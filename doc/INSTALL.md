@@ -26,7 +26,7 @@ Requirements
 - **zlib**
   - *Debian/Ubuntu:* `sudo apt-get install zlib1g-dev`
 
-- **boost** 1.47.0 or higher ("program options", "regex" and nearly all compile time libs)
+- **boost** 1.47.0 or higher ("program options", "regex", "thread", "system" and nearly all compile time libs)
   - download from [http://www.boost.org/](http://sourceforge.net/projects/boost/files/boost/1.49.0/boost_1_49_0.tar.gz/download),
       e.g. version 1.49.0
   - *Debian/Ubuntu:* `sudo apt-get install libboost-program-options-dev libboost-regex-dev`

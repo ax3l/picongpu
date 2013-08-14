@@ -37,6 +37,8 @@
 #include "plugins/BinEnergyParticles.hpp"
 #include "plugins/LineSliceFields.hpp"
 
+#include "simulationControl/signals/SignalHandler.hpp"
+
 #if (ENABLE_INSITU_VOLVIS == 1)
 #include "plugins/InSituVolumeRenderer.hpp"
 #endif
@@ -94,6 +96,7 @@ namespace picongpu
     private:
 
         std::list<IPluginModule*> modules;
+        SignalHandler mySignalHandler;
 
 #if (ENABLE_ELECTRONS == 1)
 #if(PIC_ENABLE_PNG==1)

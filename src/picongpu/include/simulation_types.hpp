@@ -45,6 +45,7 @@ enum CommunicationTag
 {
     FIELD_B = 0u, FIELD_E = 1u, FIELD_J = 2u, FIELD_TMP = 3u,
     PAR_IONS = 4u, PAR_ELECTRONS = 5u,
+    SIM_CTRL = 8u,
     NO_COMMUNICATION = 16u
 };
 
