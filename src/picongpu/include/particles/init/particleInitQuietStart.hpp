@@ -52,7 +52,7 @@ namespace picongpu
              * @return float3_X with components between [0.0, 1.0)
              */
             template <class UNIRNG>
-            DINLINE float3_X getPosition( UNIRNG& rng,
+            DINLINE float3_X getPosition( UNIRNG&,
                                            const uint32_t totalNumParsPerCell,
                                            const uint32_t curParticle )
             {

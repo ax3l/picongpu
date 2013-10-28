@@ -103,6 +103,7 @@ public:
         const TYPE old_idx = atomicInc(&(indexBox[POP]), size - 1);
 #endif
 #if (__CUDA_ARCH__>=200)
+#ifndef OCELOT
         /*old_idx == F*/
         const TYPE new_idx = (old_idx + 1) % size; //==F'
 
@@ -117,9 +118,9 @@ public:
 
         const bool overflow = (b && c && f) || (e && ((a && c) || (b && d)));
 
-
         if (overflow)
             printf("Ringbuffer: memory overflow\n");
+#endif
 #endif
 
         return (*this)[old_idx];

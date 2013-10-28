@@ -158,7 +158,6 @@ __global__ void kernelComputeCurrent(JBox fieldJ,
         PMACC_AUTO(fieldJBlock, fieldJ.shift(blockCell));
         collectivAdd(add, fieldJBlock, cachedJ);
     }
-    __syncthreads();
 }
 
 template<class ParticleAlgo, class Velocity, class TVec>

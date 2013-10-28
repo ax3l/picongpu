@@ -303,9 +303,11 @@ public:
 
 #if (ENABLE_IONS == 1)
         ions->init(*fieldE, *fieldB, *fieldJ, PAR_IONS);
-#endif      
-        //disabled because of a transaction system bug
+#endif
+
+#ifndef OCELOT
         StreamController::getInstance().addStreams(6);
+#endif
 
         uint32_t step = 0;
 

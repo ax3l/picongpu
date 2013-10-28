@@ -192,8 +192,12 @@ void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t ) throw (std::in
     /** tune paramter to use more threads than cells in a supercell
      *  valid domain: 1 <= workerMultiplier
      */
-    const int workerMultiplier =2;
-    
+#ifndef OCELOT
+    const int workerMultiplier = 2;
+#else
+    const int workerMultiplier = 1;
+#endif
+
     typedef currentSolver::CurrentSolver ParticleCurrentSolver;
     typedef ComputeCurrentPerFrame<ParticleCurrentSolver, Velocity, MappingDesc::SuperCellSize> FrameSolver;
 

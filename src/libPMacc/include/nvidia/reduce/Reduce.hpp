@@ -50,21 +50,28 @@ namespace PMacc
                     const uint32_t globalThreadCount = gridDim.x * blockDim.x;
                     extern __shared__ Type s_mem[];
 
-                    if (tid >= src_count) return; /*end not needed threads*/
-                    
+                    bool inActive = (tid >= src_count);
+
+#ifndef OCELOT
+                    if (inActive) return; /*end not needed threads*/
+#endif
                     __syncthreads(); /*wait that all shared memory is initialised*/
 
                     /*fill shared mem*/
-                    Type r_value = src[tid];
+                    Type r_value;
+                    if (!inActive)
+                        r_value = src[tid];
                     //    printf("tid=%i\n", tid);
                     /*reduce not readed global memory to shared*/
                     uint32_t i = tid + globalThreadCount;
                     while (i < src_count)
                     {
-                        func(r_value, src[i]);
+                        if (!inActive)
+                            func(r_value, src[i]);
                         i += globalThreadCount;
                     }
-                    s_mem[l_tid] = r_value;
+                    if (!inActive)
+                        s_mem[l_tid] = r_value;
                     __syncthreads();
                     /*now reduce shared memory*/
                     uint32_t chunk_count = blockDim.x;
@@ -74,21 +81,25 @@ namespace PMacc
                     {
                         const float half_threads = (float) chunk_count / 2.0f;
                         active_threads = float2uint(half_threads);
-                        if (threadIdx.x != 0 && l_tid >= active_threads) return; /*end not needed threads*/
-
+                        inActive = (threadIdx.x != 0 && l_tid >= active_threads);
+#ifndef OCELOT
+                        if (inActive) return; /*end not needed threads*/
+#endif
 
                         chunk_count = ceilf(half_threads);
                         // printf("chunk_count=%i lid=%i\n", chunk_count, l_tid);
                         //float3 s1=s_mem[l_tid];
                         // float3 s2=s_mem[l_tid + chunk_count];
-                        func(s_mem[l_tid], s_mem[l_tid + chunk_count]);
+                        if (!inActive)
+                            func(s_mem[l_tid], s_mem[l_tid + chunk_count]);
 
                         //if (src_count == 16) printf("smem %f %i\n", s1.x(), l_tid);
                         // if (src_count == 16) printf("smem2 %f %i\n", s2.x(), l_tid + chunk_count);
                         __syncthreads();
                     }
 
-                    func2(dest[blockIdx.x], s_mem[0]);
+                    if (!inActive)
+                        func2(dest[blockIdx.x], s_mem[0]);
                     // printf("erg=%f\n", dest[blockIdx.x].x());
                 }
             }

@@ -99,6 +99,30 @@ endif(CUDA_KEEP_FILES)
 
 
 ################################################################################
+# GPUOcelot
+################################################################################
+
+option(CUDA_OCELOT_RT "Use the GPUOcelot runtime instead of the CUDA runtime" ON)
+
+find_path(CUDA_OCELOT_RT_ROOT_DIR
+  NAMES lib/libocelot.so
+  PATHS ENV OCELOT_ROOT
+  DOC "GPUOcelot ROOT location"
+)
+
+if(CUDA_OCELOT_RT)
+    message(STATUS "GPUOcelot dir: ${CUDA_OCELOT_RT_ROOT_DIR}")
+    set(CUDA_CUDART_LIBRARY "${CUDA_OCELOT_RT_ROOT_DIR}/lib/libocelot.so")
+    set(CUDA_LIBRARIES "${CUDA_OCELOT_RT_ROOT_DIR}/lib/libocelot.so")
+    message(STATUS "Modified CUDA runtime library: ${CUDA_CUDART_LIBRARY}")
+    message(STATUS "Modified CUDA libraries: ${CUDA_LIBRARIES}")
+    add_definitions(-DOCELOT=1)
+    set(CUDA_ARCH "sm_20")
+    set(CUDA_KEEP_FILES ON)
+endif(CUDA_OCELOT_RT)
+
+
+################################################################################
 # Build type (debug, release)
 ################################################################################
 
@@ -189,14 +213,16 @@ endif(PARAM_OVERWRITES)
 # load cuda_memtest project
 ################################################################################
 
-set(SAME_NVCC_FLAGS_IN_SUBPROJECTS OFF)
-find_path(CUDA_MEMTEST_DIR
-        NAMES CMakeLists.txt
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../cuda_memtest"
-        DOC "path to cuda_memtest"
-        )
+if(NOT CUDA_OCELOT_RT)
+    set(SAME_NVCC_FLAGS_IN_SUBPROJECTS OFF)
+    find_path(CUDA_MEMTEST_DIR
+            NAMES CMakeLists.txt
+            PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../cuda_memtest"
+            DOC "path to cuda_memtest"
+            )
 
-add_subdirectory(${CUDA_MEMTEST_DIR} "${CMAKE_CURRENT_BINARY_DIR}/build_cuda_memtest")
+    add_subdirectory(${CUDA_MEMTEST_DIR} "${CMAKE_CURRENT_BINARY_DIR}/build_cuda_memtest")
+endif(NOT CUDA_OCELOT_RT)
 
 
 ################################################################################

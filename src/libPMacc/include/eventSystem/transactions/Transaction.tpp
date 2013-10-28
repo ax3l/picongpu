@@ -43,10 +43,11 @@ inline EventTask Transaction::setTransactionEvent( const EventTask& event )
     {
         if ( baseTask->getTaskType( ) == ITask::TASK_CUDA )
         {
-
+#ifndef OCELOT
             StreamTask* task = static_cast<StreamTask*> ( baseTask );
             CUDA_CHECK( cudaStreamWaitEvent( this->eventStream->getCudaStream( ),
                                              task->getCudaEvent( ), 0 ) );
+#endif
         }
     }
 

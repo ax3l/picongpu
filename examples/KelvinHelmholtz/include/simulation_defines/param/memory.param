@@ -30,7 +30,7 @@ namespace picongpu
  *   - reduces
  *   - ...
  */
-const size_t totalFreeGpuMemory = 400 *1024*1024;
+const size_t totalFreeGpuMemory = 500 *1024*1024;
 
 /* Factor of the species / sum of all species = relative memory usage
  *   Example:

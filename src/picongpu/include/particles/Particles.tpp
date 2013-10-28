@@ -87,8 +87,9 @@ void Particles<T_DataVector,T_MethodsVector>::createParticleBuffer( size_t gpuMe
 {
 
     /*!\todo: this is the 4GB fix for GPUs with more than 4GB memory*/
-    if ( gpuMemory >= UINT_MAX )
-        gpuMemory = (size_t) ( UINT_MAX - 2 );
+    size_t maxMem = 512 * 1024 * 1024; //UINT_MAX;
+    if ( gpuMemory >= maxMem )
+        gpuMemory = (size_t) ( maxMem - 2 );
 
     this->particlesBuffer->createParticleBuffer( gpuMemory );
 

@@ -150,7 +150,8 @@ struct MessageHeader
 
     static void destroy(MessageHeader * obj)
     {
-        free(obj);
+        //free(obj);
+        //delete obj;
     }
 
     DataHeader data;
