@@ -34,7 +34,7 @@
 #include "memory/boxes/DataBox.hpp"
 #include "memory/boxes/CachedBox.hpp"
 
-//include <curand_kernel.h>
+#include <curand_kernel.h>
 
 #include "nvidia/functors/Assign.hpp"
 #include "mappings/threads/ThreadCollective.hpp"
@@ -44,9 +44,9 @@
 #include "plugins/radiation/particles/PushExtension.hpp"
 #endif
 
-//include "nvidia/rng/RNG.hpp"
-//include "nvidia/rng/methods/Xor.hpp"
-//include "nvidia/rng/distributions/Normal_float.hpp"
+#include "nvidia/rng/RNG.hpp"
+#include "nvidia/rng/methods/Xor.hpp"
+#include "nvidia/rng/distributions/Normal_float.hpp"
 
 #include "particles/operations/Assign.hpp"
 #include "particles/operations/Deselect.hpp"
@@ -112,9 +112,9 @@ __global__ void kernelAddTemperature(ParticlesBox<FRAME, simDim> pb, float_X ene
 
     __syncthreads(); /*wait that all shared memory is initialised*/
 
-    //namespace nvrng = nvidia::rng;
-    //namespace rngMethods = nvidia::rng::methods;
-    //namespace rngDistributions = nvidia::rng::distributions;
+    namespace nvrng = nvidia::rng;
+    namespace rngMethods = nvidia::rng::methods;
+    namespace rngDistributions = nvidia::rng::distributions;
 
     const DataSpace<simDim > threadIndex(threadIdx);
     const int linearThreadIdx = DataSpaceOperations<simDim>::template map<SuperCellSize > (threadIndex);
@@ -144,7 +144,7 @@ __global__ void kernelAddTemperature(ParticlesBox<FRAME, simDim> pb, float_X ene
     const uint32_t cellIdx = DataSpaceOperations<simDim>::map(
                                                               mapper.getGridSuperCells() * SuperCellSize(),
                                                               idx);
-    //PMACC_AUTO(rng, nvrng::create(rngMethods::Xor(seed, cellIdx), rngDistributions::Normal_float()));
+    PMACC_AUTO(rng, nvrng::create(rngMethods::Xor(seed, cellIdx), rngDistributions::Normal_float()));
 
 
     __syncthreads();
@@ -154,9 +154,9 @@ __global__ void kernelAddTemperature(ParticlesBox<FRAME, simDim> pb, float_X ene
         if (isParticle)
         {
             PMACC_AUTO(particle,((*frame)[linearThreadIdx]));
-            const float3_X tmpRand = float3_X(1.,
-                                              1.,
-                                              1.);
+            const float3_X tmpRand = float3_X(rng(),
+                                              rng(),
+                                              rng());
 
             const float_X macroWeighting = particle[weighting_];
             // since energy is related to one particle,

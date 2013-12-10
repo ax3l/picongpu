@@ -28,9 +28,9 @@
 #include "simulation_defines.hpp"
 #include "plugins/radiation/parameters.hpp"
 
-//include "nvidia/rng/RNG.hpp"
-//include "nvidia/rng/methods/Xor.hpp"
-//include "nvidia/rng/distributions/Uniform_float.hpp"
+#include "nvidia/rng/RNG.hpp"
+#include "nvidia/rng/methods/Xor.hpp"
+#include "nvidia/rng/distributions/Uniform_float.hpp"
 #include "particles/init/particleInitRandomPos.hpp"
 
 
@@ -65,9 +65,9 @@ __global__ void kernelFillGridWithParticles(ParBox pb,
                                             bool isNotTop, DataSpace<simDim> gpuCelloffset, uint32_t seed, uint32_t gNrCellsY,
                                             Mapping mapper)
 {
-    //namespace nvrng = nvidia::rng;
-    //namespace rngMethods = nvidia::rng::methods;
-    //namespace rngDistributions = nvidia::rng::distributions;
+    namespace nvrng = nvidia::rng;
+    namespace rngMethods = nvidia::rng::methods;
+    namespace rngDistributions = nvidia::rng::distributions;
 
     typedef typename ParBox::FrameType FRAME;
     const DataSpace<simDim> superCells(mapper.getGridSuperCells());
@@ -124,7 +124,7 @@ __global__ void kernelFillGridWithParticles(ParBox pb,
     const uint32_t cellIdx = DataSpaceOperations<simDim>::map(
                                                               mapper.getGridSuperCells() * SuperCellSize(),
                                                               idx);
-    //PMACC_AUTO(rng, nvrng::create(rngMethods::Xor(seed, cellIdx), rngDistributions::Uniform_float()));
+    PMACC_AUTO(rng, nvrng::create(rngMethods::Xor(seed, cellIdx), rngDistributions::Uniform_float()));
 
     uint32_t numParsPerCell = particleInit::NUM_PARTICLES_PER_CELL;
 
@@ -173,8 +173,7 @@ __global__ void kernelFillGridWithParticles(ParBox pb,
             finished = 1; //clear flag
         __syncthreads();
 
-        int abc = 1;
-        float3_X pos = initMethods.getPosition(abc,
+        float3_X pos = initMethods.getPosition(rng,
                                                totalNumParsPerCell,
                                                totalNumParsPerCell - numParsPerCell);
         //pos.x() = 1.0 - rng();

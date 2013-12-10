@@ -29,7 +29,7 @@
 
 #include "dataManagement/ISimulationData.hpp"
 
-//include <curand_kernel.h>
+#include <curand_kernel.h>
 
 namespace picongpu
 {
@@ -87,7 +87,7 @@ private:
     FieldJ *fieldJurrent;
 
 
-    //curandState* randState;
+    curandState* randState;
 };
 
 
