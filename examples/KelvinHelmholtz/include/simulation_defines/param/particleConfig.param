@@ -87,16 +87,16 @@ namespace particleInitRandomPos
 {
     /** Count of particles per cell at initial state
      *  unit: none */
-    const uint32_t NUM_PARTICLES_PER_CELL = 25;
+    const uint32_t NUM_PARTICLES_PER_CELL = 12;
 }
 
 namespace particleInitQuietStart
 {
     /** Count of particles per cell per direction at initial state
      *  unit: none */
-    const uint32_t NUM_PARTICLES_PER_CELL_X = 5;
-    const uint32_t NUM_PARTICLES_PER_CELL_Y = 5;
-    const uint32_t NUM_PARTICLES_PER_CELL_Z = 1;
+    const uint32_t NUM_PARTICLES_PER_CELL_X = 3;
+    const uint32_t NUM_PARTICLES_PER_CELL_Y = 2;
+    const uint32_t NUM_PARTICLES_PER_CELL_Z = 2;
 
 /* Do not change this */
 #if(SIMDIM==DIM3)
