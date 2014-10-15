@@ -43,39 +43,133 @@ const double GAS_DENSITY_SI = 1.e25;
 //##########################################################################
 namespace gasProfiles
 {
-struct GaussianParameter
+struct FreeFormulaCylinder
 {
-    /** Gas Formular:
-                const float_X exponent = fabs((y - GAS_CENTER) / GAS_SIGMA);
-                const float_X density = __expf(GAS_FACTOR*__powf(exponent, GAS_POWER));
-
-        takes GAS_CENTER_LEFT for y < GAS_CENTER_LEFT,
-              GAS_CENTER_RIGHT for y > GAS_CENTER_RIGHT,
-        and exponent = float_X(0.0) for GAS_CENTER_LEFT < y < GAS_CENTER_RIGHT */
-    static const float_X GAS_FACTOR = -1.0;
-    static const float_X GAS_POWER = 4.0;
-
-    /** height of vacuum area on top border
-     *      this vacuum is really important because of the laser initialization,
-     *      which is done in the first cell of the simulation
-     *  unit: cells */
-    static const uint32_t VACUUM_CELLS_Y = 50;
+    /* orientation of the cylinder: 0=x, 1=y, 2=z axis */
+    static const uint32_t AXIS   = 1;
 
     struct SI
     {
-        /** The central position of the gas distribution
+        /** ...
          *  unit: meter */
-        static const float_64 GAS_CENTER_LEFT = 8.0e-5;
-        static const float_64 GAS_CENTER_RIGHT = 10.0e-5;
-        /** the distance from GAS_CENTER until the gas density decreases to its 1/e-th part
-         *  unit: meter */
-        static const float_64 GAS_SIGMA_LEFT = 8.0e-5;
-        static const float_64 GAS_SIGMA_RIGHT = 8.0e-5;
+        static const float_64 RADIUS = 1.0e-6;
+        static const float_64 LENGTH = 1.0e-6;
+        static const float_64 START  = 1.0e-6;
+        static const float_64 MIDDLE = 3.0e-6;
     };
+
+    HDINLINE float_X
+    operator()( const floatD_X position, const float_64 unit_length ) const
+    {
+        const floatD_64 pos = precisionCast<float_64>(position) * unit_length;
+        float_X dens = 1.0;
+        float_64 r = 0.0;
+        float_64 l = 0.0;
+
+        switch(AXIS) {
+            case 0:
+                {
+                    const float_64 dy = pos.y() - SI::MIDDLE;
+                    const float_64 dz = pos.y() - SI::MIDDLE;
+                    r = math::sqrt( dy*dy + dz*dz );
+                }
+                l = pos.x();
+                break;
+            case 1:
+                {
+                    const float_64 dx = pos.x() - SI::MIDDLE;
+                    const float_64 dz = pos.y() - SI::MIDDLE;
+                    r = math::sqrt( dx*dx + dz*dz );
+                }
+                l = pos.y();
+                break;
+            case 2:
+                {
+                    const float_64 dx = pos.x() - SI::MIDDLE;
+                    const float_64 dy = pos.y() - SI::MIDDLE;
+                    r = math::sqrt( dx*dx + dy*dy );
+                }
+                l = pos.z();
+                break;
+        }
+
+        /* clip to volume inside the radius */
+        dens *= float_X( r <= SI::RADIUS );
+
+        /* clip to length */
+        dens *= float_X( l >= SI::START );
+        dens *= float_X( l <= SI::START + SI::LENGTH );
+
+        return dens;
+    }
 };
 
-/* definition of GasGaussian*/
-typedef GaussianImpl<GaussianParameter> Gaussian;
+struct FreeFormulaHollowCylinder
+{
+    /* orientation of the cylinder: 0=x, 1=y, 2=z axis */
+    static const uint32_t AXIS   = 1;
+
+    struct SI
+    {
+        /** ...
+         *  unit: meter */
+        static const float_64 RADIUS = 3.0e-6;
+        static const float_64 RADIUS_INNER = 1.0e-6;
+        static const float_64 LENGTH = 1.0e-6;
+        static const float_64 START  = 1.0e-6;
+        static const float_64 MIDDLE = 3.0e-6;
+    };
+
+    HDINLINE float_X
+    operator()( const floatD_X position, const float_64 unit_length ) const
+    {
+        const floatD_64 pos = precisionCast<float_64>(position) * unit_length;
+        float_X dens = 1.0;
+        float_64 r = 0.0;
+        float_64 l = 0.0;
+
+        switch(AXIS) {
+            case 0:
+                {
+                    const float_64 dy = pos.y() - SI::MIDDLE;
+                    const float_64 dz = pos.y() - SI::MIDDLE;
+                    r = math::sqrt( dy*dy + dz*dz );
+                }
+                l = pos.x();
+                break;
+            case 1:
+                {
+                    const float_64 dx = pos.x() - SI::MIDDLE;
+                    const float_64 dz = pos.y() - SI::MIDDLE;
+                    r = math::sqrt( dx*dx + dz*dz );
+                }
+                l = pos.y();
+                break;
+            case 2:
+                {
+                    const float_64 dx = pos.x() - SI::MIDDLE;
+                    const float_64 dy = pos.y() - SI::MIDDLE;
+                    r = math::sqrt( dx*dx + dy*dy );
+                }
+                l = pos.z();
+                break;
+        }
+
+        /* clip to volume inside the radius */
+        dens *= float_X( r <= SI::RADIUS );
+        dens *= float_X( r >= SI::RADIUS_INNER );
+
+        /* clip to length */
+        dens *= float_X( l >= SI::START );
+        dens *= float_X( l <= SI::START + SI::LENGTH );
+
+        return dens;
+    }
+};
+
+/* definition of profiles */
+typedef FreeFormulaImpl<FreeFormulaCylinder> InnerCylinder;
+typedef FreeFormulaImpl<FreeFormulaHollowCylinder> OuterHollowCylinder;
 
 }//namespace gasProfiles
 

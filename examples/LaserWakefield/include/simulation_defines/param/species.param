@@ -90,6 +90,6 @@ typedef PARAM_CURRENTSOLVER UsedParticleCurrentSolver;
 #endif
 typedef PARAM_PARTICLEPUSHER UsedParticlePusher;
 
-typedef bmpl::vector1<particles::CreateGas<gasProfiles::Gaussian,particles::startPosition::Random> > UsedInitMethods;
+//typedef bmpl::vector1<particles::CreateGas<gasProfiles::Gaussian,particles::startPosition::Random> > UsedInitMethods;
 
 }//namespace picongpu
