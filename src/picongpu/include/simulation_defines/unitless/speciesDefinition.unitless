@@ -33,25 +33,25 @@ namespace picongpu
 template<>
 HDINLINE float_X getMass<typename PIC_Carbon::FrameType>(float_X weighting)
 {
-    return M_ION*6.*weighting;
+    return M_CARBON*weighting;
 };
 
 template<>
 HDINLINE float_X getCharge<typename PIC_Carbon::FrameType>(float_X weighting)
 {
-    return Q_ION*6.*weighting;
+    return Q_CARBON*weighting;
 };
 
 template<>
 HDINLINE float_X getMass<typename PIC_Hydrogen::FrameType>(float_X weighting)
 {
-    return M_ION*weighting;
+    return M_HYDROGEN*weighting;
 };
 
 template<>
 HDINLINE float_X getCharge<typename PIC_Hydrogen::FrameType>(float_X weighting)
 {
-    return Q_ION*weighting;
+    return Q_HYDROGEN*weighting;
 };
 
 template<>

@@ -45,9 +45,15 @@ namespace picongpu
 
         // Ion / Proton / Positron properties
         /** unit: kg */
-        const float_64 ION_MASS_SI = 1.6726217e-27;
+        const float_64 HYDROGEN_MASS_SI = 1.6726217e-27;
         /** unit: C */
-        const float_64 ION_CHARGE_SI = -1.0 * ELECTRON_CHARGE_SI;
+        const float_64 HYDROGEN_CHARGE_SI = -1.0 * ELECTRON_CHARGE_SI;
+
+        // Ion / Carbon
+        /** unit: kg */
+        const float_64 CARBON_MASS_SI = 1.9944e-26;
+        /** unit: C */
+        const float_64 CARBON_CHARGE_SI = -6.0 * ELECTRON_CHARGE_SI;
     }
 
     // converts

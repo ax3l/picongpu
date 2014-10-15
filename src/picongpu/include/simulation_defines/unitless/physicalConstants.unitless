@@ -82,10 +82,14 @@ namespace picongpu
     const float_X Q_EL  = (float) (SI::ELECTRON_CHARGE_SI / UNIT_CHARGE);
     //! Mass of electron
     const float_X M_EL  = (float) (SI::ELECTRON_MASS_SI / UNIT_MASS);
-    //! Charge of ion
-    const float_X Q_ION = (float) (SI::ION_CHARGE_SI / UNIT_CHARGE);
-    //! Mass of ion
-    const float_X M_ION = (float) (SI::ION_MASS_SI / UNIT_MASS);
+    //! Charge of hydrogen ions
+    const float_X Q_HYDROGEN = (float) (SI::HYDROGEN_CHARGE_SI / UNIT_CHARGE);
+    //! Mass of hydrogen ions
+    const float_X M_HYDROGEN = (float) (SI::HYDROGEN_MASS_SI / UNIT_MASS);
+    //! Charge of carbon ions
+    const float_X Q_CARBON = (float) (SI::CARBON_CHARGE_SI / UNIT_CHARGE);
+    //! Mass of carbon ions
+    const float_X M_CARBON = (float) (SI::CARBON_MASS_SI / UNIT_MASS);
 
     //! magnetic constant must be double 3.92907e-39
     const float_X MUE0 = (float) (SI::MUE0_SI / UNIT_LENGTH / UNIT_MASS * UNIT_CHARGE * UNIT_CHARGE);
