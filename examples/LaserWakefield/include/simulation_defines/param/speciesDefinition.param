@@ -39,10 +39,6 @@ namespace picongpu
 
 /*########################### define particle attributes #####################*/
 
-/* gasProfile */
-typedef bmpl::vector1<particles::CreateGas<gasProfiles::InnerCylinder,particles::startPosition::Random> > UsedInitMethodsCylinder;
-typedef bmpl::vector1<particles::CreateGas<gasProfiles::OuterHollowCylinder,particles::startPosition::Random> > UsedInitMethodsOuterHollowCylinder;
-
 /** describe attributes of a particle*/
 typedef typename MakeSeq<position<position_pic>, momentum, weighting>::type DefaultParticleAttributes;
 
@@ -77,14 +73,71 @@ AttributRadiationFlag
 /*########################### define species #################################*/
 
 
+/*--------------------------- carbon core ------------------------------------*/
+
+typedef bmpl::vector<
+    particles::CreateGas<gasProfiles::InnerCylinder,particles::startPosition::Random>
+    > UsedInitMethodsCarbon;
+
+typedef particles::shapes::TSC CarbonShape;
+typedef bmpl::vector<
+    particlePusher<UsedParticlePusher>,
+    shape<UsedParticleShape>,
+    interpolation<UsedField2Particle>,
+    current<UsedParticleCurrentSolver>,
+    initMethods<UsedInitMethodsCarbon>
+> ParticleFlagsCarbon;
+
+/*define specie ions*/
+typedef Particles<ParticleDescription<
+    bmpl::string<'c'>,
+    SuperCellSize,
+    DefaultAttributesSeq,
+    ParticleFlagsCarbon,
+    typename MakeSeq<CommunicationId<PAR_IONS> >::type >
+> PIC_Carbon;
+
+/*--------------------------- hydrogen layer core ----------------------------*/
+
+typedef bmpl::vector<
+    particles::CreateGas<gasProfiles::OuterHollowCylinder,particles::startPosition::Random>
+    > UsedInitMethodsHydrogen;
+
+typedef particles::shapes::TSC HydrogenShape;
+typedef bmpl::vector<
+    particlePusher<UsedParticlePusher>,
+    shape<UsedParticleShape>,
+    interpolation<UsedField2Particle>,
+    current<UsedParticleCurrentSolver>,
+    initMethods<UsedInitMethodsHydrogen>
+> ParticleFlagsHydrogen;
+
+/*define specie ions*/
+typedef Particles<ParticleDescription<
+    bmpl::string<'h'>,
+    SuperCellSize,
+    DefaultAttributesSeq,
+    ParticleFlagsHydrogen,
+    typename MakeSeq<CommunicationId<PAR_IONS2> >::type >
+> PIC_Hydrogen;
+
 /*--------------------------- electrons --------------------------------------*/
+
+
+typedef bmpl::vector<
+    particles::CloneSpecies<PIC_Carbon>,
+    /*particles::CreateGas<gasProfiles::Homogenous,particles::startPosition::Quiet>,*/
+    /*particles::FillAllGaps<>,*/
+    particles::Manipulate<particles::manipulators::MultiplyWeightingImpl<bmpl::integral_c<uint32_t, 6> > >,
+    particles::CloneSpecies<PIC_Hydrogen>
+    > UsedInitMethodsElectrons;
 
 typedef bmpl::vector<
     particlePusher<UsedParticlePusher>,
     shape<UsedParticleShape>,
     interpolation<UsedField2Particle>,
     current<UsedParticleCurrentSolver>,
-    initMethods<UsedInitMethodsOuterHollowCylinder>
+    initMethods<UsedInitMethodsElectrons>
 > ParticleFlagsElectrons;
 
 /*define specie electrons*/
@@ -93,50 +146,16 @@ typedef Particles<ParticleDescription<
     SuperCellSize,
     DefaultAttributesSeq,
     ParticleFlagsElectrons,
-    typename MakeSeq<CommunicationId<PAR_ELECTRONS>,MemoryFactor<2> >::type  >
+    typename MakeSeq<CommunicationId<PAR_ELECTRONS> >::type  >
 > PIC_Electrons;
 
-/*--------------------------- ions -------------------------------------------*/
-
-typedef particles::shapes::CIC IonShape;
-typedef bmpl::vector<
-    particlePusher<UsedParticlePusher>,
-    shape<UsedParticleShape>,
-    interpolation<UsedField2Particle>,
-    current<UsedParticleCurrentSolver>
-> ParticleFlagsIons;
-
-/*define specie ions*/
-typedef Particles<ParticleDescription<
-    bmpl::string<'i'>,
-    SuperCellSize,
-    DefaultAttributesSeq,
-    ParticleFlagsIons,
-    typename MakeSeq<CommunicationId<PAR_IONS>,MemoryFactor<2> >::type >
-> PIC_Ions;
 
 /*########################### end species ####################################*/
 
-
-/*! we delete this ugly definition of VectorAllSpecies after all picongpu components
- * support multi species */
-/** \todo: not nice, but this should be changed in the future*/
 typedef typename MakeSeq<
-#if (ENABLE_ELECTRONS == 1)
+PIC_Carbon,
+PIC_Hydrogen,
 PIC_Electrons
-#endif
->::type Species1;
-
-typedef typename MakeSeq<
-#if (ENABLE_IONS == 1)
-PIC_Ions
-#endif
->::type Species2;
-
-typedef typename MakeSeq<
-Species1,
-Species2
 >::type VectorAllSpecies;
-
 
 } //namespace picongpu
