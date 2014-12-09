@@ -1,6 +1,6 @@
 /**
  * Copyright 2013-2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
- *                     Richard Pausch
+ *                     Richard Pausch, Alexander Debus
  *
  * This file is part of PIConGPU.
  *
@@ -327,6 +327,18 @@ public:
         Environment<>::get().EnvMemoryInfo().getMemoryInfo(&freeGpuMem);
         log<picLog::MEMORY > ("free mem after all particles are initialized %1% MiB") % (freeGpuMem / 1024 / 1024);
 
+        /** add background field for particle pusher at the beginning of each
+            simulation, but not at restarts. At restarts the external fields
+            already exists. */
+        if( step == 0 )
+        {
+            namespace nvfct = PMacc::nvidia::functors;
+            (*pushBGField)( fieldE, nvfct::Add(), fieldBackgroundE(fieldE->getUnit()),
+                            0, fieldBackgroundE::InfluenceParticlePusher);
+            (*pushBGField)( fieldB, nvfct::Add(), fieldBackgroundB(fieldB->getUnit()),
+                            0, fieldBackgroundB::InfluenceParticlePusher);
+        }
+
         // communicate all fields
         EventTask eRfieldE = fieldE->asyncCommunication(__getTransactionEvent());
         __setTransactionEvent(eRfieldE);
@@ -348,13 +360,6 @@ public:
     virtual void runOneStep(uint32_t currentStep)
     {
         namespace nvfct = PMacc::nvidia::functors;
-
-        /** add background field for particle pusher */
-        (*pushBGField)(fieldE, nvfct::Add(), fieldBackgroundE(fieldE->getUnit()),
-                       currentStep, fieldBackgroundE::InfluenceParticlePusher);
-        (*pushBGField)(fieldB, nvfct::Add(), fieldBackgroundB(fieldB->getUnit()),
-                       currentStep, fieldBackgroundB::InfluenceParticlePusher);
-
 
         EventTask initEvent = __getTransactionEvent();
         EventTask updateEvent;
@@ -395,6 +400,15 @@ public:
 #endif
 
         this->myFieldSolver->update_afterCurrent(currentStep);
+
+        /** add background field for particle pusher of next step.
+         * Hence the background field is visible for all plugins
+         * in between the time steps.
+         */
+        (*pushBGField)( fieldE, nvfct::Add(), fieldBackgroundE(fieldE->getUnit()),
+                        currentStep + 1, fieldBackgroundE::InfluenceParticlePusher );
+        (*pushBGField)( fieldB, nvfct::Add(), fieldBackgroundB(fieldB->getUnit()),
+                        currentStep + 1, fieldBackgroundB::InfluenceParticlePusher );
     }
 
     virtual void movingWindowCheck(uint32_t currentStep)
