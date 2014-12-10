@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Richard Pausch, Alexander Debus
+ * Copyright 2013-2014 Heiko Burau, Rene Widera, Richard Pausch, Alexander Debus, Axel Huebl
  *
  * This file is part of PIConGPU.
  *
@@ -25,15 +25,15 @@
 #include <cmath>
 #include <iostream>
 
-template<typename T>
+template<typename T_Type>
 class Complex_T
 {
     /// a complex number class
 public:
 
-    typedef T Type;
+    typedef T_Type Type;
     // constructor (real, imaginary)
-    HDINLINE Complex_T(T real, T imaginary = 0.0)
+    HDINLINE Complex_T(Type real, Type imaginary = 0.0)
     : real(real), imaginary(imaginary)
     {
     };
@@ -43,20 +43,20 @@ public:
     {
     };
 
-    HDINLINE static Complex_T<T> zero(void)
+    HDINLINE static Complex_T<Type> zero(void)
     {
-        return Complex_T<T > ().euler(0, 0, 1);
+        return Complex_T<Type > ().euler(0, 0, 1);
     };
 
     // set complex number by using Euler's formula
-    HDINLINE Complex_T euler(T magnitude, const T& phase)
+    HDINLINE Complex_T euler(Type magnitude, const Type& phase)
     {
         real = magnitude * picongpu::math::cos(picongpu::precisionCast<picongpu::float_X>(phase));
         imaginary = magnitude * picongpu::math::sin(picongpu::precisionCast<picongpu::float_X>(phase));
         return *this;
     }
 
-    HDINLINE Complex_T euler(T magnitude, const T& sinValue, const T& cosValue)
+    HDINLINE Complex_T euler(Type magnitude, const Type& sinValue, const Type& cosValue)
     {
         real = magnitude * cosValue;
         imaginary = magnitude * sinValue;
@@ -75,14 +75,14 @@ public:
         return Complex_T(lhs.real + rhs.real, lhs.imaginary + rhs.imaginary);
     }
 
-    HDINLINE friend Complex_T operator+(const Complex_T& lhs, const T& rhs)
+    HDINLINE friend Complex_T operator+(const Complex_T& lhs, const Type& rhs_scalar)
     {
-        return Complex_T(lhs.real + rhs, lhs.imaginary);
+        return Complex_T(lhs.real + rhs_scalar, lhs.imaginary);
     }
 
-    HDINLINE friend Complex_T operator+(const T& lhs, const Complex_T& rhs)
+    HDINLINE friend Complex_T operator+(const Type& lhs_scalar, const Complex_T& rhs)
     {
-        return Complex_T(lhs + rhs.real, rhs.imaginary);
+        return Complex_T(lhs_scalar + rhs.real, rhs.imaginary);
     }
 
     // substraction
@@ -91,14 +91,14 @@ public:
         return Complex_T(lhs.real - rhs.real, lhs.imaginary - rhs.imaginary);
     }
 
-    HDINLINE friend Complex_T operator-(const Complex_T& lhs, const T& rhs)
+    HDINLINE friend Complex_T operator-(const Complex_T& lhs, const Type& rhs)
     {
         return Complex_T(lhs.real - rhs, lhs.imaginary);
     }
 
-    HDINLINE friend Complex_T operator-(const T& lhs, const Complex_T& rhs)
+    HDINLINE friend Complex_T operator-(const Type& lhs_scalar, const Complex_T& rhs)
     {
-        return Complex_T(lhs - rhs.real, -rhs.imaginary);
+        return Complex_T(lhs_scalar - rhs.real, -rhs.imaginary);
     }
 
     // multiplication
@@ -108,59 +108,58 @@ public:
                          lhs.imaginary * rhs.real + lhs.real * rhs.imaginary);
     }
 
-    HDINLINE friend Complex_T operator*(const Complex_T& lhs, const T& rhs)
+    HDINLINE friend Complex_T operator*(const Complex_T& lhs, const Type& rhs_scalar)
     {
-        return Complex_T(lhs.real * rhs, lhs.imaginary * rhs);
+        return Complex_T(lhs.real * rhs_scalar, lhs.imaginary * rhs_scalar);
     }
 
-    HDINLINE friend Complex_T operator*(const T& lhs, const Complex_T& rhs)
+    HDINLINE friend Complex_T operator*(const Type& lhs_scalar, const Complex_T& rhs)
     {
-        return Complex_T(lhs * rhs.real, lhs * rhs.imaginary);
+        return Complex_T(lhs_scalar * rhs.real, lhs_scalar * rhs.imaginary);
     }
 
     // Division
-    HDINLINE friend Complex_T operator/(const Complex_T& lhs, const T& rhs)
+    HDINLINE friend Complex_T operator/(const Complex_T& lhs, const Type& rhs_scalar)
     {
-        return Complex_T(lhs.real / rhs, lhs.imaginary / rhs);
+        return Complex_T(lhs.real / rhs_scalar, lhs.imaginary / rhs_scalar);
     }
 
-    HDINLINE friend Complex_T operator/(const T& lhs, const Complex_T& rhs)
+    HDINLINE friend Complex_T operator/(const Type& lhs_scalar, const Complex_T& rhs)
     {
-        return Complex_T(lhs * rhs.real/(rhs.real*rhs.real+rhs.imaginary*rhs.imaginary),
-                         -lhs * rhs.imaginary/( util::square(rhs.real)+util::square(rhs.imaginary) ));
+        return Complex_T( lhs_scalar * rhs.real / ( util::square(rhs.real) + util::square(rhs.imaginary) ),
+                         -lhs_scalar * rhs.imaginary / ( util::square(rhs.real) + util::square(rhs.imaginary) ) );
     }
 
     HDINLINE friend Complex_T operator/(const Complex_T& lhs, const Complex_T& rhs)
     {
-        return lhs*Complex_T(rhs.real/(rhs.real*rhs.real+rhs.imaginary*rhs.imaginary),
-                            -rhs.imaginary/( util::square(rhs.real)+util::square(rhs.imaginary) ));
+        return lhs*Complex_T( rhs.real / ( util::square(rhs.real) + util::square(rhs.imaginary) ),
+                             -rhs.imaginary / ( util::square(rhs.real) + util::square(rhs.imaginary) ) );
     }
 
-    HDINLINE static Complex_T<T > csqrt(const Complex_T<T >& other)
+    HDINLINE static Complex_T<Type > csqrt(const Complex_T<Type >& other)
     {
-        Complex_T<T > helper = other;
         if (other.real<=0.0 && other.imaginary==0.0) {
-            return Complex_T<T > (0.0,sqrt(-helper.real));
+            return Complex_T<Type > (0.0,sqrt(-other.real));
         }
         else {
-            return sqrt(helper.abs_64())*(other+other.abs_64())/(other+other.abs_64()).abs_64();
+            return sqrt(other.abs_64())*(other+other.abs_64())/(other+other.abs_64()).abs_64();
         }
     }
 
-    HDINLINE static Complex_T<T > cpow(const Complex_T<T >& other, const T& exponent)
+    HDINLINE static Complex_T<Type > cpow(const Complex_T<Type >& other, const Type& exponent)
     {
-        Complex_T<T > helper = other;
-        return pow(helper.abs_64(),exponent)*cexp(Complex_T<T >(0.,1.)*helper.arg()*exponent);
+        return pow( other.abs_64(), exponent) *
+               cexp( Complex_T<Type >( 0.,1. ) * other.arg() * exponent );
     }
 
     // Complex exponential function
-    HDINLINE static Complex_T<T > cexp(const Complex_T<T >& other)
+    HDINLINE static Complex_T<Type > cexp(const Complex_T<Type >& other)
     {
-        return Complex_T<T > ().euler(1.0,other.imaginary)*expf(other.real);
+        return Complex_T<Type > ().euler(1.0,other.imaginary)*expf(other.real);
     }
 
     // Conversion from scalar (assignment)
-    HDINLINE Complex_T& operator=(const T& other)
+    HDINLINE Complex_T& operator=(const Type& other)
     {
         real = other;
         return *this;
@@ -198,21 +197,21 @@ public:
     }
 
     // Absolute value
-    HDINLINE T abs_64(void) const
+    HDINLINE Type abs_64(void) const
     {
         // For the complex square root cexp(), the slower sqrt() is required to avoid infinities.
         return sqrt(util::square(real) + util::square(imaginary));
     }
 
     // Absolute value: Faster float version for Richards radiation plugin.
-    HDINLINE T abs(void) const
+    HDINLINE Type abs(void) const
     {
         // For the complex square root cexp(), the slower sqrt() is required to avoid infinities.
         return sqrtf(util::square(real) + util::square(imaginary));
     }
 
     // Phase of complex number (Note: Branchcut running from -infinity to 0)
-    HDINLINE T arg(void) const
+    HDINLINE Type arg(void) const
     {
         if (real==0.0 && imaginary==0.0) return 0.0;
         else if (real==0.0 && imaginary>0.0) return picongpu::PI/2;
@@ -222,27 +221,27 @@ public:
     }
 
     // square of absolute value
-    HDINLINE T abs_square(void) const
+    HDINLINE Type abs_square(void) const
     {
         return util::square(real) + util::square(imaginary);
     }
 
     // real part
-    HDINLINE T get_real(void) const
+    HDINLINE Type get_real(void) const
     {
         return real;
     }
 
     // imaginary part
-    HDINLINE T get_imag(void) const
+    HDINLINE Type get_imag(void) const
     {
         return imaginary;
     }
 
 
   private:
-    __align__(sizeof (T)) T real; // real part
-    __align__(sizeof (T)) T imaginary; // imaginary part
+    __align__(sizeof (Type)) Type real; // real part
+    __align__(sizeof (Type)) Type imaginary; // imaginary part
 
 };
 
