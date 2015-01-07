@@ -32,6 +32,7 @@ rename="s/psychocoder/Rene Widera/g;
 	s/phoenixloe/Florian Berninger/g;
 	s/helma/Anton Helm/g;
 	s/wf5/Wen Fu/g;
+	s/BenjaminW3/Benjamin Worpitz/g;
 	s/bussmann/Michael Bussmann/g
 	"
 
@@ -55,6 +56,25 @@ text=' *\
  * GNU General Public License for more details.\
  *\
  * You should have received a copy of the GNU General Public License\
+ * along with '"$projectName"'.\
+ * If not, see <http://www.gnu.org/licenses/>.\
+ */\
+ '
+elif [ $projectName = "alpaka" ] ; then
+text=' *\
+ * This file is part of '"$projectName"'.\
+ *\
+ * '"$projectName"' is free software: you can redistribute it and/or modify\
+ * it under the terms of the GNU Lesser General Public License as published by\
+ * the Free Software Foundation, either version 3 of the License, or\
+ * (at your option) any later version.\
+ *\
+ * '"$projectName"' is distributed in the hope that it will be useful,\
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of\
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+ * GNU Lesser General Public License for more details.\
+ *\
+ * You should have received a copy of the GNU Lesser General Public License\
  * along with '"$projectName"'.\
  * If not, see <http://www.gnu.org/licenses/>.\
  */\
