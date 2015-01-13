@@ -442,17 +442,28 @@ include_directories(BEFORE ${PIC_EXTENSION_PATH}/include)
 ################################################################################
 
 file(GLOB CUDASRCFILES "*.cu")
+file(GLOB CUDALIBSRCFILES "pythonModule.cu")
+list(REMOVE_ITEM CUDASRCFILES ${CUDALIBSRCFILES})
+file(GLOB PYTHONMODULEFILES "pythonModule.cpp")
 file(GLOB SRCFILES "*.cpp")
+list(REMOVE_ITEM SRCFILES ${PYTHONMODULEFILES})
 
-
-
-cuda_add_executable(picongpu
-    ${CUDASRCFILES}
+cuda_add_library(picongpu STATIC
+    ${CUDALIBSRCFILES}
     ${SRCFILES}
     ${SCOREP_SRCFILES}
 )
 
-target_link_libraries(picongpu  ${LIBS} ${CUDA_CUDART_LIBRARY} z m)
+cuda_add_executable(picongpu-bin
+    ${CUDASRCFILES}
+#    ${SRCFILES}
+#    ${SCOREP_SRCFILES}
+)
+
+set_target_properties(picongpu-bin PROPERTIES OUTPUT_NAME picongpu)
+
+target_link_libraries(picongpu ${LIBS} ${CUDA_CUDART_LIBRARY} z m)
+target_link_libraries(picongpu-bin picongpu)
 
 if(SCOREP_ENABLE)
     # Score-P libraries must be linked after the object to prevent symbols
@@ -460,12 +471,42 @@ if(SCOREP_ENABLE)
     target_link_libraries(picongpu ${SCOREP_LIBFLAGS})
 endif(SCOREP_ENABLE)
 
+
+################################################################################
+# Compile & Link Python Bindings
+################################################################################
+
+set(Python_ADDITIONAL_VERSIONS 2.7 2.6 2.5)
+find_package(PythonInterp)
+find_package(PythonLibs)
+# NO_DEFAULT_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH
+find_package(Boost 1.49.0 COMPONENTS program_options regex filesystem system python)
+
+if(PYTHONINTERP_FOUND AND PYTHONLIBS_FOUND AND Boost_PYTHON_FOUND)
+    message(STATUS "Going to build PIConGPU python bindings.")
+
+    include_directories(SYSTEM ${PYTHON_INCLUDE_PATH})
+    # Boost_python_LIBRARY
+    PYTHON_ADD_MODULE(pypicongpu ${PYTHONMODULEFILES})
+    set_target_properties(pypicongpu PROPERTIES LINKER_LANGUAGE CXX)
+    target_link_libraries(pypicongpu
+                          ${Boost_PYTHON_LIBRARY_RELEASE}
+#${Boost_LIBRARIES} ${PYTHON_LIBRARIES}
+                          ${PYTHON_LIBRARY}
+                          picongpu
+                         )
+else()
+    message(STATUS "Could NOT find required python/boost::python libraries. "
+                   "Skipped to build PIConGPU python bindings.")
+endif()
+
+
 ################################################################################
 # Install PIConGPU
 ################################################################################
 
-install(TARGETS picongpu
-         RUNTIME DESTINATION bin)
+install(TARGETS picongpu-bin
+        RUNTIME DESTINATION bin)
 
 #file(GLOB scripts_to_copy "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.sh")
 #foreach(f ${scripts_to_copy})

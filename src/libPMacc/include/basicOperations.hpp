@@ -27,7 +27,9 @@
 #include "types.h"
 #include <string>
 #include <ostream>
+//define __CUDA_INTERNAL_COMPILATION__
 #include <math_functions.h>
+//undef __CUDA_INTERNAL_COMPILATION__
 
 namespace PMacc
 {
