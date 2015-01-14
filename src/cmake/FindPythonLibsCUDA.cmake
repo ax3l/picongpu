@@ -1,6 +1,6 @@
 #.rst:
-# FindPythonLibs
-# --------------
+# FindPythonLibsCUDA
+# ------------------
 #
 # Find python libraries
 #
@@ -22,7 +22,7 @@
 # The Python_ADDITIONAL_VERSIONS variable can be used to specify a list
 # of version numbers that should be taken into account when searching
 # for Python.  You need to set this variable before calling
-# find_package(PythonLibs).
+# find_package(PythonLibsCUDA).
 #
 # If you'd like to specify the installation of Python to use, you should
 # modify the following cache variables:
@@ -45,7 +45,7 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
-include(${CMAKE_CURRENT_LIST_DIR}/CMakeFindFrameworks.cmake)
+include(CMakeFindFrameworks)
 # Search for the python framework on Apple.
 CMAKE_FIND_FRAMEWORKS(Python)
 
@@ -186,15 +186,15 @@ set(PYTHON_DEBUG_LIBRARIES "${PYTHON_DEBUG_LIBRARY}")
 # what SELECT_LIBRARY_CONFIGURATIONS() expects.
 set(PYTHON_LIBRARY_DEBUG "${PYTHON_DEBUG_LIBRARY}")
 set(PYTHON_LIBRARY_RELEASE "${PYTHON_LIBRARY}")
-include(${CMAKE_CURRENT_LIST_DIR}/SelectLibraryConfigurations.cmake)
+include(SelectLibraryConfigurations)
 SELECT_LIBRARY_CONFIGURATIONS(PYTHON)
 # SELECT_LIBRARY_CONFIGURATIONS() sets ${PREFIX}_FOUND if it has a library.
 # Unset this, this prefix doesn't match the module prefix, they are different
 # for historical reasons.
 unset(PYTHON_FOUND)
 
-include(${CMAKE_CURRENT_LIST_DIR}/FindPackageHandleStandardArgs.cmake)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(PythonLibs
+include(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(PythonLibsCUDA
                                   REQUIRED_VARS PYTHON_LIBRARIES PYTHON_INCLUDE_DIRS
                                   VERSION_VAR PYTHONLIBS_VERSION_STRING)
 
@@ -221,7 +221,7 @@ function(PYTHON_ADD_MODULE _NAME )
     endif()
 
     set_property(GLOBAL  APPEND  PROPERTY  PY_MODULES_LIST ${_NAME})
-    add_library(${_NAME} ${PY_MODULE_TYPE} ${ARGN})
+    cuda_add_library(${_NAME} ${PY_MODULE_TYPE} ${ARGN})
 #    target_link_libraries(${_NAME} ${PYTHON_LIBRARIES})
 
     if(PYTHON_MODULE_${_NAME}_BUILD_SHARED)
