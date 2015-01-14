@@ -28,6 +28,7 @@ If not stated otherwise explicitly, that affects:
  - `src/tools/splash2txt`
 
 **other licenses**:
+ - `src/cmake`: see individual module headers
  - `src/cuda_memtest`:
    CUDA MemTest is an *independent program* developed by the University
    Illinois, published under the *Illinois Open Source License*.
