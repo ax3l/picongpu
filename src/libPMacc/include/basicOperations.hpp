@@ -22,7 +22,6 @@
 
 #pragma once
 
-
 #include <builtin_types.h>
 #include "types.h"
 #include <string>

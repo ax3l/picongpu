@@ -18,9 +18,29 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <Python.h>
+#include <mpi.h>
+
 #include <simulation_defines.hpp>
-//include <mpi.h>
 #include "communication/manager_common.h"
 
-using namespace PMacc;
-using namespace picongpu;
+#include <boost/python.hpp>
+
+char const* greet()
+{
+return "hello, world";
+}
+
+using namespace boost::python;
+
+BOOST_PYTHON_MODULE(pypicongpu)
+{
+    def("greet", greet);
+    using namespace picongpu::simulation_starter;
+
+    class_<SimStarter >("SimStarter")
+        .def("parseConfigs", &SimStarter::parseConfigs)
+        .def("load", &SimStarter::load)
+        .def("unload", &SimStarter::unload)
+    ;
+};
