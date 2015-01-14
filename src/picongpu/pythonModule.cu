@@ -92,5 +92,6 @@ BOOST_PYTHON_MODULE(pypicongpu)
         .def("parseConfigs", &WrappedSimStarter::parse)
         .def("load", &SimStarter::load)
         .def("unload", &SimStarter::unload)
+        .def("start", &SimStarter::start)
     ;
 };
