@@ -1,6 +1,54 @@
 Change Log / Release Log for PIConGPU
 ================================================================
 
+0.1.0
+-----
+**Date:** 2015-02-25
+
+This is the version 0.1.0 of PIConGPU, a *pre-beta* version.
+
+### Changes to "Open Beta RC6"
+
+**.param file changes:**
+ - `componentsConfig.param` & `gasConfig.param` fix typo `gasHomogeneous` #577
+
+**.unitless file changes:**
+ - 
+
+**New Features:**
+ - tools:
+   - new python reader for `SliceFieldPrinter` plugin #578
+   - `cuda_memtest`:
+     - 32bit host system support (Jetson TK1) #583
+     - 
+   - `splash2txt`:
+     - removed build option `S2T_RELEASE` and uses `CMAKE_BUILD_TYPE` #591
+   - `tbg`:
+     - allows for defaults for `-s`, `-t`, `-c` via env vars #613
+ - new/updated particle traits and attributes:
+   - `getCharge`, `getMass` #596
+   - attributes are now automatically initialized to their generic defaults #607 #615
+ - plugins:
+   - `Radiation` uses/requires HDF5 output #419 #610
+
+**Bug Fixes:**
+ - boost 1.56.0+ support via `Resolve<T>` trait #588 #593 #594
+ - potential race condition in field update and pusher #604
+ - plugins:
+   - `Visualization` (png & 2D live sim) memory bug in double precision runs #621
+ - libPMacc:
+   - `float2int` return type should be int #623
+
+**Misc:**
+ - HDF5 support requires libSplash 1.2.4+
+ - various code clean-up for MSVC #563 #564 #566 #624 #625
+ - removed plugins:
+   - LinceSliceFields #590
+ - updated contribution guidelines, install, cfg examples #601 #598 #617 #620
+ - updated module examples and cfg files for:
+   - lawrencium (LBL) #607
+   - titan (ORNL) #618
+
 Open Beta RC6
 -------------
 **Date:** 2014-11-25
