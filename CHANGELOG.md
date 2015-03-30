@@ -3,7 +3,7 @@ Change Log / Release Log for PIConGPU
 
 0.1.0
 -----
-**Date:** 2015-02-25
+**Date:** 2015-04-01
 
 This is the version 0.1.0 of PIConGPU, a *pre-beta* version.
 

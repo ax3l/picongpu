@@ -1,0 +1,419 @@
+ .../simulation_defines/_defaultParam.loader        |  3 +-
+ .../simulation_defines/_defaultUnitless.loader     |  4 +-
+ .../param/componentsConfig.param                   | 17 ++++----
+ .../simulation_defines/param/gasConfig.param       |  9 +++--
+ .../simulation_defines/param/ionizerConfig.param   | 46 ++++++++++++++++++++++
+ .../param/physicalConstants.param                  |  5 +++
+ .../param/speciesAttributes.param                  | 19 ++++++++-
+ .../simulation_defines/unitless/gasConfig.unitless |  9 +++--
+ .../unitless/ionizerConfig.unitless                | 24 +++++++++++
+ .../unitless/speciesAttributes.unitless            | 10 +++++
+ .../unitless/speciesDefinition.unitless            | 31 ++++++++++-----
+ 11 files changed, 148 insertions(+), 29 deletions(-)
+
+---------------------------------------------------------------------------------------
+
+diff --git a/src/picongpu/include/simulation_defines/_defaultParam.loader b/src/picongpu/include/simulation_defines/_defaultParam.loader
+index e120eb5..2c8d1bd 100644
+--- a/src/picongpu/include/simulation_defines/_defaultParam.loader
++++ b/src/picongpu/include/simulation_defines/_defaultParam.loader
+@@ -1,5 +1,5 @@
+ /**
+- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
++ * Copyright 2013-2015 Axel Huebl, Heiko Burau, Rene Widera, Marco Garten
+  *
+  * This file is part of PIConGPU.
+  *
+@@ -31,6 +31,7 @@
+ #include "simulation_defines/param/physicalConstants.param"
+ #include "simulation_defines/param/radiationConfig.param"
+ #include "simulation_defines/param/pusherConfig.param"
++#include "simulation_defines/param/ionizerConfig.param"
+ #include "simulation_defines/param/speciesAttributes.param"
+ #include "simulation_defines/param/species.param"
+ #include "simulation_defines/param/speciesDefinition.param"
+diff --git a/src/picongpu/include/simulation_defines/_defaultUnitless.loader b/src/picongpu/include/simulation_defines/_defaultUnitless.loader
+index afd82f9..0fb3588 100644
+--- a/src/picongpu/include/simulation_defines/_defaultUnitless.loader
++++ b/src/picongpu/include/simulation_defines/_defaultUnitless.loader
+@@ -1,5 +1,6 @@
+ /**
+- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt
++ * Copyright 2013-2015 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
++ *                      Marco Garten
+  *
+  * This file is part of PIConGPU.
+  *
+@@ -33,6 +34,7 @@
+ #include "simulation_defines/unitless/fieldSolver.unitless"
+ #include "simulation_defines/unitless/visualization.unitless"
+ #include "simulation_defines/unitless/pusherConfig.unitless"
++#include "simulation_defines/unitless/ionizerConfig.unitless"
+ #include "simulation_defines/unitless/radiationConfig.unitless"
+ #include "simulation_defines/unitless/speciesAttributes.unitless"
+ #include "simulation_defines/unitless/speciesDefinition.unitless"
+diff --git a/src/picongpu/include/simulation_defines/param/componentsConfig.param b/src/picongpu/include/simulation_defines/param/componentsConfig.param
+index 85cd9c2..bc2c9c8 100644
+--- a/src/picongpu/include/simulation_defines/param/componentsConfig.param
++++ b/src/picongpu/include/simulation_defines/param/componentsConfig.param
+@@ -1,5 +1,6 @@
+ /**
+- * Copyright 2013 Axel Huebl, Heiko Burau, Anton Helm, Rene Widera, Richard Pausch
++ * Copyright 2013-2014 Axel Huebl, Heiko Burau, Anton Helm, 
++ *                     Rene Widera, Richard Pausch
+  *
+  * This file is part of PIConGPU.
+  *
+@@ -34,30 +35,30 @@ namespace simulation_starter = defaultPIConGPU;
+  *  - laserGaussianBeam     : Gaussian beam (focusing)
+  *  - laserPulseFrontTilt   : Gaussian beam with a tilted pulse envelope
+  *                            in 'x' direction
+- *  - laserWavepacket       : wavepacket (gaussian in time and space, not focusing)
++ *  - laserWavepacket       : wavepacket (Gaussian in time and space, not focusing)
+  *  - laserPlaneWave        : a plane wave
+  */
+ namespace laserProfile = laserNone;
+ 
+ /*! Field Configuration --------------------------------------------------
+  *  - fieldSolverYee : standard Yee solver
+- *  - fieldSolverLehe: Num. Cherenkov free field solver in a choosen direction
++ *  - fieldSolverLehe: Num. Cherenkov free field solver in a chosen direction
+  *  - fieldSolverDirSplitting: Sentoku's Directional Splitting Method
+  *  - fieldSolverNone: disable the vacuum update of E and B
+  *
+  * * For development purposes: ---------------------------------------------
+  *  - fieldSolverYeeNative : generic version of fieldSolverYee
+- *    (need more shared memory per gpu and is slow)
++ *    (need more shared memory per GPU and is slow)
+  */
+ namespace fieldSolver = fieldSolverYee;
+ 
+ /*! Gas Configuration-----------------------------------------------------
+  * Select a normed gas density profile
+- *  - gasGaussian : super - gaussian density profile
+- *  - gasGaussianCloud : super - gaussian density profile with a center position
++ *  - gasGaussian : super - Gaussian density profile
++ *  - gasGaussianCloud : super - Gaussian density profile with a center position
+  *  - gasLinExp : piecewise linear-exponential profile (linear first)
+- *  - gasHomogenous : constant gas density with a certain length
+- *  - gasSphereFlanks : constant sphere droplet with exponential decr envelope
++ *  - gasHomogeneous : constant gas density with a certain length
++ *  - gasSphereFlanks : constant sphere droplet with exponentially decreasing envelope
+  *  - gasFreeFormula: use a custom formula (slower)
+  *  - gasFromHdf5: load gas density from HDF5 file
+  *  - gasNone : just stay with a vacuum
+diff --git a/src/picongpu/include/simulation_defines/param/gasConfig.param b/src/picongpu/include/simulation_defines/param/gasConfig.param
+index 269d8f3..b0efdb9 100644
+--- a/src/picongpu/include/simulation_defines/param/gasConfig.param
++++ b/src/picongpu/include/simulation_defines/param/gasConfig.param
+@@ -1,5 +1,6 @@
+ /**
+  * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt
++ *                     Richard Pausch
+  *
+  * This file is part of PIConGPU.
+  *
+@@ -46,7 +47,7 @@ namespace picongpu
+ 
+     namespace gasGaussian
+     {
+-        /** Gas Formular:
++        /** Gas Formula:
+                     const float_X exponent = fabs((y - GAS_CENTER) / GAS_SIGMA);
+                     const float_X density = __expf(GAS_FACTOR*__powf(exponent, GAS_POWER));
+ 
+@@ -111,7 +112,7 @@ namespace picongpu
+ 
+     }
+ 
+-    namespace gasHomogenous
++    namespace gasHomogeneous
+     {
+         namespace SI
+         {
+@@ -134,7 +135,7 @@ namespace picongpu
+          *       ..,x,..            x high (constant)
+          *
+          *  Imagine a ball with a "hard core" and "soft flanks".
+-         *                 (+1 for using antithetics in a description)
++         *                 (+1 for using an antithesis in a description)
+          */
+         namespace SI
+         {
+@@ -163,7 +164,7 @@ namespace picongpu
+ 
+     namespace gasGaussianCloud
+     {
+-        /** Gas Formular:
++        /** Gas Formula:
+                     const float_X exponent = fabs((y - GAS_CENTER) / GAS_SIGMA);
+                     const float_X density = __expf(GAS_FACTOR*__powf(exponent, GAS_POWER));
+ 
+diff --git a/src/picongpu/include/simulation_defines/param/ionizerConfig.param b/src/picongpu/include/simulation_defines/param/ionizerConfig.param
+new file mode 100644
+index 0000000..7172726
+--- /dev/null
++++ b/src/picongpu/include/simulation_defines/param/ionizerConfig.param
+@@ -0,0 +1,46 @@
++/**
++ * Copyright 2014 Marco Garten
++ *
++ * This file is part of PIConGPU.
++ *
++ * PIConGPU is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * PIConGPU is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with PIConGPU.
++ * If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#pragma once
++
++/** forward declarations for ionization algorithms
++ * 
++ * ionization model has a < Name >
++ * so the algorithm is called "Algorithm< Name >"
++ */
++
++namespace picongpu
++{
++
++namespace particles
++{
++
++namespace ionization
++{
++
++    struct AlgorithmNone;
++
++    struct AlgorithmBSI;
++
++} // namespace ionization
++
++} // namespace particles
++
++} // namespace picongpu
+diff --git a/src/picongpu/include/simulation_defines/param/physicalConstants.param b/src/picongpu/include/simulation_defines/param/physicalConstants.param
+index a920406..b88ff4d 100644
+--- a/src/picongpu/include/simulation_defines/param/physicalConstants.param
++++ b/src/picongpu/include/simulation_defines/param/physicalConstants.param
+@@ -26,6 +26,11 @@ namespace picongpu
+ {
+     const float_64 PI = 3.141592653589793238462643383279502884197169399;
+ 
++    /** Threshold used for calculations that want to separate between
++     *  high-precision formulas for relativistic and non-relativistic
++     *  use-cases, e.g. energy-binning algorithms. */
++    const float_X GAMMA_THRESH = float_X(1.005);
++
+     namespace SI
+     {
+         /** unit: m / s */
+diff --git a/src/picongpu/include/simulation_defines/param/speciesAttributes.param b/src/picongpu/include/simulation_defines/param/speciesAttributes.param
+index 7e889ac..33c8c7d 100644
+--- a/src/picongpu/include/simulation_defines/param/speciesAttributes.param
++++ b/src/picongpu/include/simulation_defines/param/speciesAttributes.param
+@@ -1,5 +1,5 @@
+ /**
+- * Copyright 2014 Rene Widera
++ * Copyright 2014 Rene Widera, Marco Garten
+  *
+  * This file is part of PIConGPU.
+  *
+@@ -55,6 +55,16 @@ value_identifier(float_X, weighting, 0.0);
+ /** use this particle for radiation diagnostics */
+ value_identifier(bool, radiationFlag, false);
+ 
++/** number of electrons bound to the atom / ion
++ *
++ * value type is float_X to avoid casts during the runtime
++ * - float is also reasonable because effective charge numbers are possible
++ * - only reasonable for ion species if ionization is enabled 
++ * 
++ * \todo connect default to proton number
++ */
++value_identifier(float_X,boundElectrons,float_X(0.0));
++
+ /** specialization global position inside a domain (relative to origin of the
+  * moving window) and is loaded after all other param files)
+  */
+@@ -66,12 +76,19 @@ alias(shape);
+ /*! alias for particle pusher @see species.param */
+ alias(particlePusher);
+ 
++/*! alias for particle ionizer @see speciesDefinition.param */
++alias(ionizer);
++
+ /*! alias for particle to field interpolation @see species.param */
+ alias(interpolation);
+ 
+ /*! alias for particle current solver @see species.param */
+ alias(current);
+ 
++/*! alias for particle flag: atomic numbers @see speciesDefinition.param
++ * - only reasonable for atoms / ions / nuclei */
++alias(atomicNumbers);
++
+ template<uint32_t T_commTag>
+ struct CommunicationId
+ {
+diff --git a/src/picongpu/include/simulation_defines/unitless/gasConfig.unitless b/src/picongpu/include/simulation_defines/unitless/gasConfig.unitless
+index 20835d1..a460501 100644
+--- a/src/picongpu/include/simulation_defines/unitless/gasConfig.unitless
++++ b/src/picongpu/include/simulation_defines/unitless/gasConfig.unitless
+@@ -1,5 +1,6 @@
+ /**
+- * Copyright 2013-2014 Axel Huebl, Rene Widera, Felix Schmitt
++ * Copyright 2013-2014 Axel Huebl, Rene Widera, Felix Schmitt,
++ *                     Richard Pausch
+  *
+  * This file is part of PIConGPU.
+  *
+@@ -54,7 +55,7 @@ namespace picongpu
+         const bool GAS_ENABLED = true;
+     }
+ 
+-    namespace gasHomogenous
++    namespace gasHomogeneous
+     {
+         /** Length of the constant gas in y direction
+          *  unit: meter */
+@@ -79,7 +80,7 @@ namespace picongpu
+ 
+     namespace gasGaussianCloud
+     {
+-        // normed parameters of the gaussian gas profile
++        // normed parameters of the Gaussian gas profile
+         const float_X GAS_CENTER_X = float_X( SI::GAS_CENTER_X_SI / UNIT_LENGTH); //unit: meter
+         const float_X GAS_CENTER_Y = float_X( SI::GAS_CENTER_Y_SI / UNIT_LENGTH); //unit: meter
+         const float_X GAS_CENTER_Z = float_X( SI::GAS_CENTER_Z_SI / UNIT_LENGTH); //unit: meter
+@@ -121,7 +122,7 @@ namespace picongpu
+ #include "particles/gasProfiles/gasGaussian.hpp"
+ #include "particles/gasProfiles/gasGaussianCloud.hpp"
+ #include "particles/gasProfiles/gasLinExp.hpp"
+-#include "particles/gasProfiles/gasHomogenous.hpp"
++#include "particles/gasProfiles/gasHomogeneous.hpp"
+ #include "particles/gasProfiles/gasSphereFlanks.hpp"
+ #include "particles/gasProfiles/gasFreeFormula.hpp"
+ #if (ENABLE_HDF5 == 1)
+diff --git a/src/picongpu/include/simulation_defines/unitless/ionizerConfig.unitless b/src/picongpu/include/simulation_defines/unitless/ionizerConfig.unitless
+new file mode 100644
+index 0000000..be53a61
+--- /dev/null
++++ b/src/picongpu/include/simulation_defines/unitless/ionizerConfig.unitless
+@@ -0,0 +1,24 @@
++/**
++ * Copyright 2014 Marco Garten
++ *
++ * This file is part of PIConGPU.
++ *
++ * PIConGPU is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * PIConGPU is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with PIConGPU.
++ * If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#pragma once
++
++#include "particles/ionization/byField/BSI/AlgorithmBSI.hpp"
++#include "particles/ionization/None/AlgorithmNone.hpp"
+diff --git a/src/picongpu/include/simulation_defines/unitless/speciesAttributes.unitless b/src/picongpu/include/simulation_defines/unitless/speciesAttributes.unitless
+index a0badc3..02e7a23 100644
+--- a/src/picongpu/include/simulation_defines/unitless/speciesAttributes.unitless
++++ b/src/picongpu/include/simulation_defines/unitless/speciesAttributes.unitless
+@@ -108,6 +108,16 @@ struct Unit<globalCellIdx<T_Type> >
+   }
+ };
+ 
++template<>
++struct Unit<boundElectrons>
++{
++  static std::vector<double> get()
++  {
++      std::vector<double> unit;
++      return unit;
++  }
++};
++
+ 
+ }//namespace traits
+ } //namespace picongpu
+diff --git a/src/picongpu/include/simulation_defines/unitless/speciesDefinition.unitless b/src/picongpu/include/simulation_defines/unitless/speciesDefinition.unitless
+index 70761fc..4e981a4 100644
+--- a/src/picongpu/include/simulation_defines/unitless/speciesDefinition.unitless
++++ b/src/picongpu/include/simulation_defines/unitless/speciesDefinition.unitless
+@@ -21,36 +21,47 @@
+ 
+ #pragma once
+ 
+-#include "particles/traits/GetMass.hpp"
+-#include "particles/traits/GetCharge.hpp"
++#include "traits/frame/GetCharge.hpp"
++#include "traits/frame/GetMass.hpp"
++#include "traits/attribute/GetCharge.hpp"
++#include "traits/attribute/GetChargeState.hpp"
++#include "traits/attribute/GetMass.hpp"
+ #include "fields/currentDeposition/Solver.hpp"
+ #include "particles/Particles.tpp"
++#include "particles/ionization/byField/ionizers.hpp"
+ 
+ namespace picongpu
+ {
++namespace traits
++{
++namespace frame
++{
+ 
+ template<>
+-HDINLINE float_X getMass<typename PIC_Ions::FrameType>(float_X weighting)
++HDINLINE float_X getMass<typename PIC_Ions::FrameType>()
+ {
+-    return M_ION*weighting;
++    return M_ION;
++    /** \todo take account for mass loss of ions when electrons leave them during ionization */
+ };
+ 
+ template<>
+-HDINLINE float_X getCharge<typename PIC_Ions::FrameType>(float_X weighting)
++HDINLINE float_X getCharge<typename PIC_Ions::FrameType>()
+ {
+-    return Q_ION*weighting;
++    return Q_ION;
+ };
+ 
+ template<>
+-HDINLINE float_X getMass<typename PIC_Electrons::FrameType>(float_X weighting)
++HDINLINE float_X getMass<typename PIC_Electrons::FrameType>()
+ {
+-    return M_EL*weighting;
++    return M_EL;
+ };
+ 
+ template<>
+-HDINLINE float_X getCharge<typename PIC_Electrons::FrameType>(float_X weighting)
++HDINLINE float_X getCharge<typename PIC_Electrons::FrameType>()
+ {
+-    return Q_EL*weighting;
++    return Q_EL;
+ };
+ 
++} //namespace frame
++} //namespace traits
+ } //namespace picongpu

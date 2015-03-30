@@ -1,0 +1,2582 @@
+* f76f82d (HEAD, release-0.1.0) Draft of Changelog
+* 17868d5 PIConGPU: Add version.hpp
+* 684da37 (mainline/release-0.1.0) Fix LWFA Example: Hydrogen
+* 712430c Fix #719 Restart HDF5: Avoid 32bit Downcast
+* e7cfb7a add check if restart file exists and unify IO
+* d6bc59f fix CUDA6.5 int(bool) bug in Esirkepov
+* 668cf67 Merge pull request #706 from n01r/topic-attributeBoundElectrons
+* 089152d Merge pull request #715 from psychocoderHPC/fix-missingNamespace
+* 59bd4dd Merge pull request #714 from PrometheusPi/remove-unneededPhysicsParamFiles
+* 31b2b9b Merge pull request #711 from psychocoderHPC/topic-refactoringRNG
+* 5f827cc Merge pull request #700 from ax3l/doc-restartDir
+* 7d38ee0 Merge pull request #703 from PrometheusPi/fix-restartPlugin
+* a5c2e9e Merge pull request #687 from n01r/topic-flagProtonNeutronNumber
+* cf93d99 Merge pull request #692 from PrometheusPi/topic-multiSpeciesHeatingTool
+* d10c70e Merge pull request #701 from ax3l/doc-PNGenv
+* a52dc9b Merge pull request #689 from ax3l/fix-hdf52Drestart
+* be18407 Merge pull request #698 from ax3l/topic-pngCompression
+* cfa1c65 Merge pull request #690 from ax3l/topic-hdf5VarsWriteField
+* a7e0fcd Merge pull request #678 from PrometheusPi/fix-03boolBugCUDA6.5
+* 5f10e4a Merge pull request #657 from PrometheusPi/fix-02boolBugCUDA6.5
+* a4bc3ee Merge pull request #683 from psychocoderHPC/fix-wrongDeleteInMessageHeader
+* 810d330 Merge pull request #672 from PrometheusPi/tool-numericalHeating
+* d6e1746 Merge pull request #661 from psychocoderHPC/fix-adiosZeroWrites
+* 5d81eac Merge pull request #641 from ax3l/topic-addLiveVisServer
+* ea13efa Merge pull request #676 from ax3l/doc-addMarco
+* 3755ead Merge pull request #673 from ax3l/doc-addMoreADIOSFlags
+* e9a2696 Merge pull request #643 from psychocoderHPC/fix-deviceSelectionBug
+* f6498ec Merge pull request #595 from n01r/Multiple_Ionizers
+* c9e6104 Merge pull request #669 from ax3l/fix-lowEneDumpFld
+* bf74d6e Merge pull request #670 from PrometheusPi/fix-k20AutoWait
+* e8299b0 Merge pull request #662 from psychocoderHPC/fix-adiosAggregatorCount
+* f6ea7e0 Merge pull request #666 from ax3l/fix-defineAdiosVar
+* a1aae2f Merge pull request #665 from ax3l/topic-rebaseVectors64bit
+* 0931439 Merge pull request #668 from BeyondEspresso/topic-filemodes
+* b2c5d9a Merge pull request #656 from PrometheusPi/fix-01boolBugCUDA6.5
+* 5cca7ff Merge pull request #651 from PrometheusPi/fix-BinEnergyOverflow
+* 19a1388 Merge pull request #600 from ax3l/topic-bgFieldsAddOutput
+* ac9c2b9 Merge pull request #648 from psychocoderHPC/fix-shortCircuitOperators
+* 44290e9 Merge pull request #647 from psychocoderHPC/fix-ptrCalculation
+* 0f657f4 Merge pull request #649 from slizzered/update_404_in_readme
+* 7433cab Merge pull request #646 from PrometheusPi/fix-radiationRestartPointerError
+* 2f2568f (insitu/dev) Merge pull request #644 from psychocoderHPC/fix-warningExtendedFriendSyntax
+* 0f8bba8 Merge pull request #642 from ax3l/fix-SplashNullRead
+* 1b94ed3 Merge pull request #639 from ax3l/fix-restartYgridDist
+* 02fb389 Merge pull request #638 from ax3l/fix-readGridDist
+* ca1f768 Merge pull request #633 from ax3l/fix-memOnSoC
+* 86d3f5a Merge pull request #636 from ax3l/topic-pluginCntPartRestart
+* fe674cc Merge pull request #634 from ax3l/doc-updateHypnosMore
+* 9587cfa Merge pull request #632 from ax3l/topic-addEmptyExample
+* 0f2015f Merge pull request #629 from ax3l/topic-updateCompileSuiteModules
+* 2e42cbb (refs/original/refs/heads/dev) Merge pull request #622 from ax3l/topic-updateProfilesTbg
+* 349b1d3 Merge pull request #628 from ax3l/fix-radiationNoHDF5
+* 4e85460 Merge pull request #611 from ax3l/fix-restartEmptyGPUs
+* b91320f Merge pull request #626 from ax3l/topic-cudaMemtestNoSMI
+* 5b16311 Merge pull request #623 from BenjaminW3/float2int
+* bfee1d7 Merge pull request #625 from BenjaminW3/missing_const
+* 192ea70 Merge pull request #624 from BenjaminW3/vla
+* 7c15559 Merge pull request #621 from psychocoderHPC/fix-visualisationBug
+* 9fd51a3 Merge pull request #613 from ax3l/topic-tbgDefaults
+* c72f987 Merge pull request #620 from ax3l/doc-libraryDeps
+* d85b41a Merge pull request #618 from ax3l/topic-updateTitanJan2015
+* c46b1ae Merge pull request #617 from PrometheusPi/fix_typoCFGdoc
+* 49bb7e3 Merge pull request #615 from psychocoderHPC/topic-extendAssignParticle
+* b72eea4 Merge pull request #610 from PrometheusPi/radiation-HDF5output
+* 776ad3b Merge pull request #612 from ax3l/topic-lawrencium
+* f9c0a0a Merge pull request #607 from psychocoderHPC/topic-genericAttributeInit
+* c359e0c Merge pull request #596 from psychocoderHPC/topic-addChargeState
+* a238016 Merge pull request #598 from ax3l/doc-updateInstall
+* 7d44c98 Merge pull request #594 from psychocoderHPC/topic-cleanAlias
+* ef34b78 Merge pull request #604 from psychocoderHPC/fix-backgroundFieldRacecondition
+* 727eadd Merge pull request #605 from ax3l/doc-addDevDebus
+* e632a22 Merge pull request #601 from ax3l/doc-oneFeatureAtATime
+* 0704ca8 Merge pull request #593 from psychocoderHPC/fix-BoostIncompleteTypeBug
+* 4fca878 (felix/dev) Merge pull request #591 from f-schmitt-zih/topic-cmakebuildtype
+* 0b1fb99 Merge pull request #589 from ComputationalRadiationPhysics/master
+* 5da5966 (alex/dev) Merge pull request #590 from PrometheusPi/remove-LineSliceFieldsPlugin
+* badad5d Merge pull request #583 from ax3l/topic-cudaMemtest32bit
+* 7552d87 (richard/dev) Merge pull request #548 from PrometheusPi/fix-SliceFieldPrinterPlugin
+* bcaa10f Merge pull request #578 from PrometheusPi/add-pythonModuleForSliceField
+* b64be58 Merge pull request #577 from PrometheusPi/fixTypoHomogeneous
+* 787aef3 Merge pull request #575 from ax3l/topic-updateHypnosProfile
+* fb86553 Merge pull request #572 from ax3l/fix-limits32BitHost
+* cff7dc5 Merge pull request #561 from BenjaminW3/issue3
+* bb8b5c8 Merge pull request #566 from BenjaminW3/issue5
+* 97379bf Merge pull request #564 from BenjaminW3/issue1
+* 7e1ac22 Merge pull request #563 from BenjaminW3/issue4
+* 6eeed8c Merge pull request #567 from ax3l/topic-compileLatestSplash
+
+
+
+
+
+
+
+
+
+commit f76f82df3090a60d6795daded15b3ff166243f3d
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Feb 24 16:30:13 2015 +0100
+
+    Draft of Changelog
+
+commit 17868d578ca451cbe38eba7b238d46ec2c9f22f2
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Feb 24 16:29:57 2015 +0100
+
+    PIConGPU: Add version.hpp
+    
+    - release 0.1.0
+
+commit 684da37f77e91711e77dc6eed23abcace0762185
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Feb 20 14:36:02 2015 +0100
+
+    Fix LWFA Example: Hydrogen
+
+commit 712430c1663b8b7b734ee81b009ed4a9a58c737e
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Feb 19 16:04:23 2015 +0100
+
+    Fix #719 Restart HDF5: Avoid 32bit Downcast
+    
+    - offsets are element offsets in the *global* particle
+      attribute array (that can be more than uint32_t / size_t)
+    - elements are promoted to uint64_t too for convenience
+
+commit e7cfb7a0b057ec5c733d7b93ae7478590ffd19cf
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Feb 17 16:25:39 2015 +0100
+
+    add check if restart file exists and unify IO
+
+commit d6bc59fd57736fd3dc975176866b8738e1426aba
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Feb 6 09:52:32 2015 +0100
+
+    fix CUDA6.5 int(bool) bug in Esirkepov
+    
+    This also changed a workaround of a CUDA5.5+ bug.
+    Requires check if it is now in again.
+
+commit 668cf67338d5ae79de7c515965ab553d6e85d902
+Merge: 089152d 007d765
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Wed Feb 18 17:22:57 2015 +0100
+
+    Merge pull request #706 from n01r/topic-attributeBoundElectrons
+    
+    Remove attribute chargeState, add boundElectrons
+
+commit 007d765a003fe620062c3d257bbd87fa8f1efdb5
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Feb 17 15:55:01 2015 +0100
+
+    Doxygen comments / set boundElectrons default to 0
+
+commit 68b8f279f13782ca7a6bc898fb6e5ab9c6fca29d
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Mon Feb 16 14:17:58 2015 +0100
+
+    Remove attribute chargeState, add boundElectrons
+    
+    In this commit the following has been refactored:
+        -- remove attribute `chargeState`, add `boundElectrons`
+        -- add trait `GetChargeState.hpp`
+        -- replace all uses of `chargeState` with `boundElectrons`
+
+commit 089152d3797ee10c5daa1c009729dee0074a1810
+Merge: 59bd4dd e2cd690
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Tue Feb 17 17:19:09 2015 +0100
+
+    Merge pull request #715 from psychocoderHPC/fix-missingNamespace
+    
+    fix missing namespace
+
+commit e2cd690903eab4deb397b9652ced0d8863d2c03c
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Feb 17 15:48:06 2015 +0100
+
+    fix missing namespace
+    
+    add namespace splash to used `DataCollector`
+
+commit 59bd4dd2b44ed3f6ae9f739d7de11798a3d3a5dc
+Merge: 31b2b9b 06d79f3
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Tue Feb 17 15:33:00 2015 +0100
+
+    Merge pull request #714 from PrometheusPi/remove-unneededPhysicsParamFiles
+    
+    remove unneeded physicsConstant.param files
+
+commit 06d79f3ab0fc5e3f27d940607d63b8475f574044
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Feb 17 13:12:06 2015 +0100
+
+    remove unneeded physicsConstant.param files
+
+commit 31b2b9ba23c2466abfc265839b6668d4a87a4d2e
+Merge: 5f827cc 45c56f6
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Tue Feb 17 13:04:07 2015 +0100
+
+    Merge pull request #711 from psychocoderHPC/topic-refactoringRNG
+    
+    refactor nvidia RNG
+
+commit 45c56f6a16f27bb639e176a77e98574fd484b4b9
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Feb 9 16:31:07 2015 +0100
+
+    refactor nvidia RNG
+    
+    - allow instantiation of RNG on the host side
+    - allow instantiation with default constructor
+
+commit 5f827cc784fae0cfae5e1964fdd3336898f22f99
+Merge: 7d38ee0 25cfec7
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Tue Feb 17 11:39:02 2015 +0100
+
+    Merge pull request #700 from ax3l/doc-restartDir
+    
+    TBG Macros: Add Restart Dir
+
+commit 25cfec7e74ed330c2991ff32ad6db949574d7248
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Feb 17 01:55:42 2015 +0100
+
+    Remove radiation_*.restart flag
+    
+    - not used any more, unified :)
+
+commit a6f67807477a932d2adf044a6646453ebf82f460
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Feb 12 15:05:41 2015 +0100
+
+    Macros: Add Restart Dir
+    
+    That flag is needed pretty often and it should be
+    documented that it needs to point to `<run>/simOutput/checkpoints`
+    As linked above: http://git.io/PToFYg
+
+commit 7d38ee0ca473e901f088c77c45d1e991182a5023
+Merge: a5c2e9e 1083910
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Tue Feb 17 01:50:34 2015 +0100
+
+    Merge pull request #703 from PrometheusPi/fix-restartPlugin
+    
+    Fix #702 Activate new plugins after restart
+
+commit 10839105ff1dc26c7950a5d361c78d405b08d91a
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Feb 16 11:43:12 2015 +0100
+
+    make log output a one liner as suggested by @ax3l
+
+commit 1d35b57487fea08732472561469dd98c9c83f148
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Feb 16 11:03:56 2015 +0100
+
+    add changes suggested by @ax3l
+
+commit a5c2e9e86ce7724f0f91b4b75df8fca2e5786415
+Merge: cf93d99 9ddabff
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Mon Feb 16 10:38:43 2015 +0100
+
+    Merge pull request #687 from n01r/topic-flagProtonNeutronNumber
+    
+    Flag for proton and neutron number
+
+commit 9ddabff2d63bf64b234e9e19b7668b6675f8be6b
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Sat Feb 14 22:32:53 2015 +0100
+
+    Use trait / remove hard coded proton number
+
+commit c53998425c88513678197723382795b6f79a6f2f
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Sat Feb 14 22:26:18 2015 +0100
+
+    Add pragma for ionization / use atomicNumbers
+    
+    The pre-compiler define `PARAM_IONIZATION` has been added.
+    In `speciesDefinition.param` the flag `atomicNumbers` has been added to
+    the list of ion flags and Helium is used as ion species.
+
+commit 131f9eb56a2ed0178c82edfd7099152bf8d57f6a
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Sat Feb 14 22:21:47 2015 +0100
+
+    Add flag atomicNumbers and trait GetAtomicNumbers
+    
+    The flag combines proton and neutron number and by using the trait those
+    can be accessed.
+
+commit 78154d8ac583476f70f38e0e69dd5132066d461e
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Feb 13 13:59:10 2015 +0100
+
+    add check to allow plugins without restart files
+
+commit cf93d997ba4e8adc78a0cbb9d65ddc65e19bf719
+Merge: d10c70e 295df3f
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Thu Feb 12 20:17:59 2015 +0100
+
+    Merge pull request #692 from PrometheusPi/topic-multiSpeciesHeatingTool
+    
+    Close #684 Heating Analyser for Multi Species
+
+commit d10c70e1b78aa4616409f428dd5c160cb4b0c5c3
+Merge: a52dc9b 3151826
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Feb 12 16:48:12 2015 +0100
+
+    Merge pull request #701 from ax3l/doc-PNGenv
+    
+    FindPNGwriter: Fix misleading Not-Found Message
+
+commit 3151826ef5295b42c20291600d3955c35e735da2
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Feb 12 15:37:40 2015 +0100
+
+    FindPNGwriter: Fix misleading Not-Found Message
+    
+    The message on PNGwriter "NOT FOUND" was wrong, this fixes it.
+    
+    Traditionally, the environment vars controlling a cmake module
+    are all upper case, such as PNGWRITER_ROOT, BOOST_ROOT.
+    On the other hand cmake variables are internally used case
+    sensitive, such as PNGwriter, Boost, ...
+
+commit 295df3feaf34a472e021f31c6d8cb5a7537bee02
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Feb 12 15:26:18 2015 +0100
+
+    adjust warning message as suggested by @ax3l
+
+commit a52dc9b92fdb106437a683427e75d21659452c8d
+Merge: be18407 1fe433c
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Feb 12 15:09:49 2015 +0100
+
+    Merge pull request #689 from ax3l/fix-hdf52Drestart
+    
+    Fix #688 2D Restart Fields
+    :+1: Great job @ax3l .
+
+commit be18407137f17be8585c90eb77986bb6152b0f15
+Merge: cfa1c65 ce46be6
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Feb 12 14:05:23 2015 +0100
+
+    Merge pull request #698 from ax3l/topic-pngCompression
+    
+    PNG Plugin: Use less compression
+
+commit cfa1c65ecafb7bef4f935c4862cd344d710a599b
+Merge: a7e0fcd 6044476
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Feb 12 14:03:43 2015 +0100
+
+    Merge pull request #690 from ax3l/topic-hdf5VarsWriteField
+    
+    HDF5 WriteField: Fix Wrong Doc String and Index
+
+commit ce46be617a3a597eb2158587087e5f47ca5cc579
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Feb 12 13:32:43 2015 +0100
+
+    PNG Plugin: Use less compression
+    
+    - increases file by about 12%
+    - decreases time for write_png() call by ~2.3x
+    - part of optimizations in #693
+
+commit f3af42a44cb17c4dc53932e0d296f7dd43cdc83f
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Feb 11 15:07:33 2015 +0100
+
+    add multispecies support
+    
+    The plotNumericalHeating tool now supports any number of species.
+
+commit 1fe433cdbe8d6c4531610e7eb5fe3345cbe93d82
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 11 00:52:23 2015 +0100
+
+    Fix #688 2D Restart Fields
+    
+    - in 2D simulations, the last component (z) of FieldE and FieldB
+      was not initialized again (default: zero)
+
+commit 6044476eab5e5b2f4f6a7a5dbbbb4162b3ff7a83
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 11 00:52:51 2015 +0100
+
+    HDF5 WriteField: Fix Wrong Doc String and Index
+    
+    the index names in `hdf5/writer/Field.hpp` are not ideal
+    (even if the implementation is correct): once `d` is used
+    as an index `[0; simDim]` and once as an index `[0; nComponents]`
+    and same mixed with `i`.
+    
+    we now use `n` consequently for vector components (x, y, z and w)
+    of fields and `d` for *spatial* counts from `0` to `simDim`.
+    `i` is still used if we iterate over linear memory.
+
+commit a7e0fcda6c7b68b6e275086574c0df7ea5fd38c4
+Merge: 5f10e4a 387221e
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Feb 9 16:09:45 2015 +0100
+
+    Merge pull request #678 from PrometheusPi/fix-03boolBugCUDA6.5
+    
+    fix CUDA6.5 int(bool) bug in particle kernel
+
+commit 5f10e4a780ad4b436352a8f53fc81549cf8ffb06
+Merge: a4bc3ee 059663b
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Feb 9 16:07:18 2015 +0100
+
+    Merge pull request #657 from PrometheusPi/fix-02boolBugCUDA6.5
+    
+    fix CUDA6.5 int(bool) bug in algorithms
+
+commit 387221e5ff8744a7bb5d20185ec7cc2333066bc5
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Feb 9 13:15:38 2015 +0100
+
+    adjust if condition as suggested by @psychocoderHPC
+
+commit a4bc3eeb1f892408f3b5aa70c0575954499a5f31
+Merge: 810d330 1616508
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Mon Feb 9 10:46:24 2015 +0100
+
+    Merge pull request #683 from psychocoderHPC/fix-wrongDeleteInMessageHeader
+    
+    fix MessageHeader, wrong array deletion
+
+commit 810d33048a59a7102fce8f4d8a644ca79bd15887
+Merge: d6e1746 8afff81
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Mon Feb 9 10:25:00 2015 +0100
+
+    Merge pull request #672 from PrometheusPi/tool-numericalHeating
+    
+    add analyzer tool for numerical heating
+
+commit 16165082b6647f0871addba01c8c89b1072c81da
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Feb 9 10:24:48 2015 +0100
+
+    fix MessageHeader, wrong array deletion
+    
+    use `__deleteArray` to free memory
+
+commit d6e1746d840988abfdbaca193d73593bde30b716
+Merge: 5d81eac e4712c4
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Sat Feb 7 03:02:56 2015 +0100
+
+    Merge pull request #661 from psychocoderHPC/fix-adiosZeroWrites
+    
+    Fix ADIOS: Zero Writes, Collects and Buffers
+
+commit 8afff81c59389c7e029a015b776d72cc0d4b91ba
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Feb 6 13:42:34 2015 +0100
+
+    adjust sign convention when removing start value
+    
+    This was suggested by @psychocoderHPC.
+    Additionally an unneeded legend was removed.
+
+commit c9cf8ca0f035f8c2c4753e660f76f784d9f173f7
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Feb 6 13:00:29 2015 +0100
+
+    add absolute (not relative) plot option
+
+commit 4a00b22025305747aafbbf712f569ffba85b7684
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Feb 6 11:47:12 2015 +0100
+
+    add difference plot
+
+commit e4712c468e24a215a169e9915f0527b1f596459b
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Feb 5 15:27:54 2015 +0100
+
+    fix adios zero amount writes
+    
+    If some of the processes write zero amount of data with
+    adios they hang.
+    
+    Changes:
+    
+    - take care that all processes call collective adios write methods
+    - all processes calculate it's adios index table
+    - set freed memory to NULL
+    - move domain calculation before pre memory calculation
+    - call `adios_allocate_buffer()` every notify
+
+commit d5ff6c07b63e9cd1c8ad56e6720c0af5b4d61ae5
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Feb 5 15:49:21 2015 +0100
+
+    fix CUDA6.5 int(bool) bug in particle kernel
+
+commit 5d81eac8218833319efe68b73f4b8d906962571a
+Merge: ea13efa 8201b2f
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Feb 5 14:39:41 2015 +0100
+
+    Merge pull request #641 from ax3l/topic-addLiveVisServer
+    
+    LiveVis: Add Server
+    I could compile and run it on hypnos.
+
+commit ea13efa6d6eb56c309fa3f2c7b0de782c452614c
+Merge: 3755ead 6440c16
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Feb 5 14:06:29 2015 +0100
+
+    Merge pull request #676 from ax3l/doc-addMarco
+    
+    Developers: Add Marco Garten
+
+commit 6440c16cd5c1d0dad9eb011e6ab71a2a926b8529
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Feb 5 13:42:28 2015 +0100
+
+    Developers: Add Marco Garten
+    
+    Welcome Marco!
+
+commit 3755ead5034131690fb451329cad8088a4e5e69f
+Merge: e9a2696 7137091
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Feb 5 13:36:18 2015 +0100
+
+    Merge pull request #673 from ax3l/doc-addMoreADIOSFlags
+    
+    TBG_macros: Add More ADIOS Flags
+
+commit e9a2696bd49f66d2e4cb12fc34fc567b05b80ef6
+Merge: f6498ec 8169cbc
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Thu Feb 5 11:58:38 2015 +0100
+
+    Merge pull request #643 from psychocoderHPC/fix-deviceSelectionBug
+    
+    fix device selection BUG
+
+commit f6498ece2ef0cab0470cff9ec748b17fd8d43884
+Merge: c9e6104 0b8a728
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Thu Feb 5 11:55:55 2015 +0100
+
+    Merge pull request #595 from n01r/Multiple_Ionizers
+    
+    Ionization in PIConGPU
+
+commit 8169cbceb5481e56d7e249b10297c00bcbb3ea78
+Merge: d56c47a f1bb087
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Feb 4 19:00:35 2015 +0100
+
+    Merge pull request #4 from ax3l/fix-deviceSelectionBug
+    
+    Fix Typo
+
+commit c9e6104d487e414c6b4ec162177d142146e419d2
+Merge: bf74d6e fe38caa
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Wed Feb 4 18:51:41 2015 +0100
+
+    Merge pull request #669 from ax3l/fix-lowEneDumpFld
+    
+    Fix Particle2Grid: Non-Relativistic Particle Energy
+    looks good :+1:
+
+commit 7137091198e7957e9a9bd6f91a6122e50887f698
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 4 18:47:32 2015 +0100
+
+    Fix Typo in ADIOS Plugin Help
+
+commit 6722dca7a919e77b8efe98587835eb23322246d4
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 4 18:46:18 2015 +0100
+
+    TBG_macros: Add More ADIOS Flags
+    
+    Adds documentation about compression, aggregators and ost
+
+commit 97bd94e63a19dd48d76107813a7fac58838062cf
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Feb 4 18:36:10 2015 +0100
+
+    add analyser for numerical heating
+    
+    This commit adds a python program that can compare the energy
+    evolution of two PIConGPU runs as suggested by @ax3l.
+
+commit f1bb087610595f8cd65213555eebaaee64e3bfa4
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 4 18:25:00 2015 +0100
+
+    Fix Typo
+
+commit fe38caa8490fecea461364ef229b2e82bad2c7c9
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 4 15:12:33 2015 +0100
+
+    Particle2Grid: Non-Relativistic Particle Energy
+
+commit bf74d6edad69857488945fc1e92b2f7832a0fb6b
+Merge: e8299b0 a890178
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Wed Feb 4 17:34:59 2015 +0100
+
+    Merge pull request #670 from PrometheusPi/fix-k20AutoWait
+    
+    fix k20_autoWait_profile.tpl
+
+commit 8201b2fbebbc2b4d40910ea9d1051ac70c353364
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Feb 4 17:32:06 2015 +0100
+
+    Add README.md with Install Notes
+
+commit a890178dff209f62504139fa70a807428cd6430b
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Feb 4 16:07:56 2015 +0100
+
+    add missing TBG_waitJob variable
+
+commit 0b8a728f817a7c0a67b6f1794f7e4bdf32171455
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Wed Feb 4 14:52:35 2015 +0100
+
+    Make use of `GetIonizer` trait
+
+commit dd55c5d1706a95010c37348b7ae3643ced7ac092
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Wed Feb 4 14:51:47 2015 +0100
+
+    Remove blank lines and fix indents
+
+commit 94a0e9cdf2cd8795259a9ae8ebe4ffa570bcb835
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Wed Feb 4 14:49:38 2015 +0100
+
+    Change cmakeFlags and pre-compiler defines
+    
+    -- from `ENABLE_IONIZATION` to `PARAM_IONIZATION`
+    -- from `ENABLE_IONS` to `PARAM_IONS`
+
+commit 03cacbc37fdb236e72b5682ef9646104ff486ccc
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:52:56 2015 +0100
+
+    Change example `LaserWakefield`
+    
+    With `$PICSRC/configure -t 12` it is now possible to configure
+    a new parameter set test case that includes ionization.
+    It features a small gas sphere to ensure controllability of the electron count.
+    
+    Add ENABLE_IONIZATION pre-compiler directive
+    
+    ... to be found in the `LaserWakefield` example in `componentsConfig.param`
+
+commit 919d2cd3944eaa7e9dc7617987f4cc997c4025cc
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:50:20 2015 +0100
+
+    Add default parameter set support for ionization
+    
+    Ionizers have been added to the default .param and .unitless files.
+    
+    A GetIonizer trait has been added.
+    
+    Ionization energies for the ionization models were stored in a separate file.
+
+commit 8c0cca2129cf11f5eac3587766e808d7aee30089
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:47:18 2015 +0100
+
+    Add ionization methods / add models None and BSI
+    
+    The ionization methods feature the `writeElectronIntoFrame` struct.
+    
+    Two ionization models have been added:
+        - None: does nothing
+        - BSI: Barrier Suppression Ionization
+
+commit 7512015011375b93330a777aae85b5c54028c9c3
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:44:06 2015 +0100
+
+    Add main ionization function
+    
+    This commit contains the file `ionization.hpp` which introduces:
+        - the main ionization function `ionize`
+        - the kernel `kernelIonizeParticles`
+        - the struct `IonizeParticlesPerFrame`
+
+commit 69be12e5eacea4d6a9ccb4b876a1aa33ca8be103
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:41:24 2015 +0100
+
+    Change `Particles` class to support ionization
+    
+    The function "ionize" has been added.
+
+commit a02c267896bb8590a8a3d1b7897a5bc62b40e115
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:38:12 2015 +0100
+
+    Orthography patch
+
+commit 686aa06c63912f627594499935694a615ec19b81
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:31:11 2015 +0100
+
+    Add ionization to MySimulation.hpp and add functor
+    
+    In MySimulation.hpp ionization is initialized by the functor call of
+    CallIonization for each species.
+    
+    This functor is defined in ParticlesFunctors.hpp
+
+commit 510d661d8aabd1b7f9b2907360ed5c2cb134fa9e
+Author: Marco Garten <m.garten@hzdr.de>
+Date:   Tue Jan 27 15:28:21 2015 +0100
+
+    Add .orig to file extensions `.gitignore`s
+    
+    Netbeans produces .orig files as backup during merge conflict fixing.
+    Those should be excluded by git.
+
+commit e8299b0fa8cb1e4b252dc6ebfa6e0e67457f6b86
+Merge: f6ea7e0 6d9be6c
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Wed Feb 4 12:50:21 2015 +0100
+
+    Merge pull request #662 from psychocoderHPC/fix-adiosAggregatorCount
+    
+    fix adios number aggregator default
+
+commit f6ea7e0add76d361baf02b19e2184c3c8a0fe405
+Merge: a1aae2f 9903949
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Feb 4 12:16:42 2015 +0100
+
+    Merge pull request #666 from ax3l/fix-defineAdiosVar
+    
+    Fix #663 ADIOS Avoid 32bit Down-Cast
+
+commit 9903949d2e18c6047f639b2336898554cbbce78c
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Feb 3 15:11:50 2015 +0100
+
+    Fix #663 ADIOS Avoid 32bit Down-Cast
+    
+    `defineAdiosVar` caused a down-cast to 32bit for counter
+    attributes such as offsets.
+    That caused problems with counters and offsets for particles,
+    that are traditionally stored in a long 1D array and can
+    exceed the size of uint32_t (the base type of `DataSpace<DIM>`)
+    easily.
+    
+    First spotted by @psychocoderHPC - thanks!
+
+commit a1aae2ffeaba0cd917fbeb329045c041172054ef
+Merge: 0931439 e7e399d
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Feb 3 20:41:33 2015 +0100
+
+    Merge pull request #665 from ax3l/topic-rebaseVectors64bit
+    
+    Refactor libPMacc UInt Vectors
+
+commit 0931439bece51cc88ff42b816988d29060d9cead
+Merge: b2c5d9a 920e556
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Tue Feb 3 19:40:33 2015 +0100
+
+    Merge pull request #668 from BeyondEspresso/topic-filemodes
+    
+    Fix permissions of source files
+
+commit 920e5564dc78b7e140957dbb71ee78bc3b4f1ab9
+Author: Alexander Debus <a.debus@hzdr.de>
+Date:   Tue Feb 3 18:02:54 2015 +0100
+
+    Fixed permissions of source files.
+
+commit e7e399d6a3acc32b718c68f5fcf3ea574ce7a2f2
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Feb 3 14:47:33 2015 +0100
+
+    Add Vector UInt64 (RT & CT)
+
+commit a15ed99cf26be549b47e318da911517f6819237d
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Feb 3 13:00:59 2015 +0100
+
+    Refactor Vector UInt -> UInt32
+
+commit 6d9be6c28d7613b3c196db490bd2e321852260a1
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Feb 2 21:55:35 2015 +0100
+
+    fix adios number aggregator default
+    
+    - remove invalid default value
+    - set number of aggregators to `mpi size` if not defined by the user
+
+commit b2c5d9a6827a0caaf9550442ddedc63f6b8a795f
+Merge: 5cca7ff c52cae5
+Author: Axel Huebl <axel.huebl@plasma.ninja>
+Date:   Mon Feb 2 17:26:40 2015 +0100
+
+    Merge pull request #656 from PrometheusPi/fix-01boolBugCUDA6.5
+    
+    fix CUDA6.5 int(bool) bug in PhaseSpace
+
+commit c52cae5c1cf136d7bd96a6eb3367edfb44acdf05
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Jan 30 15:10:58 2015 +0100
+
+    fix CUDA6.5 int(bool) bug
+    
+    use short if notation to avoid int cast of bool value bug in CUDA 6.5
+
+commit 059663beab23500d2eacb4ee81d7d76fe4e00a00
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Jan 30 16:33:14 2015 +0100
+
+    fix CUDA6.5 int(bool) bug in algorithms
+
+commit 5cca7ff2ab9d01bdb9263d9ee7a1c6c45ae5b52e
+Merge: 19a1388 c9ed04c
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Jan 29 16:09:30 2015 +0100
+
+    Merge pull request #651 from PrometheusPi/fix-BinEnergyOverflow
+    
+    workaround - overflow BinEnergy
+
+commit 19a138816dc24375ac0d6784fde837000fc129ba
+Merge: ac9c2b9 a6dc711
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Jan 29 13:40:42 2015 +0100
+
+    Merge pull request #600 from ax3l/topic-bgFieldsAddOutput
+    
+    Add BG Fields in Plugins
+
+commit c9ed04cdac3e5222ffd38b16d007eb7e56098a8b
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Jan 28 18:58:50 2015 +0100
+
+    use short if to avoid wrong overflow
+    
+    This avoids a bug in CUDA 6.5. By introducing short if
+    the bug is avoided. Using this syntax might create a
+    branch divergence, but ptx code does not show branching.
+
+commit ac9c2b92e59f9821842b12a9e86db181d5335887
+Merge: 44290e9 0269558
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 27 18:49:10 2015 +0100
+
+    Merge pull request #648 from psychocoderHPC/fix-shortCircuitOperators
+    
+    Frames: Reduce Empty Supercell Memory Foot Print
+
+commit 44290e9654e7c4da069046b28ee818149321a0d4
+Merge: 0f657f4 75b502e
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 27 18:43:34 2015 +0100
+
+    Merge pull request #647 from psychocoderHPC/fix-ptrCalculation
+    
+    fix `DeviceBuffer<*,DIM3>::getPointer()` calculation
+
+commit 0f657f4d5377085d7fe3cb04d5a3c27a3c1bc2db
+Merge: 7433cab ad5f9c8
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 27 18:41:17 2015 +0100
+
+    Merge pull request #649 from slizzered/update_404_in_readme
+    
+    Updated wrong link in README.md
+
+commit 7433cab35429a91264f3f7538ffd0bdbc4692a5d
+Merge: 2f2568f 96a93ed
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 27 17:11:38 2015 +0100
+
+    Merge pull request #646 from PrometheusPi/fix-radiationRestartPointerError
+    
+    Fix Segfault Checkpointing Radiation Plugin
+
+commit ad5f9c8da833bc78bb3b8250a37a5f947f341ae1
+Author: Carlchristian Eckert <Carli-Eckert@gmx.de>
+Date:   Tue Jan 27 15:50:06 2015 +0100
+
+    Changed milestone link to show the progress
+
+commit cacf98608abe5bb0c888ae76bdd5eb911fd9a342
+Author: Carlchristian Eckert <Carli-Eckert@gmx.de>
+Date:   Tue Jan 27 14:43:42 2015 +0100
+
+    Updated wrong link in README.md
+    
+     - The 2 links that were supposed to point to the milestones resulted in
+       a 404-Error.
+     - Links now to the same place as the entry in
+       https://github.com/ComputationalRadiationPhysics/picongpu/blob/dev/CHANGELOG.md
+
+commit 96a93edbb6b3906104c3b34af843b6f099603ab9
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Jan 27 13:49:09 2015 +0100
+
+    fix radiation checkpoint segfault
+    
+    - only read and write checkpoints if radiation is calculated
+    - update year in license
+    - add missing spaces
+
+commit d56c47a55416cb2a82ed486e6cde7af222fe1a06
+Author: René Widera <r.widera@hzdr.de>
+Date:   Sat Jan 24 20:45:18 2015 +0100
+
+    fix bug device selection
+    
+    set device explicitly independent of the compute mode
+
+commit 02695580ece007a53cdf48be324f851e4d60b0cc
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Jan 23 13:11:21 2015 +0100
+
+    fix bug with short circuit operations
+    
+    the last frame in the supercells were never removed because of the short circuit usage
+
+commit 75b502e3b47ad37d11dbb054b38727b2d4b732fd
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Jan 27 13:13:28 2015 +0100
+
+    fix `DeviceBuffer<*,DIM3>` pointer calculation
+    
+    fix wrong offset calculation for three dimensional device buffer
+
+commit a6dc7111cdbcf4887b888f93dffb00b3f7795307
+Author: Alexander Debus <a.debus@hzdr.de>
+Date:   Tue Jan 27 12:02:28 2015 +0100
+
+    Timestep zero was dumped without the BG field. Fixed SimulationHelper.hpp.
+
+commit 085bab909ddcd0ae3413deb69ce6c047c32f551a
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 26 15:06:01 2015 +0100
+
+    Remove Dead Code
+
+commit 337b6334c4d7108bb8d3fca36396b96f1e933641
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 21 18:38:01 2015 +0100
+
+    Add GPL/LGPL Header
+
+commit 5a8c727be9a642e8bfc3b42be04d241ca871a4ad
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 3 23:29:52 2014 +0100
+
+    Add new numGPUs/Cells/Particles IDs
+
+commit fb0c3d37b12e09d7fe34cb72a25ad32afe3bfac9
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 3 13:08:05 2014 +0100
+
+    Correct VisLib Dependencies
+
+commit 3280f4c9f0665eccf452cf0fefabf814206769c2
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 3 12:53:39 2014 +0100
+
+    Remove PNGWriter (Feature was not implemented yet)
+
+commit 4e4d8bb9cea2a0cbae96e44bb005b89de2a9c0d2
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 3 12:45:09 2014 +0100
+
+    Make Clean: No Errors
+
+commit f336b17e0160d93ea084371159a9be0c91295442
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Oct 23 14:40:32 2014 +0200
+
+    add message commands
+    
+    - add FPS for simulation fps as command
+    - add RenderFPS for render fps as command
+
+commit 91cba384c5b1ea7ba25c83a4958e17a9cb6a6664
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Oct 23 15:39:42 2014 +0200
+
+    replace hard coded include and lib paths
+
+commit 0a6f2d365b99fc6f3f67abaeb640f5914c8881cb
+Author: Benjamin Schneider <s9056596@mail.zih.tu-dresden.de>
+Date:   Mon Oct 6 10:19:57 2014 +0200
+
+    Add Server Sources
+    
+    Provided by B. Schneider via R. Pausch
+    Tmp files removed and white spaces unified by A. Huebl
+
+commit 2f2568f5c306f546a99bcb0f496b6c7f5a94c924
+Merge: 0f8bba8 f86a068
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 26 11:41:47 2015 +0100
+
+    Merge pull request #644 from psychocoderHPC/fix-warningExtendedFriendSyntax
+    
+    fix extended friend syntax
+
+commit 0f8bba883320d73984b0d6ce57af49b0bdaecbbb
+Merge: 1b94ed3 1d86278
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 26 10:53:45 2015 +0100
+
+    Merge pull request #642 from ax3l/fix-SplashNullRead
+    
+    Fix #609 Splash NULL Reads
+
+commit f86a068001efca18f43bb4c091af41c481a20721
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 26 10:46:23 2015 +0100
+
+    fix extended friend syntax
+    
+    fix `warning: extended friend syntax is a C++11 feature` by adding class key word
+
+commit 1d862783e792bdeff3d21d7fafdc7ff01d6ad54a
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Sun Jan 25 23:13:14 2015 +0100
+
+    Update INSTALL.md Version of libSplash Dep
+
+commit be27f6bf1b4222a8de5c84d600747ca67ccb5382
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 21 11:47:25 2015 +0100
+
+    Remove work-around from #611
+    
+    - the work around was valid but is not needed any more
+      (as of libSplash 1.2.4)
+    - simplify code-base again
+
+commit c8c7b8c95811c448192b3d69f3a38adf618f1cd4
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 21 11:44:05 2015 +0100
+
+    Require libSplash 1.2.4
+    
+    - Fixed https://github.com/ComputationalRadiationPhysics/libSplash/issues/148
+      for null-reads for some GPUs
+
+commit 1b94ed3cf6bd27170f4375b96142c167dcff4edb
+Merge: 02fb389 af7f9b9
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Jan 21 15:19:48 2015 +0100
+
+    Merge pull request #639 from ax3l/fix-restartYgridDist
+    
+    Fix #637 Restart y-direction --gridDist
+
+commit af7f9b9e973b6ad48ed16627b9afd08d4b051c30
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 21 13:19:02 2015 +0100
+
+    Refactor: setNumSlides -> setStateAfterSlides
+    
+    - in GridController & Communcator
+    - avoid misinterpretation that "setNumSlides" to `0` won't harm
+      (it does)
+
+commit 17bec864faaf1683c62d7785f75917a36c6ff8e3
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 21 13:08:14 2015 +0100
+
+    Fix #637 Restart y-direction --gridDist
+    
+    - call `setNumSlides(...)` only if movingWindow is active,
+      since this function redistributes the y-offsets (intentionally)
+
+commit 02fb389223899a6c63c3ff8040de6a8494140f4e
+Merge: ca1f768 b5a3658
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Jan 21 13:03:00 2015 +0100
+
+    Merge pull request #638 from ax3l/fix-readGridDist
+    
+    Parse gridDist: Avoid Out-of-Bounce Access
+
+commit b5a3658ab3b066e18b40ef3de305d35e7b3c2230
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 21 12:05:16 2015 +0100
+
+    Parse gridDist: Avoid Out-of-Bounce Access
+    
+    - still allows to specify *less* arguments
+    - avoids segfault on "too many" arguments (more are ignored)
+
+commit ca1f768873773f915a82f4e3602daa8176b72257
+Merge: 86d3f5a ece91a5
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Jan 21 11:55:09 2015 +0100
+
+    Merge pull request #633 from ax3l/fix-memOnSoC
+    
+    Fix #631 Allocation Of Memory On Jetson Boards
+
+commit ece91a5e0328acfedff8d56e23aed1aabb6af4b0
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 20 13:51:21 2015 +0100
+
+    Replace 1Byte Char with uint8_t
+    
+    - uint8_t is well defined, char is not
+
+commit 86d3f5ae3c8bec163f30590146691e0e95f9ca36
+Merge: fe674cc 48bcfe0
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Jan 20 13:34:28 2015 +0100
+
+    Merge pull request #636 from ax3l/topic-pluginCntPartRestart
+    
+    Add Restart For CountParticles, EnergyFields & EnergyParticles
+
+commit fe674ccfa1244790b3d254b6a58c76ae4b62a69b
+Merge: 9587cfa 615763c
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 19 12:59:15 2015 +0100
+
+    Merge pull request #634 from ax3l/doc-updateHypnosMore
+    
+    Hypnos: grcat, fermi, mails
+
+commit 9587cfaacd518ea84ad83b6bbfdaefb21462228e
+Merge: 0f2015f e934368
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 19 12:53:54 2015 +0100
+
+    Merge pull request #632 from ax3l/topic-addEmptyExample
+    
+    Add an Empty Example
+
+commit 0f2015f95797cf746309f2437f2157bb162571f6
+Merge: 2e42cbb 2b86a48
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 19 12:50:00 2015 +0100
+
+    Merge pull request #629 from ax3l/topic-updateCompileSuiteModules
+    
+    CompileSuite: Update Modules and Do not Loop
+
+commit 48bcfe0f33e5e21055b340a30467df6800578faa
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 19 11:04:48 2015 +0100
+
+    Add Restart for EnergyFields & EnergyParticles
+
+commit 7354eed229ab7cee8564c87b78a88e76fb93b8cf
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 19 10:55:38 2015 +0100
+
+    Refactor Common Methods for Txt File Checkpointing
+
+commit b31b2a808644de189cc3f5fa287cce85fe26ad8c
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Sun Jan 18 18:36:04 2015 +0100
+
+    Add Restart For CountParticles
+
+commit 615763cd584d08ebae18eb8c13d97d104e35494f
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 15:25:40 2015 +0100
+
+    Bash: mpirun -x LD_LIBRARY_PATH
+    
+    - forward LD_LIBRARY_PATH in mpirun, too
+    - increases convenience for the user, should not cause side-effects
+
+commit fa867bd2e02ae45fef8a5d331aebe85f2ad0a501
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 13:54:43 2015 +0100
+
+    Hypnos: Add Module mallocMC/2.0.1
+
+commit 2b1ec780b2cbb492f53d9c31f198661636697d27
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 13:48:16 2015 +0100
+
+    Hypnos: Add k20f queue (2x4 C2070)
+
+commit ff14d8855dd67320fa109f05d78d8df39b769f33
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 13:47:56 2015 +0100
+
+    Hypnos: Add export MY_MAIL for email delivery
+
+commit 370e5e198433920f23c62bdb66d88faca58acef1
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 00:36:03 2015 +0100
+
+    Add BG Fields in Plugins
+    
+    Use movingWindowCheck as a hook just at the start of a
+    fresh time step, but before the plugins are called.
+
+commit ab476cf2d855300ee73176b3938fe720e78c3d95
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 12:01:18 2015 +0100
+
+    Hypnos: Add grcat example (development)
+
+commit ac0ea9b2c77cfc96cf5a0cdaba1b40b6745a1b49
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 11:47:27 2015 +0100
+
+    Add log message MEMORY about SoC Mode
+
+commit 39d1dc26036fb4236326ccb4ca6f2b75cdceffac
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 16 02:19:42 2015 +0100
+
+    Fix #631 Allocation Of Memory On Jetson Boards
+    
+    SoC-like boards share the same memory for the device
+    and host. Since we still do double buffering, we should
+    only reserve *half* of the available "device" memory
+    for particles.
+
+commit e93436832a7c695c60dfe06968b245aabdbd12fe
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Jan 15 22:12:29 2015 +0100
+
+    Add an Empty Example
+    
+    The empty example ensures that the reference files
+    in src/picongpu/include/simulation_defines are all in valid
+    syntax.
+
+commit 2b86a4811f7064462aa76b15d4d46f5a6ef7a946
+Author: ax3l <axel.huebl@web.de>
+Date:   Thu Jan 15 17:01:24 2015 +0100
+
+    Update Modules and Do not Loop
+    
+    - adios 1.7.0 (already some month in)
+    - mallocMC 2.0.1crp (today)
+    - only test a specific commit, cronjob will request new work
+
+commit 2e42cbbf1ff2d7f09ba50f27eb9e4a55a6754227
+Merge: 349b1d3 f9b8ada
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Jan 15 16:07:41 2015 +0100
+
+    Merge pull request #622 from ax3l/topic-updateProfilesTbg
+    
+    Taurus/Hypnos: Update Examples with new TBG Hints
+    :+1:
+
+commit 349b1d325712b906f84b5d3ca4abb423518bc3e6
+Merge: 4e85460 8310dbb
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Jan 15 14:52:37 2015 +0100
+
+    Merge pull request #628 from ax3l/fix-radiationNoHDF5
+    
+    Fix Radiation: No HDF5
+    great job :+1:
+
+commit 4e8546069fcb2a4f0cbc01a945026e541c8f16aa
+Merge: b91320f 5cf451c
+Author: f-schmitt-zih <f-schmitt-zih@users.noreply.github.com>
+Date:   Wed Jan 14 19:35:49 2015 -0800
+
+    Merge pull request #611 from ax3l/fix-restartEmptyGPUs
+    
+    Fix #609 Restarts with Full/Empty GPUs
+
+commit 8310dbba3e3e0abd33c491102e93d1ea47d2a9f5
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 14 17:22:20 2015 +0100
+
+    Add Note About "Optional" Libraries and Examples
+
+commit e8fef66ded3a8d1ab4a3fceeea4fb1ff7586ebbc
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 14 17:10:37 2015 +0100
+
+    Error On Missing HDF5 But Requested Radiation
+
+commit 99f0121bce1b8e26c8dfaa7a252177ed55ac672b
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 14 16:57:11 2015 +0100
+
+    Fix Radiation: No HDF5
+    
+    Radiation causes a compile error since it is not consequently disabled
+    on missing hdf5.
+
+commit f9b8ada77cde804f5db80cc634cfd5179e9a6e7b
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 13 17:20:02 2015 +0100
+
+    Add Self-Build Boost Hints again
+
+commit b91320f59774a8ff72838f1f5674d3f066663b39
+Merge: 5b16311 3f98306
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Jan 13 17:18:46 2015 +0100
+
+    Merge pull request #626 from ax3l/topic-cudaMemtestNoSMI
+    
+    Close #584 Memtest Without External Tools
+
+commit 3f98306efa325635320352d4a7d9f4b381980c45
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 13 14:01:18 2015 +0100
+
+    Add Review Comments from @psychocoderHPC
+    
+    - thx! :)
+    - alignment in tests.cu
+    - use std::cerr more consequent in macro
+
+commit 5b16311d685e769be8008928933da8f89b340ef6
+Merge: bfee1d7 40879f1
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Jan 13 11:58:19 2015 +0100
+
+    Merge pull request #623 from BenjaminW3/float2int
+    
+    fix wrong return type in Float2int_rd
+
+commit 502edb3775113ed15172d5d835cc7740705c67c9
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 13 01:49:29 2015 +0100
+
+    Update with New Taurus Modules
+    
+    - intel with `dev` currently jamming on boost::mpl errors
+      (boost 1.56+ support will be in beta-rc7)
+    - gcc works with `beta-rc6` and `dev`
+
+commit 40879f117147ea65962bf51757ad2b95fb56d93f
+Author: BenjaminW3 <benjaminworpitz@gmail.com>
+Date:   Mon Jan 12 20:52:34 2015 +0100
+
+    fix wrong Float2int_rd<double> return type
+
+commit bfee1d7b3db0118459c77c4018846df2cd0a1d98
+Merge: 192ea70 aaa4215
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 12 20:43:08 2015 +0100
+
+    Merge pull request #625 from BenjaminW3/missing_const
+    
+    add missing const in method override
+
+commit 192ea703457cd17d7e94fd77cdbfa782defeb934
+Merge: 7c15559 464cffe
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 12 20:34:54 2015 +0100
+
+    Merge pull request #624 from BenjaminW3/vla
+    
+    variable length arrays are not C++ standard
+
+commit 89d48fef215a4a1f1b6ecf8b2415d64632d156d1
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 12 18:23:22 2015 +0100
+
+    Close #584 Memtest Without External Tools
+    
+    - removes the "nvidia-smi", "grep" and "gawk" calls
+    - adds optional support for libnvidia-ml (NVML) which is
+      either part of the driver or the gdk (GPU Deployment Kit)
+      to:
+      - measure the device temperature
+      - get the device serial (by index, let's hope it is the
+        same index as in cuda for now)
+    - adds initial support for 8 GPUs/node (previous config
+      was 4 GPUs) but needs additional testing
+    - thanks to @jirikraus for the support and initial hint to use NVML
+
+commit 246b2b1cd7921151fb55c137349af93e0de8a2c3
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 12 17:43:37 2015 +0100
+
+    Add FindNVML.cmake from @jirikraus
+    
+    Source: https://github.com/jirikraus/scripts via MIT license
+
+commit 7c1555998071fbe1b187616091ae647b8ffcd005
+Merge: 9fd51a3 eed183b
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Jan 12 17:26:22 2015 +0100
+
+    Merge pull request #621 from psychocoderHPC/fix-visualisationBug
+    
+    fix memory bug in Visualisation.hpp
+
+commit aaa42155273c74ed25bf80bbb87f78ecf1a84c6e
+Author: BenjaminW3 <benjaminworpitz@gmail.com>
+Date:   Mon Jan 12 16:03:32 2015 +0100
+
+    add missing const
+
+commit 464cffe0023242b820bef398d5e3ac575899ed45
+Author: BenjaminW3 <benjaminworpitz@gmail.com>
+Date:   Mon Jan 12 15:03:02 2015 +0100
+
+    fix access
+
+commit 2f236b07771b555202c8d96a77cafb2c48686d8d
+Author: BenjaminW3 <benjaminworpitz@gmail.com>
+Date:   Mon Jan 12 14:21:38 2015 +0100
+
+    variable length arrays are not c++ standard
+
+commit 2e95d0a90a54cd27402ed97d3d5fd500bc57ba4b
+Author: Benjamin Worpitz <benjaminworpitz@gmail.com>
+Date:   Mon Jan 12 14:05:03 2015 +0100
+
+    remove unnecessary include
+
+commit f3256750ac05440414749e37264be5163a7c1973
+Author: BenjaminW3 <benjaminworpitz@gmail.com>
+Date:   Tue Jan 6 14:44:18 2015 +0100
+
+    fix wrong return type in Float2int_rd
+
+commit 9fd51a38da0275397e912ae72ed7c9714f00b547
+Merge: c72f987 d778e23
+Author: René Widera <r.widera@hzdr.de>
+Date:   Mon Jan 12 09:35:33 2015 +0100
+
+    Merge pull request #613 from ax3l/topic-tbgDefaults
+    
+    TBG: Add Defaults via Env for -s|-t
+
+commit 86b80031d1c5b512b5e35b5354510046cbd93ce5
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 9 15:52:52 2015 +0100
+
+    Taurus/Hypnos: Update Examples with new TBG Hints
+    
+    - use TBG_ environent variables for -s and -t
+    - update hypnos modules to recent libSplash/HDF5 und cmake 3.0.1
+
+commit d778e2321f9a1513dac8d3af2e269187a54f44dd
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Jan 9 15:21:48 2015 +0100
+
+    Add Env Var for cfg File
+    
+    - for consistency reasons
+    - also to allow rerun the exactly same sim,
+      useful for e.g. live sims or experiments
+      with a fixed setup
+
+commit eed183b0a777d7da21e765b23a0a3449435ae494
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Jan 9 14:42:46 2015 +0100
+
+    fix memory bug in Visualisation.hpp
+    
+    - set extern shared memory to float_X
+    
+    this bug only effect runs with double precision
+
+commit c72f987f7ab2eeb0d14b1397a56c268f744734ac
+Merge: d85b41a 480a4d7
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Fri Jan 9 13:54:17 2015 +0100
+
+    Merge pull request #620 from ax3l/doc-libraryDeps
+    
+    looks good
+    Add Overview of Library Dependencies
+
+commit 480a4d7ae00445f99154ff7842e36dcf70cfe0b4
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Jan 8 14:12:26 2015 +0100
+
+    Recommend gcc 4.6 and link Gist
+
+commit 02c75add1c696032baa2080279b329cf5dcea5a5
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Jan 8 13:35:02 2015 +0100
+
+    Add Overview of Library Dependencies
+    
+    - via the DOT file format
+    - see hints for png/ascii/svg creation
+
+commit 83216da46ba94c74b02d39ef3bc05c29844e269d
+Merge: 5bbf76a f340584
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Jan 8 10:33:44 2015 +0100
+
+    Merge pull request #2 from psychocoderHPC/topic-tbgDefaultsExtent
+    
+    Topic tbg defaults extent
+
+commit f3405843a0b995e256551e0e372f29127ba822f0
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Jan 8 10:21:54 2015 +0100
+
+    add submit command check, change documentation
+    
+    - change github annotations
+    - add check whether a submit system is set with -s|--submit
+
+commit d85b41a437ff51fb67660f880dbcabbfded98b33
+Merge: c46b1ae 9f106a2
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Jan 8 09:44:48 2015 +0100
+
+    Merge pull request #618 from ax3l/topic-updateTitanJan2015
+    
+    Update Titan Templates, January 2015
+
+commit 9f106a20bb4f8feb43d2bc8a118a8b71d02c7335
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 6 18:35:35 2015 +0100
+
+    Update Titan, January 2015
+    
+    - refactor: jaguar -> titan-ornl
+    - update modules
+    - project number in tpl from env "proj" (picongpu.profile)
+
+commit 5cf451c0f518f9e49d847d2cc5f707c32d819e4a
+Merge: e07289c 6bfb411
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Jan 7 11:10:55 2015 +0100
+
+    Merge pull request #3 from psychocoderHPC/fix-bugRestartEmptyGPUs
+    
+    workaround for read hangs during restart
+
+commit 6bfb411bf7507c7c06e58e02341441504b962249
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Jan 7 10:35:15 2015 +0100
+
+    workaround of read hangs during restart
+    
+    - This is a workaround to avoid the bug that processes hangs if some call `DataCollector::read()` where elements to read is zero and the destination pointer for the read data is set to `NULL`.
+    
+    splash bug issu: https://github.com/ComputationalRadiationPhysics/libSplash/issues/148
+
+commit 580b86f793737df971249259c43e0b02d7494224
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 6 15:30:02 2015 +0100
+
+    Remove Titane Cluster
+    
+    - old, french sm_13 (tesla) cluster
+
+commit c46b1ae5d99c66144eab4df8ea05c666e3e4fa1a
+Merge: 49bb7e3 ba6a105
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Jan 6 14:12:32 2015 +0100
+
+    Merge pull request #617 from PrometheusPi/fix_typoCFGdoc
+    
+    fix #616 typo TGB -> TBG
+
+commit ba6a105ab9c1263cc88c0d92bc69e176236a8c20
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Jan 6 12:08:16 2015 +0100
+
+    fix typo TGB -> TBG
+
+commit 039412ebd8815954658c90775af11ec07fbb76a7
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Jan 2 22:40:24 2015 +0100
+
+    use `egetpot` to parse parameters
+    
+    - parse parameter of tbg with egetopt
+    - move evaluation of environment default parameter to while loop
+
+commit 49bb7e3a40bde0db5a66eac4af3af84351c82175
+Merge: b72eea4 b333592
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Sat Jan 3 20:34:14 2015 +0100
+
+    Merge pull request #615 from psychocoderHPC/topic-extendAssignParticle
+    
+    extend particle assign specialization
+
+commit e2a4a50865c61f1beeb9ec86fee977e6a47dbcde
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Jan 2 22:30:34 2015 +0100
+
+    add tool egetopt
+    
+    - add tool with extended option syntax
+
+commit b333592509c5c9f0c88ca64c7dd8c58ef2f93908
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Jan 2 13:11:39 2015 +0100
+
+    change type names and documentation
+    
+    add @ax3l github annotations
+
+commit 5b4e2efec8f4b4f814b34293375dc916ed457b11
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Dec 19 21:29:11 2014 +0100
+
+    delete SetToDefault and use PMacc version
+    
+    - use new method SetAttributeToDefault() from PMacc
+    - delete local method SetToDefault
+    - use new method SetAttributeToDefault() in all single particle examples
+
+commit 971b5bfda50e20fd251a3a2a10c72ff5a4b34ce3
+Author: René Widera <r.widera@hzdr.de>
+Date:   Fri Dec 19 21:22:17 2014 +0100
+
+    add particle operation, extend particle assign
+    
+    - add functor to set an attribute of a particle to their default value
+    - extend the particle assign definition (set attributes which are not defined in the source particle to their default value)
+
+commit b72eea4d8bcb6e35414cc8bd52213cf1750795b3
+Merge: 776ad3b 0943c92
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Fri Dec 19 00:04:46 2014 -0800
+
+    Merge pull request #610 from PrometheusPi/radiation-HDF5output
+    
+    Close #419 Radiation Adds HDF5 Output/Restart
+
+commit 0943c92275b06657b8e237ddbfe8dd69c99e8c15
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Dec 19 07:09:10 2014 +0100
+
+    remove magic number 6 = number of float components of Amplitude class
+
+commit 776ad3b7d6f4b5d5a0e333cc4a5d3323f61ddab8
+Merge: f9c0a0a 224f751
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 18 20:11:24 2014 +0100
+
+    Merge pull request #612 from ax3l/topic-lawrencium
+    
+    Add LBL's Lawrencium Cluster
+
+commit 5bbf76ac697aa40805305cf54a6897406501bf35
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 16 17:03:05 2014 -0800
+
+    Re-Enable stdin for tpl files
+
+commit 224f75177e3277864ea2b2216766133ee1c1f70b
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 16 16:52:02 2014 -0800
+
+    Lawrencium: Add New TBG Defaults
+
+commit 1f6a958928bf667d7248719fea4d78cca8832918
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 16 16:48:26 2014 -0800
+
+    TBG: Add Defaults via Env for -s|-t
+    
+    This feature shortens the tbg call dramatically without harming
+    its generality.
+    
+    The -s | --submit option is the batch system and unique for each
+    machine. That is a perfect candidate for a picongpu.profile or
+    a general .profile setting (as a default).
+    
+    The -t | --tpl file is useful if you have various queues or debug
+    templates. 99% of the users always submit to the same queue and
+    would need a default, too. Developers or users with varying queues
+    can still use -t to overwrite the default.
+
+commit db1163129fe5a345fd7def494c4783cb802ffde2
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Dec 16 11:16:13 2014 +0100
+
+    add doxygen documentation and
+    fix code style
+
+commit e25d0e3377f4f8716cb7610259a60ed8cc5788b5
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Dec 16 01:20:30 2014 +0100
+
+    remove 3D vs 2D pragma, as suggested by @ax3l
+
+commit 3b3e42d851ef71cee4bf0b887408bffd69fce9ba
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 15 15:05:32 2014 -0800
+
+    Add MemPerCPU (need to calc...) for Fermi
+
+commit 7b1281afffe6d194e13c3ce4f4a20c540f51587b
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Dec 16 00:45:42 2014 +0100
+
+    improve code style as suggested by @ax3l
+
+commit fc48b08fd1025ec6f2b4df9e5bd3d5693405e76e
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Dec 16 00:40:46 2014 +0100
+
+    add safeguard that ensures hdf5 is included when radiation is used
+
+commit 5355b0c7e12194bd1287c63f08e40f30213cc0fb
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 15 14:48:52 2014 -0800
+
+    Add sinfo Cmd Docu to SLURM
+    
+    - find out if all nodes of a queue are available
+
+commit 2dcb6019572c6957496b3462f7de26e7e09b7ca7
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 15 13:38:10 2014 -0800
+
+    Add libSplash + PNGwriter Plugins
+
+commit c55d432e5e1b9e4bff990e001591775c440cb25e
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 15 12:06:54 2014 -0800
+
+    Use Correct MPI Command (mpirun)
+    
+    - fermi: >2 GPU mem ressources weird, skip extra info for now
+
+commit e07289c83b0a105bc363f3fbb9c0fb327522f717
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 15 12:01:02 2014 -0800
+
+    Fix #609 Restarts with Full/Empty GPUs
+    
+    - particle read during restart hangs if some GPUs
+      have no particles and others do
+
+commit 8367614e4c4de7d3a66cbe5a9f22d9f2aa8ba1a8
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Sun Dec 14 02:34:53 2014 +0100
+
+    add comments and remove trailing whitespace
+
+commit 256be1b32d45495208dbf4ae053149cdaacb2ad1
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Sun Dec 14 02:08:23 2014 +0100
+
+    clean up verbose output
+
+commit 1c5662ae3930f9a630ba89dca46d51a79efa5c5d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 27 11:53:26 2014 +0100
+
+    add restart via default restart-method
+
+commit a9a001454d8e3ca25f34a3536ec478d1591d41ac
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 27 10:50:07 2014 +0100
+
+    move tmp_buffer to Load and Unload method
+    dump hdf5 backup of radiation
+
+commit 844cdd52c9ea1a8eeb6e446a6d80f30665d0054d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Nov 26 16:38:33 2014 +0100
+
+    rename method
+
+commit f94ed812bef750a2214a22f6c2625bea4ab330cd
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 25 18:01:47 2014 +0100
+
+    seperate operations in combineData
+
+commit 1691c9ca77a2fc44f72c416a07759fc1600c6244
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Nov 24 11:32:09 2014 +0100
+
+    fix inizialization of complex amplitudes
+
+commit e65d0835277b4a92ae37ff0215560a3688909706
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 18 16:41:37 2014 +0100
+
+    add comments
+
+commit 80ca9c169b2903b68e6165e480334e25746ede48
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 18 16:26:49 2014 +0100
+
+    set hdf5 data structure once
+    do not create radRestart directory
+
+commit e296807c102e229c09b09d707267b202d80143a1
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 18 15:44:18 2014 +0100
+
+    remove pure binary data dump
+
+commit f10262ec2bf8d1f2886b5c3bd35fc8cb73c11409
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 18 15:31:45 2014 +0100
+
+    output conversion factor
+
+commit 60b773f000e6b73867da53f5615ecdb59028b296
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Nov 17 17:49:11 2014 +0100
+
+    add read from HDF5 files method
+
+commit 84c4e2e9070613b34d001abe779ce6a2cf59ca81
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Nov 17 14:25:39 2014 +0100
+
+    add all amplitude components separately
+
+commit 9f3617ad8072f7b38dee95aff76d17f7328c0906
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Nov 17 11:25:52 2014 +0100
+
+    add hdf5 radiation subdirectory
+
+commit bf6935e58b323922173c810b093003c6f1425679
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Mon Nov 17 11:06:37 2014 +0100
+
+    add hdf5 output to radiation
+
+commit f9c0a0ae9341710cddd1ab902d6a68e7152aba37
+Merge: c359e0c 2edba91
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Dec 11 13:35:06 2014 -0800
+
+    Merge pull request #607 from psychocoderHPC/topic-genericAttributeInit
+    
+    Particles: Generic Attribute Initialization
+
+commit 2edba919fd35aeb71f281721e38f9d50722fcb83
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 11 20:03:31 2014 +0100
+
+    rename variable, add documentation
+    
+    thx @ax3l for the documentation
+
+commit 7d1d74bd278d4e1fce165400d6f064b0d2322c69
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 10 21:50:05 2014 +0100
+
+    add generic particle attribute initialization
+    
+    set all particle attributes which are not explizit initialized to the default value
+
+commit 25d930b731e9629b210115b6b0615fb05cf902a3
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 10 21:46:43 2014 +0100
+
+    add new trait ResolveAndRemoveFromSeq
+    
+    - add trait to resolve aliases and delete the resolved types from a boost mpl sequence
+
+commit c359e0cb2596921abd8441f24d310f737349ffc3
+Merge: a238016 6188023
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Dec 11 12:21:34 2014 -0800
+
+    Merge pull request #596 from psychocoderHPC/topic-addChargeState
+    
+    add particle attribute `chargeState`
+
+commit a23801637739e3d3746d1faa5027fb57e7ff95f4
+Merge: 7d44c98 cdef5b8
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Thu Dec 11 10:52:34 2014 +0100
+
+    Merge pull request #598 from ax3l/doc-updateInstall
+    
+    Update Install Documentation (Version Numbers)
+
+commit 6188023d67fb3cca0060b839a3ea848dc08829ee
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 10 22:11:16 2014 +0100
+
+    reduce full namespace path for the trait calls
+    
+    - reduce `traits::attribute::*` to `attribute::*`
+    - reduce `traits::frame:.*` to `frame::*`
+
+commit cc08b57d0bf527d6eafabf4a2989f31a858eb083
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 10 20:11:03 2014 +0100
+
+    use new getMass in all examples
+    
+    - use `traits::attribute::getMass` in all single particle examples
+
+commit 7d44c983fb1f7e6900b1413ca88ac22bf310e047
+Merge: ef34b78 72fa606
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Dec 10 09:29:35 2014 -0800
+
+    Merge pull request #594 from psychocoderHPC/topic-cleanAlias
+    
+    remove `::ThisType` in all identifier types
+
+commit f4a06c5e77de864a14fbb7fe8b7845f3ba0329f6
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 10 13:34:08 2014 +0100
+
+    use new traits `getCharge`and `getMass`
+    
+    - fix all dependencies to the trait definitions of `getCharge` and `getMass`
+
+commit 006ae57c6ab743bea7fa3404f71d677e1578bed5
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 10 13:26:11 2014 +0100
+
+    move GetCharge and GetMass to `picongpu/traits`
+    
+    - add frame and attribute folder in `picongpu/include/traits/`
+    - add namespace `picongpu::tarits::frame`
+    - add namespace `picongpu::traits::attribute`
+    - move `getCharge` traits to `tarits::frame` and `traits::attribute`
+
+commit 282030c2228a40ab8f28b5df97b7bd8f961ce6e5
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 9 18:02:37 2014 -0800
+
+    Fix Mem Limits
+
+commit fc1890b0a9218282e912a3f93ab6b273dad35bd6
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 9 17:14:43 2014 -0800
+
+    Add Account/Project Name
+
+commit 2c592dc27559c4e71ab1a50b20d9592eeb225b85
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 9 16:57:54 2014 -0800
+
+    Submit Templates: Lawrencium (LBL)
+    
+    - Draft (untested)
+    - Account Name still missing
+
+commit ef34b78890bfc7520342eb74ac20ab95d2297448
+Merge: 727eadd 040e4e6
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 9 16:54:56 2014 -0800
+
+    Merge pull request #604 from psychocoderHPC/fix-backgroundFieldRacecondition
+    
+    Fix Race Condition: Field Update and Pusher
+
+commit 727eaddf362cbf647b97c81aa42654563e050d1e
+Merge: e632a22 6a99540
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Tue Dec 9 23:52:25 2014 +0100
+
+    Merge pull request #605 from ax3l/doc-addDevDebus
+    
+    Add Alex Debus, Add PhD's
+
+commit 6a99540d47dd6ede65a4352e808a7cc2f2f4eb6f
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Dec 9 13:49:28 2014 -0800
+
+    Add Alex Debus, Add PhD's
+    
+    - Dr./PhD: either one or none
+
+commit 040e4e66eeb2f2b86817b7647251847c339a65ec
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Dec 9 20:29:42 2014 +0100
+
+    fix race condition
+    
+    - fix race condition that field background is removed parallel to the particle pusher
+    - fix race condition that field update `update_beforeCurrent` run in parallel to the particle pusher
+
+commit c95799725e8009616d8b6df41e3d5dbde82a34fc
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Dec 9 20:09:30 2014 +0100
+
+    rename trait `getCharge(...,particle)`
+    
+    - rename the trait `getCharge(...,particle)` in `getAttrCharge(...,particle)`
+    - fix all dependencies
+
+commit e632a22c5bdd9af657618b8e1f2f63dcc91a255b
+Merge: 0704ca8 09adae2
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Tue Dec 9 11:55:05 2014 +0100
+
+    Merge pull request #601 from ax3l/doc-oneFeatureAtATime
+    
+    Contributions: One-Feature-Per-Pull-Request
+
+commit 09adae280af14965c1e1b6318fc7fdb6646a5680
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 8 23:40:44 2014 -0800
+
+    Fix Typo, thx @PrometheusPI
+
+commit 5c39a259c86e02baf1a07ea943d9d61aec5f6280
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 8 22:58:34 2014 -0800
+
+    Contributions: One-Feature-Per-Pull-Request
+
+commit cdef5b811dd2b8b21aa3d377d566cd6e48c73522
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 8 10:43:49 2014 -0800
+
+    OpenMPI: Require as libSplash 1.5.1+
+    
+    and add hint about GPU aware MPI versions, see bug #438
+
+commit 3cb113610303122337be0335fed583ca74649fbd
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 8 10:35:17 2014 -0800
+
+    Boost compatible 1.49+
+    
+    thanks to the patch provided in #593
+
+commit ab34406b02fece8813771d6c67d0fcec0b2cfbd7
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Dec 8 10:34:19 2014 -0800
+
+    Update PNGwriter Path
+    
+    - now uses an official GitHub Repo
+
+commit 0704ca8f2d03f17f6fc5dc68fa66dae0a370e0ee
+Merge: 4fca878 eae8b6c
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Thu Dec 4 18:13:47 2014 -0800
+
+    Merge pull request #593 from psychocoderHPC/fix-BoostIncompleteTypeBug
+    
+    Close #588 Boost 1.56.0+ and Aliases
+
+commit d24f108b6cd69af9ccec33ad86c2c075290fba53
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 14:22:23 2014 +0100
+
+    use new `getCharge()` trait
+    
+    use the new `getCharge()` trait method to calculate the charge
+
+commit be85030af016f712ec37ac6ac25d69a2dcf4530f
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 14:22:07 2014 +0100
+
+    add documentation
+
+commit ccf0a1e3c297c3d47b2af4b83419fb8c6c64ffa3
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 14:13:07 2014 +0100
+
+    change unitless
+    
+    - change definition of getCharge
+
+commit 19e10ed197d39fff52c2f7bd76026707f70bfaf3
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 14:11:17 2014 +0100
+
+    change trait getCharge
+    
+    - change interface of getCharge
+    - getCharge use chargeState if it is set for the given species
+
+commit b0e32f0b0624325d32fee42cead73ff6821604f8
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 14:06:11 2014 +0100
+
+    add new particle attribute `chargeState`
+    
+    add particle attribute `chargeState` to support future ionization
+
+commit 72fa6069fb5835412f3f99ddb5d043c7c95e64be
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 10:17:11 2014 +0100
+
+    use trait `Resolve<T>` instead of ::ThisType
+    
+    use new trait `Resolve<T>` to get the type out of an alias
+
+commit 98f6ee72d02f1dc6aa5d4750655a601896150185
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 10:15:49 2014 +0100
+
+    remove ThisType from all identifier types
+    
+    remove `ThisType` (know available with the trait `Resolve<T>`)
+
+commit eae8b6c9c6b8cd3ad5a0fd88f835493c75691be3
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Dec 4 09:40:27 2014 +0100
+
+    change documentation, change CMakeLists.txt
+    
+    - change documentation of `alias`
+    - remove block of boost 1.56.0+ versions in CMakeLists
+
+commit d9ada1d8d5aad1415f9ad9e775baa123c71c3c70
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 3 20:08:17 2014 +0100
+
+    close #588, change type alias
+    
+    - change `alias` remove inherit
+    - use new trait `Resolve<T>` to handle incomplete types
+
+commit ac749cf915c117c27781ddc3a6629bbc3bfb0e1f
+Author: René Widera <r.widera@hzdr.de>
+Date:   Wed Dec 3 20:07:23 2014 +0100
+
+    add trait Resolve
+    
+    this trait gives the real type of an alias
+
+commit 4fca87841d28a9964312c124d9a2e3daf46bd084
+Merge: 0b1fb99 b4041ee
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Sun Nov 30 21:23:35 2014 +0100
+
+    Merge pull request #591 from f-schmitt-zih/topic-cmakebuildtype
+    
+    Fix #554 Use CMAKE_BUILD_TYPE for splash2txt
+
+commit b4041ee399b0fdf36e4ae69f7657d60c4ebd4f0d
+Author: Felix Schmitt <felix.schmitt@zih.tu-dresden.de>
+Date:   Sun Nov 30 11:42:43 2014 -0800
+
+    Update splash2txt cmake
+    
+     - fix boost warnings
+     - add -Wall
+
+commit 0b1fb99f7c1846d31c5fb8f3c12959abcd55148b
+Merge: 5da5966 c34b402
+Author: René Widera <r.widera@hzdr.de>
+Date:   Sun Nov 30 19:57:13 2014 +0100
+
+    Merge pull request #589 from ComputationalRadiationPhysics/master
+    
+    Update dev with RC6 release changes
+
+commit 3cb6da8b77c4a08fd5c9f43c71b4febbeac1a939
+Author: Felix Schmitt <felix.schmitt@zih.tu-dresden.de>
+Date:   Wed Nov 26 12:03:27 2014 -0800
+
+    Use CMAKE_BUILD_TYPE for splash2txt
+    
+     - use CMAKE_BUILD_TYPE instead of S2T_RELEASE cmake option
+     - fix a compile error with gcc 4.9 (uint32_t undefined)
+
+commit 5da59662240e6bd75feac59b189f3a0f4ff380c4
+Merge: badad5d 32b6e02
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Nov 26 16:07:45 2014 +0100
+
+    Merge pull request #590 from PrometheusPi/remove-LineSliceFieldsPlugin
+    
+    Remove LineSliceFields plugin
+
+commit 32b6e02b6de57bf8c6cdbec0ab374ef424e4405e
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Nov 26 15:25:18 2014 +0100
+
+    remove obsolete LineSliceFields.hpp file
+
+commit f46833f5927236d93a08a34ef11db44dd6833e0d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Nov 26 15:24:22 2014 +0100
+
+    remove LineSliceFields Plugin from PluginController
+
+commit c34b40280fbd67f5fbc2d04f24378ac73f5515b3
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Nov 26 03:07:46 2014 +0100
+
+    Hotfix: CMake Boost 1.56.0+ is currently broken
+
+commit badad5d7c198017ed98e4e329595b5e06421fb60
+Merge: 7552d87 f78ad8a
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Nov 25 20:15:59 2014 +0100
+
+    Merge pull request #583 from ax3l/topic-cudaMemtest32bit
+    
+    Close #574 cuda-memtest 32bit
+
+commit f78ad8a98d162c28a20a717b8251efefee8d5213
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Nov 25 17:10:20 2014 +0100
+
+    Fix forgotten Cast
+
+commit 22b8002c9debbc7125cd303e47b9e5182de5da7e
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Nov 25 09:42:58 2014 +0100
+
+    Printf with %zu for size_t
+
+commit 53d3fcc8407bb19f1416095adcd5dd8007af7563
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Nov 25 09:37:45 2014 +0100
+
+    Remove Warning in getRand
+
+commit 7552d8736451ab838b1dd5255828fd3b5c98c86a
+Merge: bcaa10f 49223a3
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 17 22:32:03 2014 -0600
+
+    Merge pull request #548 from PrometheusPi/fix-SliceFieldPrinterPlugin
+    
+    Fix slice field printer plugin
+
+commit bcaa10f5c123fd5119491b1ae2ce2b2159e62b53
+Merge: b64be58 37a8731
+Author: Heiko Burau <h.burau@hzdr.de>
+Date:   Mon Nov 17 15:58:46 2014 +0100
+
+    Merge pull request #578 from PrometheusPi/add-pythonModuleForSliceField
+    
+    add python module to read sliced fields
+
+commit 37a8731fef221c9d4159958fe39e03478c5e60f1
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Nov 14 01:34:32 2014 +0100
+
+    add license header
+
+commit fa612f2f975aa7461bddd15158c5ce8a108a9111
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Nov 14 01:31:54 2014 +0100
+
+    add simple test to run code test-wise on command line
+
+commit 36a5e2bc7661290f84145b3ffb218ffec4419b5d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Fri Nov 14 01:15:23 2014 +0100
+
+    add doc strings
+    fix typo
+
+commit 6a71166698d65c04c093e27a26375a812440ad06
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 17:37:14 2014 +0100
+
+    add python module to read sliced fields
+
+commit 49223a31815de6a6ad2a0abb743ac4179581817d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 15:58:35 2014 +0100
+
+    update license header
+
+commit 095b7fa56abcf3d2e578e0d2b6b7dd5ce629a82c
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 15:54:43 2014 +0100
+
+    remove unit factor from output
+    add and correct comments
+
+commit c3e55935f1f9beaf0c35a09d1b76c5e7371583a9
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 15:46:38 2014 +0100
+
+    perform unit conversion on GPUs
+
+commit 1690f99a5d70b7d99f92c5fd316177206412da0a
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 15:45:53 2014 +0100
+
+    allow access to field unit on GPUs
+
+commit 10c687923d3e951998c66f8cb4a28f8940b4e087
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 15:14:41 2014 +0100
+
+    convert slice to double precision on GPU
+
+commit 776182a4f369c11d05c3cbe5013549dc1f21b1de
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Thu Nov 13 10:38:23 2014 +0100
+
+    include for loop for slicing again
+
+commit 6817b94c9cad278b1a4623a56238ef619f1500a7
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Nov 12 15:34:57 2014 +0100
+
+    add boolian flage to avoid notify in case of invalid slice
+
+commit 2879f7978db7527b561a7023defa270a830ec85a
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Nov 12 15:17:04 2014 +0100
+
+    remove template specialization for SI conversion
+
+commit 1bfd7b3c1c7d0ab950f274530823e2aba9435b83
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 30 14:46:03 2014 +0200
+
+    remove  cuSTL For loop as suggested by @ax3l
+
+commit aea8380ddbe39dfe612f6d8fa0edfa033c97564a
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 30 14:36:17 2014 +0200
+
+    add output to perform unit conversion
+
+commit 4abe1a14d840596718a9f299f88922ea297bbb2b
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 30 14:23:45 2014 +0200
+
+    add adjustments suggested by @ax3l
+    
+    set unit output to float_64
+    change unit template to use Field:: class
+
+commit af0be21a12f9370d5027969b559b9c642d97b7fb
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Sep 24 16:02:51 2014 +0200
+
+    add author to copy right
+
+commit 052a0f9cff9254e5755f9182f71031bff662178d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Wed Sep 24 01:40:50 2014 +0200
+
+    add fieldJ as template option to plugin
+
+commit 5e4a3594db57111da08f5f02ab0b9fb83389885d
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 23 17:34:11 2014 +0200
+
+    treat unit conversion via templates
+
+commit aa8794d4e9a34bc0d82a520d50d44becd77d1918
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 23 16:59:15 2014 +0200
+
+    rename file-name-variable from fieldName to fileName
+
+commit e110f47f1de44d6ab6bcab6eba36473cbae805b0
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 23 16:32:17 2014 +0200
+
+    move warning from multi to single
+
+commit 0b61a76448fcaaf499a2bb206f2a911c4a844cd7
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 23 12:55:52 2014 +0200
+
+    add warning if slice is set wrongly
+
+commit 13bf915e32ec0aa9278643f3a5c39df659de55ea
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Sep 23 11:43:11 2014 +0200
+
+    replace underscore by period to unify command line argument flags
+
+commit b64be58fc58d6da95d90197e688d136975ed5f90
+Merge: 787aef3 1c2fe75
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Nov 4 14:01:23 2014 +0100
+
+    Merge pull request #577 from PrometheusPi/fixTypoHomogeneous
+    
+    Fix #569 Wrong Gas Profile Name
+
+commit 1c2fe75424a4f21505dcbecb27ec469919b68781
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 4 11:38:47 2014 +0100
+
+    adjust new naming for all examples
+
+commit 8780aa93455d3d7951d9e9ab5068f409e0e857aa
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 4 11:03:21 2014 +0100
+
+    correct name of namespace
+
+commit 606dbb4aaa4817f8f5c1997f2b5f60f6b16c6372
+Author: PrometheusPi <r.pausch@hzdr.de>
+Date:   Tue Nov 4 10:51:23 2014 +0100
+
+    rename hpp file from homogenous to homogeneous
+
+commit 787aef3112f35491162ea06b163d49454c16e8b7
+Merge: fb86553 4e45c9c
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Mon Nov 3 15:06:11 2014 +0100
+
+    Merge pull request #575 from ax3l/topic-updateHypnosProfile
+    
+    Close #573 Update to New Modules on Hypnos
+
+commit 4e45c9cf7e8dabdea59e895207050fd4bbe2bc1b
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 3 14:27:00 2014 +0100
+
+    Incooperate Richards Feedback
+
+commit fb865535700e40d9d341a66b31a99a2321ae4578
+Merge: cff7dc5 ed9a16f
+Author: Richard Pausch <r.pausch@hzdr.de>
+Date:   Mon Nov 3 14:22:19 2014 +0100
+
+    Merge pull request #572 from ax3l/fix-limits32BitHost
+    
+    Fix #571 libPMacc limits: 32 bit host
+
+commit 4f868b436b72ff5f8f73f3f489991ae2caa0366c
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Mon Nov 3 14:13:43 2014 +0100
+
+    Update to New Modules on Hypnos
+
+commit ed9a16f31410888ff0b6c37e31a678f70bce1de7
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Wed Oct 29 11:36:15 2014 +0100
+
+    Fix #571 libPMacc limits: 32 bit host
+    
+    on 32bit hosts, size_t is the same as uint32_t (hopefully)
+    which declares the `max` for it twice.
+    
+    Reported by @sigkill on github, thanks!
+
+commit cff7dc525eda324b92caa22a6dd24799fa83fd71
+Merge: bb8b5c8 df6183b
+Author: René Widera <r.widera@hzdr.de>
+Date:   Thu Oct 23 17:03:44 2014 +0200
+
+    Merge pull request #561 from BenjaminW3/issue3
+    
+    make the cast from int to bool explicit to prevent a warning
+
+commit bb8b5c878d1c13c9b28699883cff9151ac8a56d5
+Merge: 97379bf fc2de70
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Oct 21 13:25:26 2014 +0200
+
+    Merge pull request #566 from BenjaminW3/issue5
+    
+    Forward declarations for std::stack are not standard conformant.
+
+commit 97379bfd93592a5454d2000429c002a8abb7d304
+Merge: 7e1ac22 edf08f3
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Oct 21 13:21:07 2014 +0200
+
+    Merge pull request #564 from BenjaminW3/issue1
+    
+    Fix Expression.hpp #define / #undef
+
+commit 7e1ac222ac73833b4a880fccb7661378d7d789ec
+Merge: 6eeed8c f413f8e
+Author: René Widera <r.widera@hzdr.de>
+Date:   Tue Oct 21 13:17:35 2014 +0200
+
+    Merge pull request #563 from BenjaminW3/issue4
+    
+    remove duplicate header inclusion
+
+commit 6eeed8ce212597987072ef6c52d9209845f79111
+Merge: f96d743 2a9688f
+Author: f-schmitt-zih <f-schmitt-zih@users.noreply.github.com>
+Date:   Wed Oct 15 09:38:26 2014 +0200
+
+    Merge pull request #567 from ax3l/topic-compileLatestSplash
+    
+    CompileSuite: Use libSplash 1.2.3
+
+commit 2a9688f85de0fe6dc1aa8b6297578f23743710e0
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Oct 14 14:32:37 2014 +0200
+
+    Add mallocMC and Update Adios
+    
+    ... as it runs already on the compile node
+
+commit 14391f2a902f4375e87a5e934c1c98c855ff6e2f
+Author: Axel Huebl <axel.huebl@web.de>
+Date:   Tue Oct 14 14:21:37 2014 +0200
+
+    CompileSuite: Use libSplash 1.2.3
+
+commit f413f8ebf78adb33a7a6f86fa29bbd5bdd82db3f
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Sun Oct 12 09:26:06 2014 +0200
+
+    push
+
+commit df6183b8917c3347aec8e63b554af4c1e5d04871
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Fri Oct 10 13:20:53 2014 +0200
+
+    remove parantheses
+
+commit fc2de709b43b77166334a783ccad2c7556435a48
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Fri Oct 10 12:08:27 2014 +0200
+
+    remove tabs and c++11
+
+commit edf08f3f2db57d57f88c69caa60cf13f5be94456
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Fri Oct 10 12:02:19 2014 +0200
+
+    replace tabs with spaces
+
+commit 83819a7bba03814d091e2c508acb7fcb6a842783
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Thu Oct 9 14:18:44 2014 +0200
+
+    forward declaration of Transaction for std::stack<Transaction> is not standard confroming,
+    fix 'if ( !transactions.size( ) > 1 )' always beeing false and never triggering in error conditions
+
+commit 80ad50f30dbfc167e812f1a87da69d5448e931f5
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Thu Oct 9 14:09:16 2014 +0200
+
+    remove duplicate header inclusion
+
+commit 3333f88f8482b48e86312bdcb1aa5bfa187438bb
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Thu Oct 9 14:08:00 2014 +0200
+
+    make the cast from int to bool explicit to prevent a warning
+
+commit 23938014ca37b2235851c501f03bfe7da63540d5
+Author: BenjaminW <benjaminworpitz@gmail.com>
+Date:   Thu Oct 9 14:06:30 2014 +0200
+
+    add missing '#undef EXPRESSION_CTOR',
+    move the defininition of EXPRESSION_CTOR where it belongs to,
+    typedef FirstChild to make the constructor more clear,
+    replace RESULT_OF_FUNCTOR_HPP with the correct RESULT_OF_MAKE_EXPR
