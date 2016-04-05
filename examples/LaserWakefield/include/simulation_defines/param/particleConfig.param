@@ -41,7 +41,7 @@ namespace particles
  *  unit: none */
 BOOST_CONSTEXPR_OR_CONST float_X MIN_WEIGHTING = 10.0;
 
-BOOST_CONSTEXPR_OR_CONST uint32_t TYPICAL_PARTICLES_PER_CELL = 2;
+BOOST_CONSTEXPR_OR_CONST uint32_t TYPICAL_PARTICLES_PER_CELL = 8;
 
 namespace startPosition
 {

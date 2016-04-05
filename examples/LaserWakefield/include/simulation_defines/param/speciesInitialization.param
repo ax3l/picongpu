@@ -85,14 +85,14 @@ namespace particles
 typedef mpl::vector<
 #if (PARAM_IONIZATION == 0)
 
-    CreateGas<gasProfiles::Gaussian, startPosition::Random, PIC_Electrons>
+    CreateGas<gasProfiles::Gaussian, startPosition::Quiet, PIC_Electrons>
     #if (ENABLE_IONS == 1)
         ,CloneSpecies<PIC_Electrons,PIC_Ions>
     #endif
 
 #else
 
-    CreateGas<gasProfiles::Gaussian, startPosition::Random, PIC_Ions>,
+    CreateGas<gasProfiles::Gaussian, startPosition::Quiet, PIC_Ions>,
     Manipulate<manipulators::SetBoundElectrons, PIC_Ions>
 
 #endif

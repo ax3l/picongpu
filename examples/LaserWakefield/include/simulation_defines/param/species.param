@@ -59,7 +59,7 @@ namespace picongpu
  *  example:             typedef particles::shapes::CIC CICShape;
  */
 #ifndef PARAM_PARTICLESHAPE
-#define PARAM_PARTICLESHAPE TSC
+#define PARAM_PARTICLESHAPE CIC
 #endif
 typedef particles::shapes::PARAM_PARTICLESHAPE UsedParticleShape;
 
@@ -76,7 +76,7 @@ typedef FieldToParticleInterpolation<UsedParticleShape, AssignedTrilinearInterpo
  *   without optimization (~4x slower and needs more shared memory)
  */
 #ifndef PARAM_CURRENTSOLVER
-#define PARAM_CURRENTSOLVER Esirkepov
+#define PARAM_CURRENTSOLVER ZigZag
 #endif
 typedef currentSolver::PARAM_CURRENTSOLVER<UsedParticleShape> UsedParticleCurrentSolver;
 

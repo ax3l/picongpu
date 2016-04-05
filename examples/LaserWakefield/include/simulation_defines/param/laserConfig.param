@@ -69,7 +69,7 @@ namespace picongpu
         }
         /** The laser pulse will be initialized PULSE_INIT times of the PULSE_LENGTH
          *  unit: none */
-        BOOST_CONSTEXPR_OR_CONST float_64 PULSE_INIT = 15.0;
+        BOOST_CONSTEXPR_OR_CONST float_64 PULSE_INIT = 8.0;
 
         /* laser phase shift (no shift: 0.0) */
         BOOST_CONSTEXPR_OR_CONST float_X LASER_PHASE = 0.0; /* unit: rad, periodic in 2*pi */
@@ -124,7 +124,7 @@ namespace picongpu
         }
         /** The laser pulse will be initialized PULSE_INIT times of the PULSE_LENGTH
          *  unit: none */
-        BOOST_CONSTEXPR_OR_CONST float_64 PULSE_INIT = 20.0;
+        BOOST_CONSTEXPR_OR_CONST float_64 PULSE_INIT = 8.0;
 
         /* laser phase shift (no shift: 0.0) */
         BOOST_CONSTEXPR_OR_CONST float_X LASER_PHASE = 0.0; /* unit: rad, periodic in 2*pi */
@@ -178,7 +178,7 @@ namespace picongpu
 
         /** The laser pulse will be initialized half of PULSE_INIT times of the PULSE_LENGTH before and after the plateau
          *  unit: none */
-        BOOST_CONSTEXPR_OR_CONST float_64 RAMP_INIT = 20.6146; //25.6415;//SI::aux_calulation::PULSE_TIME_SI/SI::PULSE_LENGTH_SI;
+        BOOST_CONSTEXPR_OR_CONST float_64 RAMP_INIT = 8.0;
 
         /* we use a sin(omega*time + laser_phase) function to set up the laser - define phase: */
         BOOST_CONSTEXPR_OR_CONST float_X LASER_PHASE = 0.0; /* unit: rad, periodic in 2*pi */
@@ -243,7 +243,7 @@ namespace picongpu
         /** The laser pulse will be initialized half of PULSE_INIT times of the PULSE_LENGTH before plateau
         and half at the end of the plateau
          *  unit: none */
-        BOOST_CONSTEXPR_OR_CONST float_64 RAMP_INIT = 20.0;
+        BOOST_CONSTEXPR_OR_CONST float_64 RAMP_INIT = 8.0;
 
         /* we use a sin(omega*time + laser_phase) function to set up the laser - define phase: */
         BOOST_CONSTEXPR_OR_CONST float_X LASER_PHASE = 0.0; /* unit: rad, periodic in 2*pi */
