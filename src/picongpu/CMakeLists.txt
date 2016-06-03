@@ -89,9 +89,13 @@ if(IS_CUDA_ARCH_UNSUPPORTED)
                        "SM 2.0 or higher is required.")
 endif(IS_CUDA_ARCH_UNSUPPORTED)
 
+# disable the implied flush-to-zero from --use_fast_math because it causes
+# wrong frame-list mapping
 set(CUDA_FTZ "--ftz=false" CACHE STRING "Set flush to zero for GPU")
 
-set(CUDA_MATH --use_fast_math CACHE STRING "Enable fast-math" )
+# default flags for nvcc:
+#  --ftz=false, --prec-div=true and --prec-sqrt=true (ensures IEEE compliance)
+set(CUDA_MATH "--prec-div=false --prec-sqrt=false" CACHE STRING "Enable fast-math: --use_fast_math (bad for phases), --prec-div=false, --prec-sqrt=false" )
 option(CUDA_SHOW_REGISTER "Show kernel registers and create PTX" OFF)
 option(CUDA_KEEP_FILES "Keep all intermediate files that are generated during internal compilation steps (folder: nvcc_tmp)" OFF)
 option(CUDA_SHOW_CODELINES "Show kernel lines in cuda-gdb and cuda-memcheck" OFF)
