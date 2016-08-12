@@ -262,7 +262,7 @@ public:
                   old_fieldB_coreBorder.origin(),
                   gridSize);
 
-#if (SENTOKU==1)
+#if (SENTOKU==1) //prpagateX adds current
         propagateX<Space_XJ,Orientation_XJ, 1>(
                   fieldE_coreBorder.origin(),
                   fieldB_coreBorder.origin(),

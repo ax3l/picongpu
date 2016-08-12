@@ -143,7 +143,7 @@ namespace traits
 
         HDINLINE ReturnType operator()() const
         {
-            return ReturnType( FieldPos::create(0.0) );
+            return ReturnType( FieldPos::create(0.0) ); //you can probably change here to 0.5 for the charge to be defined in the center of the cell
         }
     };
 } // traits

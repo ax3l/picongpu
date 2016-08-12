@@ -32,7 +32,7 @@ namespace picongpu
          *  unit: seconds */
         //DS
         BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.79e-16;
-        //BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.2657e-16;
+        //BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.2657e-16; for Yee
         /** equals X
          *  unit: meter */
 #define fieldSolverDirSplitting 1

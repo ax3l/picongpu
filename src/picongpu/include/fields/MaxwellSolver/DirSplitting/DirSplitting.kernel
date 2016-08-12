@@ -100,7 +100,7 @@ struct DirSplittingKernel
 
         __syncthreads();
 
-        (*cursorB).z() = 0.5f * (a_plus + a_minus);
+        (*cursorB).z() = 0.5f * (a_plus + a_minus); //if I enable the double buffer I need to ad += instead of =
         (*cursorE).y() = 0.5f * (a_plus - a_minus);
         (*cursorB).y() = 0.5f * (a_prime_plus + a_prime_minus);
         (*cursorE).z() = 0.5f * (a_prime_minus - a_prime_plus);
@@ -173,6 +173,7 @@ struct DirSplittingKernel
             }
 
             propagate(cursorE, cursorB, globalJ(globalShift+cursorShift),globalE(globalShift+cursorShift),globalB(globalShift+cursorShift));
+            //propagate(cursorE, cursorB, globalJ(globalShift+cursorShift),old_globalE(globalShift+cursorShift),old_globalB(globalShift+cursorShift));
 
             DataSpace<simDim> globalShiftTmp;
             globalShiftTmp.x() = x_offset;
