@@ -13,3 +13,6 @@
 
 # original backup files
 *.orig
+
+#clion project file
+.idea/
