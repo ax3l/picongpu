@@ -283,6 +283,22 @@ public:
         pushBGField = new cellwiseOperation::CellwiseOperation < CORE + BORDER + GUARD > (*cellDescription);
         currentBGField = new cellwiseOperation::CellwiseOperation < CORE + BORDER + GUARD > (*cellDescription);
 
+	    /* add CUDA streams to the StreamController for concurrent execution */
+	    Environment<>::get().StreamController().addStreams(6);
+
+	    // Initialize synchrotron functions, if there are synchrotron photon species
+	    typedef typename PMacc::particles::traits::FilterByFlag<VectorAllSpecies,
+			    synchrotronPhotons<> >::type AllSynchrotronPhotonsSpecies;
+	    if(!bmpl::empty<AllSynchrotronPhotonsSpecies>::value)
+	    {
+		    this->synchrotronFunctions.init();
+		    // create factory for the random number generator
+		    this->rngFactory = new RNGFactory(Environment<simDim>::get().SubGrid().getLocalDomain().size);
+		    // init factory
+		    PMacc::GridController<simDim>& gridCon = PMacc::Environment<simDim>::get().GridController();
+		    this->rngFactory->init(gridCon.getScalarPosition());
+	    }
+
         laser = new LaserPhysics(cellDescription->getGridLayout());
 
         ForEach<VectorAllSpecies, particles::CreateSpecies<bmpl::_1>, MakeIdentifier<bmpl::_1> > createSpeciesMemory;
@@ -337,24 +353,6 @@ public:
 
         ForEach<VectorAllSpecies, particles::CallInit<bmpl::_1>, MakeIdentifier<bmpl::_1> > particleInit;
         particleInit(forward(particleStorage), fieldE, fieldB, fieldJ, fieldTmp);
-
-
-        /* add CUDA streams to the StreamController for concurrent execution */
-        Environment<>::get().StreamController().addStreams(6);
-
-        // create factory for the random number generator
-        this->rngFactory = new RNGFactory(Environment<simDim>::get().SubGrid().getLocalDomain().size);
-        // init factory
-        PMacc::GridController<simDim>& gridCon = PMacc::Environment<simDim>::get().GridController();
-        this->rngFactory->init(gridCon.getScalarPosition());
-
-        // Initialize synchrotron functions, if there are synchrotron photon species
-        typedef typename PMacc::particles::traits::FilterByFlag<VectorAllSpecies,
-                                                                synchrotronPhotons<> >::type AllSynchrotronPhotonsSpecies;
-        if(!bmpl::empty<AllSynchrotronPhotonsSpecies>::value)
-        {
-            this->synchrotronFunctions.init();
-        }
     }
 
     virtual uint32_t fillSimulation()
