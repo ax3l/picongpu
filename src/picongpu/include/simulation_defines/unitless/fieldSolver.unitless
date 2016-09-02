@@ -24,9 +24,7 @@
 
 #include "fields/MaxwellSolver/None/NoSolver.def"
 #include "fields/MaxwellSolver/Yee/YeeSolver.def"
-#if(SIMDIM==DIM2)
 #include "fields/MaxwellSolver/DirSplitting/DirSplitting.def"
-#endif
 #if(SIMDIM==DIM3)
 #include "fields/MaxwellSolver/Lehe/LeheSolver.def"
 #endif
@@ -55,13 +53,11 @@ namespace fieldSolverYee
     namespace numericalCellType = yeeCell;
 }
 
-#if(SIMDIM==DIM2)
 namespace fieldSolverDirSplitting
 {
     typedef picongpu::dirSplitting::DirSplitting FieldSolver;
     namespace numericalCellType = emfCenteredCell;
 }
-#endif
 #if(SIMDIM==DIM3)
 namespace fieldSolverLehe
 {

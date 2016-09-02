@@ -320,6 +320,8 @@ public:
                   fieldE_coreBorder.origin(),
                   fieldB_coreBorder.origin(),
                   fieldJ_coreBorder.origin(),
+                  old_fieldE_coreBorder.origin(),
+                  old_fieldB_coreBorder.origin(),
                   gridSize);
 
         __setTransactionEvent(fieldE.asyncCommunication(__getTransactionEvent()));
