@@ -77,17 +77,17 @@ namespace picongpu
 
 	        float_64 sinX = 0.0;
 
-	        //const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
-	        const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
+	        const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
+	        //const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
 	        //const float_64 positionRelativeZ = (cellIdx.y() - GRID_SIZE / 2);
 
-	        if(currentStep == 0 && math::abs(positionRelativeY) <= 50)
+	        if(currentStep == 0 && math::abs(positionRelativeX) <= 50)
 			{
-				sinX = math::sin(precisionCast<float_X>(positionRelativeY / float_X(100.0) * float_X(2.0) * PI ));
+				sinX = math::sin(precisionCast<float_X>(positionRelativeX / float_X(100.0) * float_X(2.0) * PI ));
 			}
 
 	        /* specify your E-Field in V/m and convert to PIConGPU units */
-            return float3_X(0.0, sinX / m_unitField[1], 0.0);
+            return float3_X(sinX / m_unitField[0], 0.0, 0.0);
         }
     };
 
@@ -141,15 +141,15 @@ namespace picongpu
 	        float_64 sinX = 0.0;
 	        float_64 sinT = 0.0;
 
-	        //const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
-	        const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
+	        const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
+	        //const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
 	        //const float_64 positionRelativeZ = (cellIdx.y() - GRID_SIZE / 2);
 
-	        if(currentStep == 0 && math::abs(positionRelativeY) <= 50)
+	        if(currentStep == 0 && math::abs(positionRelativeX) <= 50)
 	        {
 		        //sinT = math::sin(precisionCast<float_X>( float_X(currentStep) / float_X(100.0) * float_X(2.0) * PI ));
 		        sinT = float_X(1.0);
-		        sinX = sinT * math::sin(precisionCast<float_X>(positionRelativeY / float_X(100.0) * float_X(2.0) * PI ));
+		        sinX = sinT * math::sin(precisionCast<float_X>(positionRelativeX / float_X(100.0) * float_X(2.0) * PI ));
 	        }
 
             return float3_X(0.0, 0.0, sinX / m_unitField[2]);
