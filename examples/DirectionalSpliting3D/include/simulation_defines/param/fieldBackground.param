@@ -19,7 +19,7 @@
  */
 
 #pragma once
-#define GRID_SIZE 1024
+#define GRID_SIZE 256
 /** Load external background fields
  *
  */
@@ -87,7 +87,7 @@ namespace picongpu
 			}
 
 	        /* specify your E-Field in V/m and convert to PIConGPU units */
-            return float3_X(sinX / m_unitField[0], 0.0, 0.0);
+            return float3_X(0.0, sinX / m_unitField[1], 0.0);
         }
     };
 

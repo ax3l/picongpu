@@ -32,7 +32,7 @@ namespace picongpu
         BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.4776889417278136e-17; // 1.044883e-16 Yee
         /** equals X
          *  unit: meter */
-        BOOST_CONSTEXPR_OR_CONST float_64 CELL_WIDTH_SI = SI::SPEED_OF_LIGHT_SI * 1.4776889417278136e-17; // 0.0443e-6
+        BOOST_CONSTEXPR_OR_CONST float_64 CELL_WIDTH_SI = SI::SPEED_OF_LIGHT_SI * DELTA_T_SI; // 0.0443e-6
         /** equals Y - the propagation direction
          *  unit: meter */
         BOOST_CONSTEXPR_OR_CONST float_64 CELL_HEIGHT_SI = CELL_WIDTH_SI;
