@@ -19,7 +19,7 @@
  */
 
 #pragma once
-#define GRID_SIZE 256
+#define GRID_SIZE 1024
 /** Load external background fields
  *
  */
@@ -61,10 +61,11 @@ namespace picongpu
             }*/
 
             //Circular wave propagation version 2
-            /*
+
             const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
             const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
-            const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY);
+	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
+	        const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY + positionRelativeZ * positionRelativeZ);
 
             float_64 sin = 0.0;
 
@@ -72,22 +73,22 @@ namespace picongpu
             {
                 sin = math::sin(precisionCast<float_X>(radius / 50 * float_X(2.0) * PI));
             }
-            */
-	        //Plane wave propagation in x/y direction
 
+	        //Plane wave propagation in x/y direction
+			/*
 	        float_64 sinX = 0.0;
 
 	        //const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
 	        //const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
-	        const float_64 positionRelativeZ = (cellIdx.y() - GRID_SIZE / 2);
+	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
 
 	        if(currentStep == 0 && math::abs(positionRelativeZ) <= 50)
 			{
 				sinX = math::sin(precisionCast<float_X>(positionRelativeZ / float_X(100.0) * float_X(2.0) * PI ));
 			}
-
+			*/
 	        /* specify your E-Field in V/m and convert to PIConGPU units */
-            return float3_X(0.0, sinX / m_unitField[1], 0.0);
+            return float3_X(sin / m_unitField[0], sin / m_unitField[1], 0.0);
         }
     };
 
@@ -124,10 +125,11 @@ namespace picongpu
             }*/
 
             //Circular wave propagation version 2
-            /*
+
             const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
             const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
-            const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY);
+	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
+            const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY + positionRelativeZ * positionRelativeZ);
 
             float_64 sin = 0.0;
 
@@ -135,15 +137,15 @@ namespace picongpu
             {
                 sin = math::sin(precisionCast<float_X>(radius / 50 * float_X(2.0) * PI));
             }
-            */
-	        //Plane wave propagation in x/y direction
 
+	        //Plane wave propagation in x/y direction
+			/*
 	        float_64 sinX = 0.0;
 	        float_64 sinT = 0.0;
 
 	        //const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
 	        //const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
-	        const float_64 positionRelativeZ = (cellIdx.y() - GRID_SIZE / 2);
+	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
 
 	        if(currentStep == 0 && math::abs(positionRelativeZ) <= 50)
 	        {
@@ -151,8 +153,8 @@ namespace picongpu
 		        sinT = float_X(1.0);
 		        sinX = sinT * math::sin(precisionCast<float_X>(positionRelativeZ / float_X(100.0) * float_X(2.0) * PI ));
 	        }
-
-            return float3_X(sinX / m_unitField[0], 0.0, 0.0);
+			*/
+            return float3_X(0.0, 0.0, sin / m_unitField[2]);
         }
     };
 
