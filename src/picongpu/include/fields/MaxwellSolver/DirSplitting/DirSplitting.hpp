@@ -98,7 +98,7 @@ twistVectorForDirSplitting(const T_Cursor& cursor)
 class DirSplitting : private ConditionCheck<fieldSolver::FieldSolver>
 {
 private:
-    template<typename SpaceTwist, typename OrientationTwist,typename JSpaceTwist,typename CursorE, typename CursorB, typename CursorJ, typename GridSize>
+    template<uint32_t pass, typename SpaceTwist, typename OrientationTwist,typename JSpaceTwist,typename CursorE, typename CursorB, typename CursorJ, typename GridSize>
     void propagate(CursorE cursorE, CursorB cursorB,CursorJ cursorJ,CursorE old_cursorE, CursorB old_cursorB, GridSize gridSize) const
     {
         using namespace cursor::tools;
@@ -141,7 +141,7 @@ private:
                 cursor::make_NestedCursor(twistVectorForDirSplitting<SpaceTwistSimDim, OrientationTwist>(cursorJ)),
                 cursor::make_NestedCursor(twistVectorForDirSplitting<SpaceTwistSimDim, OrientationTwist>(old_cursorE)),
                 cursor::make_NestedCursor(twistVectorForDirSplitting<SpaceTwistSimDim, OrientationTwist>(old_cursorB)),
-                DirSplittingKernel<BlockDim,JSpaceTwist>((int)gridSizeTwisted.x()));
+                DirSplittingKernel<pass,BlockDim,JSpaceTwist>((int)gridSizeTwisted.x()));
     }
 
 
@@ -254,7 +254,7 @@ public:
         typedef PMacc::math::CT::Int<0,1,2> Orientation_X;
         typedef PMacc::math::CT::Int<0,1,2> Space_X;
         typedef PMacc::math::CT::Int<0,2,1> JDir_X;
-        propagate<Space_X,Orientation_X,JDir_X>(
+        propagate<0, Space_X,Orientation_X,JDir_X>(
                   fieldE_coreBorder.origin(),
                   fieldB_coreBorder.origin(),
                   fieldJ_coreBorder.origin(),
@@ -277,7 +277,7 @@ public:
         typedef PMacc::math::CT::Int<1,2,0> Orientation_Y;
         typedef PMacc::math::CT::Int<1,0,2> Space_Y;
         typedef PMacc::math::CT::Int<0,1,2> JDir_Y;
-        propagate<Space_Y,Orientation_Y,JDir_Y>(
+        propagate<1, Space_Y,Orientation_Y,JDir_Y>(
                   fieldE_coreBorder.origin(),
                   fieldB_coreBorder.origin(),
                   fieldJ_coreBorder.origin(),

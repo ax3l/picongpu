@@ -32,7 +32,7 @@
 namespace picongpu
 {
 
-template<typename BlockDim, typename JSpaceTwist>
+template<uint32_t pass, typename BlockDim, typename JSpaceTwist>
 struct DirSplittingKernel
 {
     typedef void result_type;
@@ -79,22 +79,22 @@ struct DirSplittingKernel
         const PMACC_AUTO(plus,Plus::toRT());
         float a_plus = (*cursorB(minus)).z() + (*cursorE(minus)).y()
 #if (SENTOKU==0)
-            - ( (*cursorJ).y() + ( *cursorJ(jYDir::toRT()) ).y() ) * constJE
+            - ( (*cursorJ).y() + ( *cursorJ(jYDir::toRT()) ).y() ) * constJE * (pass==1?float_X(0.5):float_X(1.0))
 #endif
         ;
         float a_minus = (*cursorB(plus)).z() - (*cursorE(plus)).y()
 #if (SENTOKU==0)
-            + ( (*cursorJ(plus)).y() + ( *cursorJ(plus + jYDir::toRT()) ).y() ) * constJE
+            + ( (*cursorJ(plus)).y() + ( *cursorJ(plus + jYDir::toRT()) ).y() ) * constJE * (pass==1?float_X(0.5):float_X(1.0))
 #endif
         ;
         float a_prime_plus = (*cursorB(minus)).y() - (*cursorE(minus)).z()
 #if (SENTOKU==0)
-        + ( (*cursorJ).z() + ( *cursorJ(jZDir::toRT())).z() ) * constJE
+        + ( (*cursorJ).z() + ( *cursorJ(jZDir::toRT())).z() ) * constJE * (pass==0?float_X(0.5):float_X(1.0))
 #endif
         ;
         float a_prime_minus = (*cursorB(plus)).y() + (*cursorE(plus)).z()
 #if (SENTOKU==0)
-        - ( (*cursorJ(plus)).z() + (*cursorJ(plus + jZDir::toRT()) ).z() ) * constJE
+        - ( (*cursorJ(plus)).z() + (*cursorJ(plus + jZDir::toRT()) ).z() ) * constJE * (pass==0?float_X(0.5):float_X(1.0))
 #endif
         ;
 
@@ -104,6 +104,7 @@ struct DirSplittingKernel
         (*cursorE).y() = 0.5f * (a_plus - a_minus);
         (*cursorB).y() = 0.5f * (a_prime_plus + a_prime_minus);
         (*cursorE).z() = 0.5f * (a_prime_minus - a_prime_plus);
+	    //(*cursorE).x() -= 0.5f * ( (*cursorJ).x() + (*cursorJ(jYDir::toRT())).x() +  (*cursorJ(jZDir::toRT())).x() + (*cursorJ(jYDir::toRT() + jZDir::toRT())).x()) * constJE;
 
         __syncthreads();
     }
