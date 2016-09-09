@@ -19,7 +19,7 @@
  */
 
 #pragma once
-#define GRID_SIZE 1024
+#define GRID_SIZE 384
 /** Load external background fields
  *
  */
@@ -61,11 +61,10 @@ namespace picongpu
             }*/
 
             //Circular wave propagation version 2
-
+			/*
             const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
             const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
-	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
-	        const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY + positionRelativeZ * positionRelativeZ);
+	        const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY);
 
             float_64 sin = 0.0;
 
@@ -73,6 +72,39 @@ namespace picongpu
             {
                 sin = math::sin(precisionCast<float_X>(radius / 50 * float_X(2.0) * PI));
             }
+			*/
+	        //Circular wave propagation 3D
+
+	        float_64 Er = 0.0;
+	        float_64 Ex = 0.0;
+	        float_64 Ey = 0.0;
+	        float_64 Ez = 0.0;
+
+	        const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
+	        const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
+	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
+	        const float_64 radius = math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY + positionRelativeZ * positionRelativeZ);
+
+	        if(currentStep == 0 && radius >= 50 && radius <= 100)
+	        {
+		        Er = math::sin(precisionCast<float_X>(radius / 50 * float_X(2.0) * PI));
+
+		        if(positionRelativeX != 0 || positionRelativeY != 0)
+		        {
+			        Ex = Er *
+			             math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY) /
+			             radius
+			             * positionRelativeX /
+			             math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY);
+
+			        Ey = Er *
+			             math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY) /
+			             radius
+			             * positionRelativeY /
+			             math::sqrt(positionRelativeX * positionRelativeX + positionRelativeY * positionRelativeY);
+		        }
+		        Ez = Er * positionRelativeZ / radius;
+	        }
 
 	        //Plane wave propagation in x/y direction
 			/*
@@ -88,7 +120,7 @@ namespace picongpu
 			}
 			*/
 	        /* specify your E-Field in V/m and convert to PIConGPU units */
-            return float3_X(sin / m_unitField[0], sin / m_unitField[1], 0.0);
+            return float3_X(Ex / m_unitField[0], Ey / m_unitField[1], Ez / m_unitField[2]);
         }
     };
 
@@ -125,7 +157,7 @@ namespace picongpu
             }*/
 
             //Circular wave propagation version 2
-
+			/*
             const float_64 positionRelativeX = (cellIdx.x() - GRID_SIZE / 2);
             const float_64 positionRelativeY = (cellIdx.y() - GRID_SIZE / 2);
 	        const float_64 positionRelativeZ = (cellIdx.z() - GRID_SIZE / 2);
@@ -137,7 +169,7 @@ namespace picongpu
             {
                 sin = math::sin(precisionCast<float_X>(radius / 50 * float_X(2.0) * PI));
             }
-
+			*/
 	        //Plane wave propagation in x/y direction
 			/*
 	        float_64 sinX = 0.0;
@@ -154,7 +186,7 @@ namespace picongpu
 		        sinX = sinT * math::sin(precisionCast<float_X>(positionRelativeZ / float_X(100.0) * float_X(2.0) * PI ));
 	        }
 			*/
-            return float3_X(0.0, 0.0, sin / m_unitField[2]);
+            return float3_X(0.0, 0.0, 0.0);
         }
     };
 

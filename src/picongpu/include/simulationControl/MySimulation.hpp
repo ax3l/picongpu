@@ -500,7 +500,7 @@ public:
             EventTask eRecvCurrent = fieldJ->asyncCommunication(__getTransactionEvent());
             __setTransactionEvent(eRecvCurrent);
 
-#if 0
+#if 1
             const DataSpace<simDim> currentRecvLower( GetMargin<fieldSolver::CurrentInterpolation>::LowerMargin( ).toRT( ) );
             const DataSpace<simDim> currentRecvUpper( GetMargin<fieldSolver::CurrentInterpolation>::UpperMargin( ).toRT( ) );
 

@@ -60,7 +60,7 @@ namespace particles
 namespace manipulators
 {
 
-    CONST_VECTOR(float_X,3,DriftParamPositive_direction,1.0,0.0,0.0); //chgane here in which direction the particles are moving
+    CONST_VECTOR(float_X,3,DriftParamPositive_direction,0.0,0.0,1.0); //chgane here in which direction the particles are moving
     struct DriftParamPositive
     {
         /** Initial particle drift velocity for electrons and ions
@@ -73,7 +73,7 @@ namespace manipulators
     /* definition of SetDrift start*/
     typedef DriftImpl<DriftParamPositive,nvidia::functors::Assign> AssignXDriftPositive;
 
-    CONST_VECTOR(float_X,3,DriftParamNegative_direction,-1.0,0.0,0.0);
+    CONST_VECTOR(float_X,3,DriftParamNegative_direction,0.0,0.0,-1.0);
     struct DriftParamNegative
     {
         /** Initial particle drift velocity for electrons and ions

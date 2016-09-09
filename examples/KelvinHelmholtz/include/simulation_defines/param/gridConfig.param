@@ -31,8 +31,9 @@ namespace picongpu
         /** Duration of one timestep
          *  unit: seconds */
         //DS
-        BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.79e-16;
-        //BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.2657e-16; for Yee
+        BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.79e-16; //DS
+        //BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.2657e-16; // for Yee
+        //BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.033457e-16; // for 3DYee
         /** equals X
          *  unit: meter */
 #define fieldSolverDirSplitting 1

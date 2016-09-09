@@ -316,7 +316,7 @@ public:
         typedef PMacc::math::CT::Int<2,0,1> Orientation_Z;
         typedef PMacc::math::CT::Int<2,0,1> Space_Z;
         typedef PMacc::math::CT::Int<0,2,1> JDir_Z;
-        propagate<Space_Z,Orientation_Z,JDir_Z>(
+        propagate<1,Space_Z,Orientation_Z,JDir_Z>(
                   fieldE_coreBorder.origin(),
                   fieldB_coreBorder.origin(),
                   fieldJ_coreBorder.origin(),

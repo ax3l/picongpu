@@ -79,22 +79,22 @@ struct DirSplittingKernel
         const PMACC_AUTO(plus,Plus::toRT());
         float a_plus = (*cursorB(minus)).z() + (*cursorE(minus)).y()
 #if (SENTOKU==0)
-            - ( (*cursorJ).y() + ( *cursorJ(jYDir::toRT()) ).y() ) * constJE * (pass==1?float_X(0.5):float_X(1.0))
+            - ( (*cursorJ).y() + ( *cursorJ(jYDir::toRT()) ).y() ) * constJE //* (pass==1?float_X(0.5):float_X(1.0))
 #endif
         ;
         float a_minus = (*cursorB(plus)).z() - (*cursorE(plus)).y()
 #if (SENTOKU==0)
-            + ( (*cursorJ(plus)).y() + ( *cursorJ(plus + jYDir::toRT()) ).y() ) * constJE * (pass==1?float_X(0.5):float_X(1.0))
+            + ( (*cursorJ(plus)).y() + ( *cursorJ(plus + jYDir::toRT()) ).y() ) //* constJE * (pass==1?float_X(0.5):float_X(1.0))
 #endif
         ;
         float a_prime_plus = (*cursorB(minus)).y() - (*cursorE(minus)).z()
 #if (SENTOKU==0)
-        + ( (*cursorJ).z() + ( *cursorJ(jZDir::toRT())).z() ) * constJE * (pass==0?float_X(0.5):float_X(1.0))
+        + ( (*cursorJ).z() + ( *cursorJ(jZDir::toRT())).z() ) * constJE //* (pass==0?float_X(0.5):float_X(1.0))
 #endif
         ;
         float a_prime_minus = (*cursorB(plus)).y() + (*cursorE(plus)).z()
 #if (SENTOKU==0)
-        - ( (*cursorJ(plus)).z() + (*cursorJ(plus + jZDir::toRT()) ).z() ) * constJE * (pass==0?float_X(0.5):float_X(1.0))
+        - ( (*cursorJ(plus)).z() + (*cursorJ(plus + jZDir::toRT()) ).z() ) //* constJE * (pass==0?float_X(0.5):float_X(1.0))
 #endif
         ;
 

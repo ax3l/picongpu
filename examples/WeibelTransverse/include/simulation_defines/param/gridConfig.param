@@ -29,7 +29,8 @@ namespace picongpu
     {
         /** Duration of one timestep
          *  unit: seconds */
-        BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 3.0e-17;
+        BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 3.0e-17; //Yee
+        //BOOST_CONSTEXPR_OR_CONST float_64 DELTA_T_SI = 1.8e-8 / SPEED_OF_LIGHT_SI; //DS
         /** equals X
          *  unit: meter */
         BOOST_CONSTEXPR_OR_CONST float_64 CELL_WIDTH_SI = 1.8e-8;
