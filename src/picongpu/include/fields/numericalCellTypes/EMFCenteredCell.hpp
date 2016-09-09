@@ -92,9 +92,9 @@ namespace traits
 
         HDINLINE VectorVector2D3V operator()() const
         {
-            const float2_X posJ_x( 0.5, 0.0 );
-            const float2_X posJ_y( 0.0, 0.5 );
-            const float2_X posJ_z( 0.0, 0.0 );
+            const float2_X posJ_x( 0.0, 0.5 );
+            const float2_X posJ_y( 0.5, 0.0 );
+            const float2_X posJ_z( 0.5, 0.5 );
 
             return VectorVector2D3V( posJ_x, posJ_y, posJ_z );
         }
@@ -115,9 +115,9 @@ namespace traits
 
         HDINLINE VectorVector3D3V operator()() const
         {
-            const float3_X posJ_x( 0.5, 0.0, 0.0 );
-            const float3_X posJ_y( 0.0, 0.5, 0.0 );
-            const float3_X posJ_z( 0.0, 0.0, 0.5 );
+            const float3_X posJ_x( 0.0, 0.5, 0.5 );
+            const float3_X posJ_y( 0.5, 0.0, 0.5 );
+            const float3_X posJ_z( 0.5, 0.5, 0.0 );
 
             return VectorVector3D3V( posJ_x, posJ_y, posJ_z );
         }

@@ -49,6 +49,13 @@ struct Line
         m_pos1 -= rhs;
         return *this;
     }
+
+    DINLINE Line<type>& operator+=(const type & rhs)
+    {
+        m_pos0 += rhs;
+        m_pos1 += rhs;
+        return *this;
+    }
 };
 
 template<typename T_Type>

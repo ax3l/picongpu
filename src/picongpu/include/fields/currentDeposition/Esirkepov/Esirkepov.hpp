@@ -41,8 +41,8 @@ struct Esirkepov<T_ParticleShape, DIM3>
     typedef typename T_ParticleShape::ChargeAssignment ParticleAssign;
     BOOST_STATIC_CONSTEXPR int supp = ParticleAssign::support;
 
-    BOOST_STATIC_CONSTEXPR int currentLowerMargin = supp / 2 + 1 - (supp + 1) % 2;
-    BOOST_STATIC_CONSTEXPR int currentUpperMargin = (supp + 1) / 2 + 1;
+    BOOST_STATIC_CONSTEXPR int currentLowerMargin = supp / 2 + 1 - (supp + 1) % 2 + 1;
+    BOOST_STATIC_CONSTEXPR int currentUpperMargin = (supp + 1) / 2 + 1 + 1;
     typedef PMacc::math::CT::Int<currentLowerMargin, currentLowerMargin, currentLowerMargin> LowerMargin;
     typedef PMacc::math::CT::Int<currentUpperMargin, currentUpperMargin, currentUpperMargin> UpperMargin;
 
@@ -54,8 +54,8 @@ struct Esirkepov<T_ParticleShape, DIM3>
      * For the case were previous position is greater than current position we correct
      * begin and end on runtime and add +1 to begin and end.
      */
-    BOOST_STATIC_CONSTEXPR int begin = -currentLowerMargin;
-    BOOST_STATIC_CONSTEXPR int end = begin + supp + 1;
+    BOOST_STATIC_CONSTEXPR int begin = -currentLowerMargin + 1;
+    BOOST_STATIC_CONSTEXPR int end = begin + supp + 1 + 1;
 
     float_X charge;
 
@@ -127,7 +127,7 @@ struct Esirkepov<T_ParticleShape, DIM3>
      */
     template<typename CursorJ >
     DINLINE void cptCurrent1D(CursorJ cursorJ,
-                              const Line<float3_X>& line,
+                              Line<float3_X> line,
                               const float_X cellEdgeLength)
     {
         /* Check if particle position in previous step was greater or
@@ -139,6 +139,9 @@ struct Esirkepov<T_ParticleShape, DIM3>
         const int offset_i = line.m_pos0.x() > line.m_pos1.x() ? 1 : 0;
         const int offset_j = line.m_pos0.y() > line.m_pos1.y() ? 1 : 0;
         const int offset_k = line.m_pos0.z() > line.m_pos1.z() ? 1 : 0;
+
+        // move particle to the virtual coordiate system
+        line += float3_X(float3_X::create(0.5));
 
         /* pick every cell in the xy-plane that is overlapped by particle's
          * form factor and deposit the current for the cells above and beneath
@@ -167,7 +170,7 @@ struct Esirkepov<T_ParticleShape, DIM3>
                     accumulated_J += -this->charge * (float_X(1.0) / float_X(CELL_VOLUME * DELTA_T)) * W * cellEdgeLength;
                     /* the branch divergence here still over-compensates for the fewer collisions in the (expensive) atomic adds */
                     if (accumulated_J != float_X(0.0))
-                        atomicAddWrapper(&((*cursorJ(i, j, k)).z()), accumulated_J);
+                        atomicAddWrapper(&((*cursorJ(i-1, j-1, k)).z()), accumulated_J);
                 }
             }
         }
