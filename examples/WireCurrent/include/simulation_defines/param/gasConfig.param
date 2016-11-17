@@ -1,0 +1,89 @@
+/**
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
+ *                     Richard Pausch
+ *
+ * This file is part of PIConGPU.
+ *
+ * PIConGPU is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PIConGPU is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PIConGPU.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+#pragma once
+
+#include "particles/gasProfiles/profiles.def"
+
+namespace picongpu
+{
+    namespace SI
+    {
+        /** The maximum density in particles per m^3 in the gas distribution
+         *  unit: ELEMENTS/m^3
+         *
+         * He (2e- / Atom ) with 1.e15 He / m^3
+         *                      = 2.e15 e- / m^3 */
+        BOOST_CONSTEXPR_OR_CONST float_64 GAS_DENSITY_SI = 1.e27;
+
+    }
+
+    //##########################################################################
+    //############## special gas profiles ######################################
+    //##########################################################################
+
+namespace gasProfiles
+{
+
+struct FreeFormulaFunctor
+{
+
+    /**
+     * This formula uses SI quantities only
+     * The profile will be multiplied by GAS_DENSITY.
+     *
+     * @param position_SI total offset including all slides [in meter]
+     * @param cellSize_SI cell sizes [in meter]
+     *
+     * @return float_X density [normalized to 1.0]
+     */
+    HDINLINE float_X operator()(const floatD_64& position_SI, const floatD_64& cellSize_SI)
+    {
+        const float_X x_cell_id( uint64_t(position_SI.x() / cellSize_SI.x() ) );
+        const float_X y_cell_id( uint64_t(position_SI.y() / cellSize_SI.y() ) );
+
+        const float_X radius_cells( 50. );
+        const float_X mid_xy_cells( 128. );
+
+        const float_X x_rel = x_cell_id - mid_xy_cells;
+        const float_X y_rel = y_cell_id - mid_xy_cells;
+
+        const float_X r = math::sqrt( x_rel * x_rel + y_rel * y_rel );
+
+        float_64 s = 0.0;
+
+        if( r <= radius_cells )
+            s = 1.0;
+
+        /* all parts of the function MUST be > 0 */
+        // s *= float_64(s >= 0.0);
+
+        return s;
+    }
+};
+
+/* definition of gas free formula */
+typedef FreeFormulaImpl<FreeFormulaFunctor> FreeFormula;
+
+}//namespace gasProfiles
+
+}
