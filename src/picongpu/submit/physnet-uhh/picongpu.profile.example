@@ -1,0 +1,65 @@
+# Modules #####################################################################
+#
+
+if [ -f /etc/profile.modules ]
+then
+        . /etc/profile.modules
+        module purge
+#       export MODULES_NO_OUTPUT=1
+
+        # Core Dependencies
+        #module load gcc/4.9.3
+        #module load gcc/4.7.3
+        module load gcc/4.6.4
+        module load cmake/3.6.2
+        #module load boost/...
+        export BOOST_ROOT=$HOME/lib/boost
+        module load cuda/7.0.27
+        #module load openmpi/1.8.5-gcc-cuda
+        module load openmpi/1.8.6-gcc
+
+        export LD_LIBRARY_PATH=$BOOST_ROOT/lib:$LD_LIBRARY_PATH
+
+        # Plugins (optional)
+        export PNGWRITER_ROOT=$HOME/lib/pngwriter
+        export HDF5_ROOT=$HOME/lib/hdf5
+        export SPLASH_ROOT=$HOME/lib/splash
+
+        export LD_LIBRARY_PATH=$HDF5_ROOT/lib:$SPLASH_ROOT/lib:$PNGWRITER_ROOT/lib:$LD_LIBRARY_PATH
+        module load hdf5-parallel/1.8.14 libsplash/1.5.0
+
+
+        # Debug Tools
+        # ...
+
+#       unset MODULES_NO_OUTPUT
+fi
+
+# Environment #################################################################
+#
+alias getk20='qsub -I -q k20 -lwalltime=00:30:00 -lnodes=1:ppn=8'
+alias getlaser='qsub -I -q laser -lwalltime=00:30:00 -lnodes=1:ppn=16'
+
+export PICSRC=/home/`whoami`/src/picongpu
+
+# send me mails on job (b)egin, (e)nd, (a)bortion or (n)o mail
+export MY_MAILNOTIFY="n"
+export MY_MAIL="someone@example.com"
+export MY_NAME="$(whoami) <$MY_MAIL>"
+
+export PATH=$PATH:$PICSRC/src/splash2txt/build
+export PATH=$PATH:$PICSRC/src/tools/bin
+
+# Development #################################################################
+#
+#function make
+#{
+#  real_make=`which make`
+#  $real_make $* 2>&1 | $HOME/grcat/usr/bin/grcat conf.gcc
+#}
+
+# "tbg" default options #######################################################
+#   - PBS/Torque (qsub)
+#   - "k20" queue
+export TBG_SUBMIT="qsub"
+export TBG_TPLFILE="submit/hypnos-hzdr/k20_profile.tpl"
