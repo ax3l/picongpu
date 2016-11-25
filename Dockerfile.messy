@@ -1,0 +1,97 @@
+FROM       nvidia/cuda:7.0-devel
+#debian:stretch
+MAINTAINER Axel Huebl <a.huebl@hzdr.de>
+
+ENV        HOME /root
+ENV        DEBIAN_FRONTEND noninteractive
+
+# update system, add non-free and contrib
+#RUN        sed -i 's/ main/ main contrib non-free/g' /etc/apt/sources.list
+RUN        cat /etc/apt/sources.list
+RUN        apt-get update
+RUN        apt-get install -qq -m software-properties-common
+RUN        add-apt-repository ppa:george-edison55/cmake-3.x
+RUN        apt-get update
+#RUN        apt-get install -qq -m apt-utils
+RUN        apt-get upgrade -qq --fix-missing
+
+# downgrade GCC to 4.9 (CUDA requirement)
+# --no-install-recommends
+RUN        apt-get install -qq -m \
+                           cmake make
+#                           gcc-5-base gcc-4.9 g++-4.9 cmake make
+#RUN        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.9 20
+#RUN        update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 20
+#RUN        update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 30
+#RUN        update-alternatives --set cc /usr/bin/gcc
+#RUN        update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 30
+#RUN        update-alternatives --set c++ /usr/bin/g++
+RUN        gcc --version && g++ --version
+RUN        cc --version && c++ --version
+
+# install PIConGPU requirements
+RUN        apt-get install -qq -m git zlib1g-dev
+# --no-install-recommends
+RUN        apt-get install -qq -m \
+                           libopenmpi-dev zlib1g-dev
+#                           libopenmpi-dev nvidia-cuda-toolkit zlib1g-dev
+RUN        apt-get install -qq -m \
+                           pkg-config wget autoconf \
+                           libpng-dev libhdf5-openmpi-dev
+#                           libadios-dev libadios-bin
+#                           libboost-program-options1.58-dev libboost-regex1.58-dev \
+#                           libboost-filesystem1.58-dev libboost-system1.58-dev \
+#                           libboost-thread1.58-dev libboost-math1.58-dev
+
+# boost
+RUN        wget -nv http://downloads.sourceforge.net/project/boost/boost/1.57.0/boost_1_57_0.tar.gz
+RUN        tar -xzf boost_1_57_0.tar.gz && rm boost_1_57_0.tar.gz
+RUN        cd boost_1_57_0 \
+           && ./bootstrap.sh --with-libraries=filesystem,program_options,regex,system,thread,math --prefix=/usr \
+           && ./b2 -j4 && ./b2 install
+RUN        rm -rf boost_1_57_0
+
+RUN        mkdir build
+
+# pngwriter
+RUN        git clone --depth 50 --branch master \
+           https://github.com/pngwriter/pngwriter.git
+RUN        cd build \
+           && cmake -DCMAKE_INSTALL_PREFIX=/usr ../pngwriter \
+           && make install
+RUN        rm -rf build/*
+
+# libSplash
+RUN        git clone --depth 50 --branch master \
+           https://github.com/ComputationalRadiationPhysics/libSplash.git
+RUN        cd build \
+           && cmake -DCMAKE_INSTALL_PREFIX=/usr ../libSplash \
+           && make install
+RUN        rm -rf build/*
+
+# ADIOS
+RUN        wget -nv http://users.nccs.gov/~pnorbert/adios-1.10.0.tar.gz
+RUN        tar -xzf adios-1.10.0.tar.gz && rm adios-1.10.0.tar.gz
+RUN        cd adios-1.10.0 \
+           && CFLAGS="-fPIC" ./configure --enable-static --enable-shared \
+              --prefix=/usr --with-mpi --with-zlib=/usr --disable-fortran \
+           && make && make install
+RUN        rm -rf adios-1.10.0
+
+# get PIConGPU sources
+RUN        git clone --depth 50 --branch release-0.2.0 \
+               https://github.com/ComputationalRadiationPhysics/picongpu.git
+
+# build PIConGPU examples
+#ENV PIC_COMPILE_SUITE_CMAKE "-DCMAKE_CXX_STANDARD=11 -DBOOST_RESULT_OF_USE_TR1 -DCUDA_NVCC_FLAGS='-std=c++11'"
+#RUN        ./picongpu/compile -j 2 -q -l ./picongpu/examples ./build
+#RUN        ./picongpu/compile ./picongpu/examples/ThermalTest ./build
+#RUN        sed -i s/-DBOOST_RESULT_OF_USE_TR1_WITH_DECLTYPE_FALLBACK/-DBOOST_RESULT_OF_USE_TR1/g ./picongpu/src/picongpu/CMakeLists.txt
+
+RUN        apt-get install locate
+RUN        updatedb
+RUN        locate libboost_program_options
+RUN        ./picongpu/createParameterSet ./picongpu/examples/ThermalTest ./case1
+RUN        cmake --version
+RUN        cd build && ../picongpu/configure \
+           ../case1 && make VERBOSE=true install
