@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2015 Axel Huebl, Felix Schmitt, Rene Widera, Alexander Debus
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Rene Widera, Alexander Debus,
+ *                     Benjamin Worpitz, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,22 +24,18 @@
 
 #pragma once
 
-#include <cuda_runtime_api.h>
-#include <iostream>
-#include <iomanip>
-
-#include "types.h"
+#include "pmacc_types.hpp"
 
 #include "mappings/simulation/GridController.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "TimeInterval.hpp"
-
 #include "dataManagement/DataConnector.hpp"
-
-
-#include "eventSystem/EventSystem.hpp"
+#include "Environment.hpp"
 #include "pluginSystem/IPlugin.hpp"
-
+#include <boost/filesystem.hpp>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 
 namespace PMacc
 {
@@ -68,11 +65,11 @@ public:
     restartStep(-1),
     restartDirectory("checkpoints"),
     restartRequested(false),
-    CHECKPOINT_MASTER_FILE("checkpoints.txt")
+    CHECKPOINT_MASTER_FILE("checkpoints.txt"),
+    author("")
     {
         tSimulation.toggleStart();
         tInit.toggleStart();
-
     }
 
     virtual ~SimulationHelper()
@@ -84,7 +81,6 @@ public:
                 tSimulation.printInterval() << " = " <<
                 (uint64_t) (tSimulation.getInterval() / 1000.) << " sec" << std::endl;
         }
-        //CUDA_CHECK(cudaGetLastError());
     }
 
     /**
@@ -95,12 +91,27 @@ public:
     virtual void runOneStep(uint32_t currentStep) = 0;
 
     /**
-     * Initializes simulation state.
+     * Initialize simulation
+     *
+     * Does hardware selections/reservations, memory allocations and
+     * initializes data structures as empty.
+     */
+    virtual void init() = 0;
+
+    /**
+     * Fills simulation with initial data after init()
      *
      * @return returns the first step of the simulation
+     *         (can be >0 for, e.g., restarts from checkpoints)
      */
-    virtual uint32_t init() = 0;
+    virtual uint32_t fillSimulation() = 0;
 
+    /**
+     * Reset the simulation to a state such as it was after
+     * init() but for a specific time step.
+     * Can be used to call fillSimulation() again.
+     */
+    virtual void resetAll(uint32_t currentStep) = 0;
 
     /**
      * Check if moving window work must do
@@ -128,6 +139,19 @@ public:
         /* trigger checkpoint notification */
         if (checkpointPeriod && (currentStep % checkpointPeriod == 0))
         {
+            /* first synchronize: if something failed, we can spare the time
+             * for the checkpoint writing */
+            CUDA_CHECK(cudaDeviceSynchronize());
+            CUDA_CHECK(cudaGetLastError());
+
+            /* avoid deadlock between not finished PMacc tasks and MPI_Barrier */
+            __getTransactionEvent().waitForFinished();
+
+            GridController<DIM> &gc = Environment<DIM>::get().GridController();
+            /* can be spared for better scalings, but allows to spare the
+             * time for checkpointing if some ranks died */
+            MPI_CHECK(MPI_Barrier(gc.getCommunicator().getMPIComm()));
+
             /* create directory containing checkpoints  */
             if (numCheckpoints == 0)
             {
@@ -137,7 +161,17 @@ public:
             Environment<DIM>::get().PluginConnector().checkpointPlugins(currentStep,
                                                                         checkpointDirectory);
 
-            GridController<DIM> &gc = Environment<DIM>::get().GridController();
+            /* important synchronize: only if no errors occured until this
+             * point guarantees that a checkpoint is usable */
+            CUDA_CHECK(cudaDeviceSynchronize());
+            CUDA_CHECK(cudaGetLastError());
+
+            /* avoid deadlock between not finished PMacc tasks and MPI_Barrier */
+            __getTransactionEvent().waitForFinished();
+
+            /* \todo in an ideal world with MPI-3, this would be an
+             * MPI_Ibarrier call and this function would return a MPI_Request
+             * that could be checked */
             MPI_CHECK(MPI_Barrier(gc.getCommunicator().getMPIComm()));
 
             if (gc.getGlobalRank() == 0)
@@ -160,7 +194,11 @@ public:
         {
             tSimCalculation.toggleEnd();
             std::cout << std::setw(3) <<
-                (uint16_t) ((double) currentStep / (double) runSteps * 100.) <<
+                uint16_t(
+                    double( currentStep ) /
+                    double( Environment<>::get().SimulationDescription().getRunSteps() ) *
+                    100.
+                ) <<
                 " % = " << std::setw(8) << currentStep <<
                 " | time elapsed:" <<
                 std::setw(25) << tSimCalculation.printInterval() << " | avg time per step: " <<
@@ -177,70 +215,90 @@ public:
      */
     void startSimulation()
     {
-        uint32_t currentStep = init();
-        tInit.toggleEnd();
-        if (output)
+        init();
+
+        for (uint32_t nthSoftRestart = 0; nthSoftRestart <= softRestarts; ++nthSoftRestart)
         {
-            std::cout << "initialization time: " << tInit.printInterval() <<
-                " = " <<
-                (int) (tInit.getInterval() / 1000.) << " sec" << std::endl;
-        }
+            resetAll(0);
+            uint32_t currentStep = fillSimulation();
+            Environment<>::get().SimulationDescription().setCurrentStep( currentStep );
 
-        TimeIntervall tSimCalculation;
-        TimeIntervall tRound;
-        double roundAvg = 0.0;
+            tInit.toggleEnd();
+            if (output)
+            {
+                std::cout << "initialization time: " << tInit.printInterval() <<
+                    " = " <<
+                    (int) (tInit.getInterval() / 1000.) << " sec" << std::endl;
+            }
 
-	/* dump initial step if simulation starts without restart */
-	if (currentStep == 0)
-	{
-	    /* Since in the main loop movingWindow is called always before the dump, we also call it here for consistency.
-	    This becomes only important, if movingWindowCheck does more than merely checking for a slide.
-	    TO DO in a new feature: Turn this into a general hook for pre-checks (window slides are just one possible action). */
-	    movingWindowCheck(currentStep);
-	    dumpOneStep(currentStep);
-	}
-	else
-	{
-	    currentStep--; //We dump before calculation, thus we must go one step back when doing a restart.
-	    movingWindowCheck(currentStep); //If we restart at any step check if we must slide.
-	}
+            TimeIntervall tSimCalculation;
+            TimeIntervall tRound;
+            double roundAvg = 0.0;
 
-        /* dump 0% output */
-        dumpTimes(tSimCalculation, tRound, roundAvg, currentStep);
-        while (currentStep < runSteps)
-        {
-            tRound.toggleStart();
-            runOneStep(currentStep);
-            tRound.toggleEnd();
-            roundAvg += tRound.getInterval();
+            /* dump initial step if simulation starts without restart */
+            if (currentStep == 0)
+            {
+                /* Since in the main loop movingWindow is called always before the dump, we also call it here for consistency.
+                This becomes only important, if movingWindowCheck does more than merely checking for a slide.
+                TO DO in a new feature: Turn this into a general hook for pre-checks (window slides are just one possible action). */
+                movingWindowCheck(currentStep);
+                dumpOneStep(currentStep);
+            }
+            else
+            {
+                currentStep--; //We dump before calculation, thus we must go one step back when doing a restart.
+                Environment<>::get().SimulationDescription().setCurrentStep( currentStep );
+                movingWindowCheck(currentStep); //If we restart at any step check if we must slide.
+            }
 
-            currentStep++;
-            /*output after a round*/
+            /* dump 0% output */
             dumpTimes(tSimCalculation, tRound, roundAvg, currentStep);
 
-            movingWindowCheck(currentStep);
-            /*dump after simulated step*/
-            dumpOneStep(currentStep);
-        }
 
-        //simulatation end
-        Environment<>::get().Manager().waitForAllTasks();
+            /** \todo currently we assume this is the only point in the simulation
+             *        that is allowed to manipulate `currentStep`. Else, one needs to
+             *        add and act on changed values via
+             *        `SimulationDescription().getCurrentStep()` in this loop
+             */
+            while (currentStep < Environment<>::get().SimulationDescription().getRunSteps())
+            {
+                tRound.toggleStart();
+                runOneStep(currentStep);
+                tRound.toggleEnd();
+                roundAvg += tRound.getInterval();
 
-        tSimCalculation.toggleEnd();
+                currentStep++;
+                Environment<>::get().SimulationDescription().setCurrentStep( currentStep );
+                /*output after a round*/
+                dumpTimes(tSimCalculation, tRound, roundAvg, currentStep);
 
-        if (output)
-        {
-            std::cout << "calculation  simulation time: " <<
-                tSimCalculation.printInterval() << " = " <<
-                (int) (tSimCalculation.getInterval() / 1000.) << " sec" << std::endl;
-        }
+                movingWindowCheck(currentStep);
+                /*dump after simulated step*/
+                dumpOneStep(currentStep);
+            }
 
+            // simulatation end
+            Environment<>::get().Manager().waitForAllTasks();
+
+            tSimCalculation.toggleEnd();
+
+            if (output)
+            {
+                std::cout << "calculation  simulation time: " <<
+                   tSimCalculation.printInterval() << " = " <<
+                   (int) (tSimCalculation.getInterval() / 1000.) << " sec" << std::endl;
+            }
+
+        } // softRestarts loop
     }
 
     virtual void pluginRegisterHelp(po::options_description& desc)
     {
         desc.add_options()
             ("steps,s", po::value<uint32_t > (&runSteps), "Simulation steps")
+            ("softRestarts", po::value<uint32_t > (&softRestarts)->default_value(0),
+             "Number of times to restart the simulation after simulation has finished (for presentations). "
+             "Note: does not yet work with all plugins, see issue #1305")
             ("percent,p", po::value<uint16_t > (&progress)->default_value(5),
              "Print time statistics after p percent to stdout")
             ("restart", po::value<bool>(&restartRequested)->zero_tokens(), "Restart simulation")
@@ -249,7 +307,9 @@ public:
             ("restart-step", po::value<int32_t>(&restartStep), "Checkpoint step to restart from")
             ("checkpoints", po::value<uint32_t>(&checkpointPeriod), "Period for checkpoint creation")
             ("checkpoint-directory", po::value<std::string>(&checkpointDirectory)->default_value(checkpointDirectory),
-             "Directory for checkpoints");
+             "Directory for checkpoints")
+            ("author", po::value<std::string>(&author)->default_value(std::string("")),
+             "The author that runs the simulation and is responsible for created output files");
     }
 
     std::string pluginGetName() const
@@ -259,6 +319,9 @@ public:
 
     void pluginLoad()
     {
+        Environment<>::get().SimulationDescription().setRunSteps(runSteps);
+        Environment<>::get().SimulationDescription().setAuthor(author);
+
         calcProgress();
 
         output = (getGridController().getGlobalRank() == 0);
@@ -279,6 +342,10 @@ public:
 protected:
     /* number of simulation steps to compute */
     uint32_t runSteps;
+
+    /** Presentations: loop the whole simulation `softRestarts` times from
+     *                 initial step to runSteps */
+    uint32_t softRestarts;
 
     /* period for checkpoint creation */
     uint32_t checkpointPeriod;
@@ -301,6 +368,9 @@ protected:
     /* filename for checkpoint master file with all checkpoint timesteps */
     const std::string CHECKPOINT_MASTER_FILE;
 
+    /* author that runs the simulation */
+    std::string author;
+
 private:
 
     /**
@@ -313,7 +383,10 @@ private:
         if (progress == 0 || progress > 100)
             progress = 100;
 
-        showProgressAnyStep = (uint32_t) ((double) runSteps / 100. * (double) progress);
+        showProgressAnyStep = uint32_t(
+            double( Environment<>::get().SimulationDescription().getRunSteps() ) /
+            100. * double( progress )
+        );
         if (showProgressAnyStep == 0)
             showProgressAnyStep = 1;
     }
@@ -338,6 +411,45 @@ private:
         file.close();
     }
 
+protected:
+    /**
+     * Reads the checkpoint master file if any and returns all found checkpoint steps
+     *
+     * @return vector of found checkpoints steps in order they appear in the file
+     */
+    std::vector<uint32_t> readCheckpointMasterFile()
+    {
+        std::vector<uint32_t> checkpoints;
+
+        const std::string checkpointMasterFile =
+            this->restartDirectory + std::string("/") + this->CHECKPOINT_MASTER_FILE;
+
+        if (!boost::filesystem::exists(checkpointMasterFile))
+            return checkpoints;
+
+        std::ifstream file(checkpointMasterFile.c_str());
+
+        /* read each line */
+        std::string line;
+        while (std::getline(file, line))
+        {
+            if (line.empty())
+                continue;
+            try
+            {
+                checkpoints.push_back(boost::lexical_cast<uint32_t>(line));
+            }
+            catch (boost::bad_lexical_cast const&)
+            {
+                std::cerr << "Warning: checkpoint master file contains invalid data ("
+                    << line << ")" << std::endl;
+            }
+        }
+
+        return checkpoints;
+    }
+private:
+
     bool output;
 
     uint16_t progress;
@@ -347,5 +459,5 @@ private:
     TimeIntervall tInit;
 
 };
-} // namespace PMacc
 
+} // namespace PMacc

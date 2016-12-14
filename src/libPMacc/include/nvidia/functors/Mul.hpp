@@ -1,10 +1,10 @@
 /**
- * Copyright 2014 Axel Huebl
+ * Copyright 2014-2016 Axel Huebl
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,36 +22,36 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "mpi/GetMPI_Op.hpp"
 
 namespace PMacc
 {
-    namespace nvidia
+namespace nvidia
+{
+namespace functors
+{
+    struct Mul
     {
-        namespace functors
+        template<typename Dst, typename Src>
+        HDINLINE void
+        operator()( Dst& dst, const Src& src ) const
         {
-            struct Mul
-            {
-                template<typename Dst, typename Src>
-                HDINLINE void
-                operator()( Dst& dst, const Src& src ) const
-                {
-                    dst *= src;
-                }
-            };
+            dst *= src;
         }
-    }
-}
+    };
+} // namespace functors
+} // namespace nvidia
+} // namespace PMacc
 
 namespace PMacc
 {
-    namespace mpi
+namespace mpi
+{
+    template<>
+    MPI_Op getMPI_Op<PMacc::nvidia::functors::Mul>()
     {
-        template<>
-        MPI_Op getMPI_Op<PMacc::nvidia::functors::Mul>()
-        {
-            return MPI_PROD;
-        }
+        return MPI_PROD;
     }
-}
+} // namespace mpi
+} // namespace PMacc

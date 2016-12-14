@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,8 +22,8 @@
 
 #pragma once
 
-
-#include "types.h"
+#include "pmacc_types.hpp"
+#include "ppFunctions.hpp"
 
 /* No namespace is needed because we only have defines*/
 
@@ -33,7 +33,16 @@
 #define PMACC_PLACEHOLDER(id) using namespace PMACC_JOIN(host_placeholder,id)
 #endif
 
-/*define special makros for creating classes which are ony used as identifer*/
+#ifdef __CUDACC__
+    #define PMACC_identifier_CUDA(name,id)                                         \
+        namespace PMACC_JOIN(device_placeholder,id){                               \
+            __constant__ PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_); \
+        }
+#else
+    #define PMACC_identifier_CUDA(name,id)
+#endif
+
+/*define special macros for creating classes which are only used as identifier*/
 #define PMACC_identifier(name,id,...)                                          \
     namespace PMACC_JOIN(placeholder_definition,id) {                          \
         struct name{                                                           \
@@ -44,14 +53,12 @@
     namespace PMACC_JOIN(host_placeholder,id){                                 \
         PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_);        \
     }                                                                          \
-    namespace PMACC_JOIN(device_placeholder,id){                               \
-        __constant__ PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_); \
-    }                                                                          \
+    PMACC_identifier_CUDA(name,id);                                            \
     PMACC_PLACEHOLDER(id);
 
 
 /** create an identifier (identifier with arbitrary code as second parameter
- * !! second parameter is optinal and can be any C++ code one can add inside a class
+ * !! second parameter is optional and can be any C++ code one can add inside a class
  *
  * example: identifier(varname); //create type varname
  * example: identifier(varname,typedef int type;); //create type varname,

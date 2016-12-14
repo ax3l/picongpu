@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 #pragma once
 
 #include <iostream>
-#include "types.h"
+#include "pmacc_types.hpp"
 
 template<typename V, typename T>
 struct cuda_vec : public V
@@ -81,7 +81,7 @@ struct cuda_vec : public V
         return (&(this->x()))[dim];
     }
 
-    HDINLINE T &operator[](uint32_t dim) const
+    HDINLINE const T &operator[](uint32_t dim) const
     {
         return (&(this->x()))[dim];
     }
@@ -115,7 +115,7 @@ struct cuda_vec : public V
         return cuda_vec(scalar * this->x(), scalar * this->y(), scalar * this->z());
     }
 
-    // devision (scalar)
+    // division (scalar)
 
     HDINLINE cuda_vec<V, T> operator/(const T scalar) const
     {
@@ -154,7 +154,7 @@ struct cuda_vec : public V
         this->z() += other.z();
     }
 
-    // asign multiply
+    // assign multiply
 
     HDINLINE void operator*=(const T scalar)
     {

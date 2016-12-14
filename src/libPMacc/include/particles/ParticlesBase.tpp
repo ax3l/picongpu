@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,6 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
 #include "Environment.hpp"
 #include "eventSystem/EventSystem.hpp"
@@ -38,11 +39,31 @@ namespace PMacc
     {
 
         ExchangeMapping<GUARD, MappingDesc> mapper(this->cellDescription, exchangeType);
-        dim3 grid(mapper.getGridDim());
+        auto grid = mapper.getGridDim();
 
-        __cudaKernel(kernelDeleteParticles)
-                (grid, TileSize)
+        PMACC_KERNEL(KernelDeleteParticles{})
+                (grid, (int)TileSize)
                 (particlesBuffer->getDeviceParticleBox(), mapper);
+    }
+
+    template<typename T_ParticleDescription, class MappingDesc>
+    template<uint32_t T_area>
+    void ParticlesBase<T_ParticleDescription, MappingDesc>::deleteParticlesInArea()
+    {
+
+        AreaMapping<T_area, MappingDesc> mapper(this->cellDescription);
+        auto grid = mapper.getGridDim();
+
+        PMACC_KERNEL(KernelDeleteParticles{})
+                (grid, (int)TileSize)
+                (particlesBuffer->getDeviceParticleBox(), mapper);
+    }
+
+    template<typename T_ParticleDescription, class MappingDesc>
+    void ParticlesBase<T_ParticleDescription, MappingDesc>::reset(uint32_t )
+    {
+        deleteParticlesInArea<CORE+BORDER+GUARD>();
+        particlesBuffer->reset( );
     }
 
     template<typename T_ParticleDescription, class MappingDesc>
@@ -53,10 +74,10 @@ namespace PMacc
             ExchangeMapping<GUARD, MappingDesc> mapper(this->cellDescription, exchangeType);
 
             particlesBuffer->getSendExchangeStack(exchangeType).setCurrentSize(0);
-            dim3 grid(mapper.getGridDim());
+            auto grid = mapper.getGridDim();
 
-            __cudaKernel(kernelBashParticles)
-                    (grid, TileSize)
+            PMACC_KERNEL(KernelBashParticles{})
+                    (grid, (int)TileSize)
                     (particlesBuffer->getDeviceParticleBox(),
                     particlesBuffer->getSendExchangeStack(exchangeType).getDeviceExchangePushDataBox(), mapper);
         }
@@ -68,34 +89,19 @@ namespace PMacc
         if (particlesBuffer->hasReceiveExchange(exchangeType))
         {
 
-            dim3 grid(particlesBuffer->getReceiveExchangeStack(exchangeType).getHostCurrentSize());
-            if (grid.x != 0)
+            size_t grid(particlesBuffer->getReceiveExchangeStack(exchangeType).getHostCurrentSize());
+            if (grid != 0)
             {
-              //  std::cout<<"insert = "<<grid.x()<<std::endl;
                 ExchangeMapping<GUARD, MappingDesc> mapper(this->cellDescription, exchangeType);
-                __cudaKernel(kernelInsertParticles)
-                        (grid, TileSize)
+                PMACC_KERNEL(KernelInsertParticles{})
+                        (grid, (int)TileSize)
                         (particlesBuffer->getDeviceParticleBox(),
                         particlesBuffer->getReceiveExchangeStack(exchangeType).getDeviceExchangePopDataBox(),
                         mapper);
-                }
+            }
         }
-    }
-
-    template<typename T_ParticleDescription, class MappingDesc>
-    EventTask ParticlesBase<T_ParticleDescription, MappingDesc>::asyncCommunication(EventTask event)
-    {
-        EventTask ret;
-        __startTransaction(event);
-        Environment<>::get().ParticleFactory().createTaskParticlesReceive(*this);
-        ret = __endTransaction();
-
-        __startTransaction(event);
-        Environment<>::get().ParticleFactory().createTaskParticlesSend(*this);
-        ret += __endTransaction();
-        return ret;
     }
 
 } //namespace PMacc
 
-
+#include "particles/AsyncCommunicationImpl.hpp"

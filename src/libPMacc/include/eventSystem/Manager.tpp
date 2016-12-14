@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,14 +20,18 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "eventSystem/streams/StreamController.hpp"
+#include "eventSystem/EventSystem.hpp"
+#include "eventSystem/Manager.hpp"
+#include "assert.hpp"
+
+#include <cstdlib>
+#include <cstdio>
 #include <set>
 #include <iostream>
 
-#include "eventSystem/EventSystem.hpp"
-#include "eventSystem/streams/StreamController.hpp"
-#include "eventSystem/Manager.hpp"
-#include <stdlib.h>
-#include <stdio.h>
 //#define DEBUG_EVENTS
 
 namespace PMacc
@@ -38,8 +42,6 @@ inline Manager::~Manager( )
     CUDA_CHECK( cudaGetLastError( ) );
     waitForAllTasks( );
     CUDA_CHECK( cudaGetLastError( ) );
-    delete eventPool;
-    CUDA_CHECK( cudaGetLastError( ) );
 }
 
 inline bool Manager::execute( id_t taskToWait )
@@ -47,14 +49,14 @@ inline bool Manager::execute( id_t taskToWait )
 #ifdef DEBUG_EVENTS
     static int old_max = 0;
     static int deep = -1;
-        static int counter = 0;
+    static int counter = 0;
     ++counter;
 
     deep++;
     if ( deep > old_max )
     {
         old_max = deep;
-     }
+    }
 #endif
 
     static TaskMap::iterator iter = tasks.begin( );
@@ -62,12 +64,12 @@ inline bool Manager::execute( id_t taskToWait )
     if ( iter == tasks.end( ) )
         iter = tasks.begin( );
 
-    // this is the slow but very save variant to delete taks in a map
+    // this is the slow but very save variant to delete tasks in a map
     while ( iter != tasks.end( ) )
     {
         id_t id = iter->first;
         ITask* taskPtr = iter->second;
-        assert( taskPtr != NULL );
+        PMACC_ASSERT( taskPtr != NULL );
         ++iter;
 #ifdef DEBUG_EVENTS
         if ( counter == 500000 )
@@ -110,6 +112,8 @@ inline void Manager::event( id_t eventId, EventType, IEventData* )
 
 inline ITask* Manager::getITaskIfNotFinished( id_t taskId ) const
 {
+    if( taskId == 0 )
+        return NULL;
     ITask* passiveTask = getPassiveITaskIfNotFinished( taskId );
     if ( passiveTask != NULL )
         return passiveTask;
@@ -135,6 +139,8 @@ inline ITask* Manager::getActiveITaskIfNotFinished( id_t taskId ) const
 
 inline void Manager::waitForFinished( id_t taskId )
 {
+    if( taskId == 0 )
+        return;
     //check if task is passive and wait on it
     ITask* task = getPassiveITaskIfNotFinished( taskId );
     if ( task != NULL )
@@ -167,18 +173,18 @@ inline void Manager::waitForAllTasks( )
     {
         this->execute( );
     }
-    assert( tasks.size( ) == 0 );
+    PMACC_ASSERT( tasks.size( ) == 0 );
 }
 
 inline void Manager::addTask( ITask *task )
 {
-    assert( task != NULL );
+    PMACC_ASSERT( task != NULL );
     tasks[task->getId( )] = task;
 }
 
 inline void Manager::addPassiveTask( ITask *task )
 {
-    assert( task != NULL );
+    PMACC_ASSERT( task != NULL );
 
     task->addObserver( this );
     passiveTasks[task->getId( )] = task;
@@ -186,24 +192,14 @@ inline void Manager::addPassiveTask( ITask *task )
 
 inline Manager::Manager( )
 {
-    /**
-     * The \see Environment ensures that the \see StreamController is
-     * already created before calling this
-     */
-    eventPool = new EventPool( );
-    eventPool->addEvents( 300 );
 }
 
 inline Manager::Manager( const Manager& )
 {
 }
 
-inline EventPool& Manager::getEventPool( )
-{
-    return *eventPool;
-}
 
-inline int Manager::getCount( )
+inline std::size_t Manager::getCount( )
 {
     for ( TaskMap::iterator iter = tasks.begin( ); iter != tasks.end( ); ++iter )
     {

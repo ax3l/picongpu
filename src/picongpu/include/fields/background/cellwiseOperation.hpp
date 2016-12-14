@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Axel Huebl
+ * Copyright 2014-2016 Axel Huebl
  *
  * This file is part of PIConGPU.
  *
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "basicOperations.hpp"
 
@@ -36,34 +36,37 @@ namespace cellwiseOperation
 {
     using namespace PMacc;
 
-    /** Kernel that calls T_OpFunctor and T_ValFunctor on each cell of a field
-     *
-     *  Pseudo code: opFunctor( cell, valFunctor( globalCellIdx, currentStep ) );
-     *
-     * \tparam T_OpFunctor like assign, add, subtract, ...
-     * \tparam T_ValFunctor like "f(x,t)", "0.0", "readFromOtherField", ...
-     * \tparam FieldBox field type
-     * \tparam Mapping auto attached argument from __picKernelArea call
-     */
-    template<
-        class T_OpFunctor,
-        class T_ValFunctor,
-        class FieldBox,
-        class Mapping>
-    __global__ void
-    kernelCellwiseOperation( FieldBox field, T_OpFunctor opFunctor, T_ValFunctor valFunctor, const DataSpace<simDim> totalCellOffset,
-        const uint32_t currentStep, Mapping mapper )
+    struct KernelCellwiseOperation
     {
-        const DataSpace<simDim> block( mapper.getSuperCellIndex( DataSpace<simDim>( blockIdx ) ) );
-        const DataSpace<simDim> blockCell = block * MappingDesc::SuperCellSize::toRT();
+        /** Kernel that calls T_OpFunctor and T_ValFunctor on each cell of a field
+         *
+         *  Pseudo code: opFunctor( cell, valFunctor( totalCellIdx, currentStep ) );
+         *
+         * \tparam T_OpFunctor like assign, add, subtract, ...
+         * \tparam T_ValFunctor like "f(x,t)", "0.0", "readFromOtherField", ...
+         * \tparam FieldBox field type
+         * \tparam Mapping mapper which defines the working region
+         */
+        template<
+            class T_OpFunctor,
+            class T_ValFunctor,
+            class FieldBox,
+            class Mapping>
+        DINLINE void
+        operator()( FieldBox field, T_OpFunctor opFunctor, T_ValFunctor valFunctor, const DataSpace<simDim> totalCellOffset,
+            const uint32_t currentStep, Mapping mapper ) const
+        {
+            const DataSpace<simDim> block( mapper.getSuperCellIndex( DataSpace<simDim>( blockIdx ) ) );
+            const DataSpace<simDim> blockCell = block * MappingDesc::SuperCellSize::toRT();
 
-        const DataSpace<simDim> threadIndex( threadIdx );
+            const DataSpace<simDim> threadIndex( threadIdx );
 
-        opFunctor( field( blockCell + threadIndex ),
-                   valFunctor( blockCell + threadIndex + totalCellOffset,
-                               currentStep )
-                 );
-    }
+            opFunctor( field( blockCell + threadIndex ),
+                       valFunctor( blockCell + threadIndex + totalCellOffset,
+                                   currentStep )
+                     );
+        }
+    };
 
     /** Call a functor on each cell of a field
      *
@@ -75,10 +78,10 @@ namespace cellwiseOperation
     private:
         typedef MappingDesc::SuperCellSize SuperCellSize;
 
-        MappingDesc cellDescription;
+        MappingDesc m_cellDescription;
 
     public:
-        CellwiseOperation(MappingDesc cellDescription) : cellDescription(cellDescription)
+        CellwiseOperation(MappingDesc cellDescription) : m_cellDescription(cellDescription)
         {
         }
 
@@ -105,15 +108,16 @@ namespace cellwiseOperation
             totalCellOffset.y() += numSlides * subGrid.getLocalDomain().size.y();
             /* the first block will start with less offset if started in the GUARD */
             if( T_Area & GUARD)
-                totalCellOffset -= cellDescription.getSuperCellSize() * cellDescription.getGuardingSuperCells();
+                totalCellOffset -= m_cellDescription.getSuperCellSize() * m_cellDescription.getGuardingSuperCells();
             /* if we run _only_ in the CORE we have to add the BORDER's offset */
             else if( T_Area == CORE )
-                totalCellOffset += cellDescription.getSuperCellSize() * cellDescription.getBorderSuperCells();
+                totalCellOffset += m_cellDescription.getSuperCellSize() * m_cellDescription.getBorderSuperCells();
 
             /* start kernel */
-            __picKernelArea((kernelCellwiseOperation<T_OpFunctor>), cellDescription, T_Area)
-                    (SuperCellSize::toRT().toDim3())
-                    (field->getDeviceDataBox(), opFunctor, valFunctor, totalCellOffset, currentStep);
+            AreaMapping<T_Area, MappingDesc> mapper(m_cellDescription);
+            PMACC_KERNEL(KernelCellwiseOperation{})
+                    (mapper.getGridDim(), SuperCellSize::toRT())
+                    (field->getDeviceDataBox(), opFunctor, valFunctor, totalCellOffset, currentStep, mapper);
         }
     };
 

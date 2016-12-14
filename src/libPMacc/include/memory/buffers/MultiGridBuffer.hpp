@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,22 +20,21 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include <algorithm>
-
 #include "dimensions/DataSpace.hpp"
-#include "eventSystem/EventSystem.hpp"
 #include "dimensions/GridLayout.hpp"
-#include "memory/dataTypes/Mask.hpp"
-
+#include "eventSystem/EventSystem.hpp"
 #include "mappings/simulation/EnvironmentController.hpp"
+#include "memory/dataTypes/Mask.hpp"
 #include "memory/buffers/ExchangeIntern.hpp"
 #include "memory/buffers/HostBufferIntern.hpp"
 #include "memory/buffers/DeviceBufferIntern.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "memory/boxes/MultiBox.hpp"
+#include "assert.hpp"
+
+#include <algorithm>
 
 namespace PMacc
 {
@@ -44,8 +43,8 @@ template<typename Type_, uint32_t communicationTag_ = 0, bool sizeOnDevice_ = fa
         struct TypeDescriptionElement
 {
     typedef Type_ Type;
-    static const uint32_t communicationTag = communicationTag_;
-    static const bool sizeOnDevice = sizeOnDevice_;
+    static constexpr uint32_t communicationTag = communicationTag_;
+    static constexpr bool sizeOnDevice = sizeOnDevice_;
 
 
 };
@@ -64,7 +63,7 @@ template<typename Type_, uint32_t communicationTag_ = 0, bool sizeOnDevice_ = fa
  *  struct Mem
  *  {
  *    enum Names{VALUE1,VALUE2};
- *    static const uint32_t Count=2;
+ *    static constexpr uint32_t Count=2;
  *  };
  * @tparam BORDERTYPE optional type for border data in the buffers. TYPE is used by default.
  */
@@ -158,9 +157,9 @@ public:
     }
 
     /**
-     * Starts sync data from own device buffer to neigbhor device buffer.
+     * Starts sync data from own device buffer to neighboring device buffer.
      *
-     * Asynchronously starts syncronization data from internal DeviceBuffer using added
+     * Asynchronously starts synchronization of data from internal DeviceBuffer using added
      * Exchange buffers.
      *
      */
@@ -176,11 +175,11 @@ public:
     }
 
     /**
-     * Starts sync data from own device buffer to neigbhor device buffer.
+     * Starts sync data from own device buffer to neighboring device buffer.
      *
-     * Asynchronously starts syncronization data from internal DeviceBuffer using added
+     * Asynchronously starts synchronization of data from internal DeviceBuffer using added
      * Exchange buffers.
-     * This operation runs sequential to other code but intern asyncron
+     * This operation runs sequentially to other code but uses asynchronous operations internally.
      *
      */
     EventTask communication()
@@ -222,7 +221,7 @@ public:
 
     GridBuffer<Type, DIM>& getGridBuffer(typename BufferNames::Names name)
     {
-        assert(name >= 0 && name < BufferNames::Count);
+        PMACC_ASSERT(name >= 0 && name < BufferNames::Count);
         return *gridBuffers[name];
     }
 
@@ -231,8 +230,8 @@ public:
         __startOperation(ITask::TASK_HOST);
         return DataBoxType(MultiBox<Type, DIM > (getGridBuffer(static_cast<NameType> (0)).getHostBuffer().getBasePointer(),
                                                  DataSpace<DIM > (),
-                                                 getGridBuffer(static_cast<NameType> (0)).getHostBuffer().getDataSpace(),
-                                                 getGridBuffer(static_cast<NameType> (0)).getHostBuffer().getDataSpace().x() * sizeof (Type)));
+                                                 getGridBuffer(static_cast<NameType> (0)).getHostBuffer().getPhysicalMemorySize(),
+                                                 getGridBuffer(static_cast<NameType> (0)).getHostBuffer().getPhysicalMemorySize().x() * sizeof (Type)));
     }
 
     DataBoxType getDeviceDataBox()
@@ -240,7 +239,7 @@ public:
         __startOperation(ITask::TASK_CUDA);
         return DataBoxType(MultiBox<Type, DIM > (getGridBuffer(static_cast<NameType> (0)).getDeviceBuffer().getBasePointer(),
                                                  getGridBuffer(static_cast<NameType> (0)).getDeviceBuffer().getOffset(),
-                                                 getGridBuffer(static_cast<NameType> (0)).getDeviceBuffer().getDataSpace(),
+                                                 getGridBuffer(static_cast<NameType> (0)).getDeviceBuffer().getPhysicalMemorySize(),
                                                  getGridBuffer(static_cast<NameType> (0)).getDeviceBuffer().getCudaPitched().pitch));
     }
 

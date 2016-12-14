@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,10 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef GAMMA_HPP
-#define	GAMMA_HPP
+#pragma once
 
 namespace picongpu
 {
@@ -48,6 +45,4 @@ struct Gamma
 };
 
 }
-
-#endif	/* GAMMA_HPP */
 

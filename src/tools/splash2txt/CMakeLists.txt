@@ -1,10 +1,10 @@
 #
-# Copyright 2013-2014 Felix Schmitt, Axel Huebl, Rene Widera
+# Copyright 2013-2016 Felix Schmitt, Axel Huebl, Rene Widera
 #
 # This file is part of splash2txt. 
 # 
 # splash2txt is free software: you can redistribute it and/or modify 
-# it under the terms of of either the GNU General Public License or 
+# it under the terms of either the GNU General Public License or 
 # the GNU Lesser General Public License as published by 
 # the Free Software Foundation, either version 3 of the License, or 
 # (at your option) any later version. 
@@ -23,7 +23,7 @@
 # Required cmake version
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.12.2)
 
 
 ################################################################################
@@ -32,12 +32,18 @@ cmake_minimum_required(VERSION 2.8.5)
 
 project(splash2txt)
 
-set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/" "$ENV{BOOST_ROOT}" "$ENV{HDF5_ROOT}"
-    "$ENV{MPI_ROOT}")
+# Add specific hints
+list(APPEND CMAKE_PREFIX_PATH "$ENV{MPI_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{BOOST_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{HDF5_ROOT}")
+# Add from environment after specific env vars
+list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
+# Last add generic system path to the end (as last fallback)
+list(APPEND "/usr/lib/x86_64-linux-gnu/")
 
 # own modules for find_packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../thirdParty/cmake-modules/)
 
 include_directories(include)
 
@@ -52,7 +58,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "RelWithDebInfo")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wshadow")
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
 elseif(CMAKE_BUILD_TYPE MATCHES Release)
@@ -86,7 +92,7 @@ endif(MPI_CXX_FOUND)
 # find libSplash installation
 # prefer static libraries over shared ones (but do not force them)
 set(Splash_USE_STATIC_LIBS ON)
-find_package(Splash 1.2.4 REQUIRED COMPONENTS PARALLEL)
+find_package(Splash 1.6.0 REQUIRED COMPONENTS PARALLEL)
 
 if(Splash_FOUND)
     include_directories(SYSTEM ${Splash_INCLUDE_DIRS})
@@ -103,7 +109,7 @@ endif(Splash_FOUND)
 
 # find adios installation
 #   set(ADIOS_USE_STATIC_LIBS ON) # force static linking
-find_package(ADIOS 1.6.0)
+find_package(ADIOS 1.10.0)
 
 if(ADIOS_FOUND)
     add_definitions(-DENABLE_ADIOS=1)

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALLOCATOR_DEVICEMEMEVENPITCHALLOCATOR_HPP
-#define ALLOCATOR_DEVICEMEMEVENPITCHALLOCATOR_HPP
+#pragma once
 
 #include "math/vector/Size_t.hpp"
 #include "cuSTL/cursor/BufferCursor.hpp"
@@ -36,7 +35,7 @@ template<typename Type, int T_dim>
 struct DeviceMemEvenPitch
 {
     typedef Type type;
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
     typedef cursor::BufferCursor<type, dim> Cursor;
     typedef allocator::tag::device tag;
 
@@ -49,7 +48,7 @@ template<typename Type>
 struct DeviceMemEvenPitch<Type, 1>
 {
     typedef Type type;
-    static const int dim = 1;
+    static constexpr int dim = 1;
     typedef cursor::BufferCursor<type, 1> Cursor;
     typedef allocator::tag::device tag;
 
@@ -63,4 +62,3 @@ struct DeviceMemEvenPitch<Type, 1>
 
 #include "DeviceMemEvenPitchAllocator.tpp"
 
-#endif // ALLOCATOR_DEVICEMEMEVENPITCHALLOCATOR_HPP

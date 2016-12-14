@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -64,24 +64,6 @@ struct Float : public Vector<float, dim>
     HDINLINE Float(const BaseType& vec) :
     BaseType(vec)
     {
-    }
-
-    HDINLINE Float(float1 vec) : BaseType(vec.x)
-    {
-    }
-
-    HDINLINE Float(float2 vec) : BaseType(vec.x, vec.y)
-    {
-    }
-
-    HDINLINE Float(float3 vec) : BaseType(vec.x, vec.y, vec.z)
-    {
-    }
-
-    HDINLINE operator float3() const
-    {
-        BOOST_STATIC_ASSERT(dim == 3);
-        return make_float3(this->x(), this->y(), this->z());
     }
 };
 

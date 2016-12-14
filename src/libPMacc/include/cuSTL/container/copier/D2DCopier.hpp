@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,11 +21,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COPIER_D2DCOPIER_HPP
-#define COPIER_D2DCOPIER_HPP
+#pragma once
 
 #include "Memcopy.hpp"
-#include <types.h>
+#include "cuSTL/cursor/BufferCursor.hpp"
+#include "cuSTL/cursor/accessor/CursorAccessor.hpp"
+#include "cuSTL/cursor/navigator/MapTo1DNavigator.hpp"
+#include "pmacc_types.hpp"
 
 namespace PMacc
 {
@@ -34,18 +37,37 @@ namespace copier
 template<int T_dim>
 struct D2DCopier
 {
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
+
+    PMACC_NO_NVCC_HDWARNING /* Handled via CUDA_ARCH */
     template<typename Type>
-    static void copy(Type* dest, const math::Size_t<dim-1>& pitchDest,
+    HDINLINE static void copy(Type* dest, const math::Size_t<dim-1>& pitchDest,
          Type* source, const math::Size_t<dim-1>& pitchSource,
          const math::Size_t<dim>& size)
     {
+#ifdef __CUDA_ARCH__
+        typedef cursor::BufferCursor<Type, dim> Cursor;
+        Cursor bufCursorDest(dest, pitchDest);
+        Cursor bufCursorSrc(source, pitchSource);
+        cursor::MapTo1DNavigator<dim> myNavi(size);
+
+        BOOST_AUTO(srcCursor, cursor::make_Cursor(cursor::CursorAccessor<Cursor>(),
+                                                  myNavi,
+                                                  bufCursorSrc));
+        BOOST_AUTO(destCursor, cursor::make_Cursor(cursor::CursorAccessor<Cursor>(),
+                                                   myNavi,
+                                                   bufCursorDest));
+        size_t sizeProd = size.productOfComponents();
+        for(size_t i = 0; i < sizeProd; i++)
+        {
+            destCursor[i] = srcCursor[i];
+        }
+#else
         cudaWrapper::Memcopy<dim>()(dest, pitchDest, source, pitchSource,
                                     size, cudaWrapper::flags::Memcopy::deviceToDevice);
+#endif
     }
 };
 
 } // copier
 } // PMacc
-
-#endif // COPIER_D2DCOPIER_HPP

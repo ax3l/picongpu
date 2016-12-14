@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -36,19 +36,19 @@ namespace detail
 
 /** Calculate the real charge of a particle
  *
- * use attribute `boundElectrons` and the proton number from 
+ * use attribute `boundElectrons` and the proton number from
  * flag `atomicNumbers` to calculate the charge
- * 
+ *
  * \tparam T_HasBoundElectrons boolean that describes if species allows multiple charge states
  * due to bound electrons
  */
 template<bool T_HasBoundElectrons>
 struct LoadBoundElectrons
 {
-    /** Functor implementation 
-     * 
+    /** Functor implementation
+     *
      * \tparam T_Particle particle type
-     * \param singlyChargedResult charge resulting from multiplying a single 
+     * \param singlyChargedResult charge resulting from multiplying a single
      * electron charge (positive OR negative) by the macro particle weighting
      * \param particle particle reference
      */
@@ -56,7 +56,7 @@ struct LoadBoundElectrons
     HDINLINE float_X operator()(const float_X singlyChargedResult, const T_Particle& particle)
     {
         const float_X protonNumber = GetAtomicNumbers<T_Particle>::type::numberOfProtons;
-        
+
         return singlyChargedResult * (protonNumber - particle[boundElectrons_]);
     }
 };
@@ -64,17 +64,17 @@ struct LoadBoundElectrons
 /**  Calculate the real charge of a particle
  *
  * This is the fallback implementation if no `boundElectrons` are available for a particle
- * 
+ *
  * \tparam T_HasBoundElectrons boolean that describes if species allows multiple charge states
  * due to bound electrons
  */
 template<>
 struct LoadBoundElectrons<false>
 {
-    /** Functor implementation 
-     * 
+    /** Functor implementation
+     *
      * \tparam T_Particle particle type
-     * \param singlyChargedResult charge resulting from multiplying a single 
+     * \param singlyChargedResult charge resulting from multiplying a single
      * electron charge (positive OR negative) by the macro particle weighting
      * \param particle particle reference
      */

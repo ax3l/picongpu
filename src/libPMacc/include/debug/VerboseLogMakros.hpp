@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,24 +20,17 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include <sstream>
-#include <boost/format.hpp>
-#include <iostream>
-
-#include "static_assert.hpp"
+#include "debug/VerboseLog.hpp"
 #include <string>
-
-
 
 /** create a log lvl
  * @param code integer which represent a bit in a 64bit bitmask
  * @param name name of the log lvl, name is needet later to call log<name>(...)
  */
 #define DEFINE_LOGLVL(code,name)                            \
-    typedef LogLvl < code, thisClass > name;                \
+    typedef PMacc::LogLvl < code, thisClass > name;         \
     friend inline std::string getLogName(const name)        \
     {                                                       \
         return std::string(#name);                          \
@@ -47,7 +40,7 @@
  * @param default_lvl must be a integer which represent a defined log lvl
  */
 #define __DEFINE_VERBOSE_CLASS_DEFAULT_LVL(default_lvl) \
-    static const uint64_t log_level = default_lvl;      \
+    static constexpr uint64_t log_level = default_lvl;      \
     }
 
 /** helper for define log lvl inside of DEFINE_VERBOSE_CLASS
@@ -70,6 +63,3 @@
         typedef structName thisClass;           \
     public:                                     \
     __DEFINE_VERBOSE_CLASS_LVLS
-
-
-

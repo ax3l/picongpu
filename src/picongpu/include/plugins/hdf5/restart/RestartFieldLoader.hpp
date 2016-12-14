@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2014-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -24,7 +24,7 @@
 #include <sstream>
 #include <splash/splash.h>
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "particles/frame_types.hpp"
 #include "dataManagement/DataConnector.hpp"
@@ -55,7 +55,7 @@ public:
         const uint32_t numSlides = MovingWindow::getInstance().getSlideCounter(params->currentStep);
         const PMacc::Selection<simDim>& localDomain = Environment<simDim>::get().SubGrid().getLocalDomain();
 
-        field.getHostBuffer().setValue(float3_X(0.));
+        field.getHostBuffer().setValue(float3_X::create(0.0));
 
         const std::string name_lookup[] = {"x", "y", "z"};
 

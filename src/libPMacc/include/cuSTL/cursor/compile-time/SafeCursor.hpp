@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CURSOR_CT_SAVECURSOR_HPP
-#define CURSOR_CT_SAVECURSOR_HPP
+#pragma once
 
 #include <cuSTL/cursor/traits.hpp>
 #include <math/vector/Int.hpp>
@@ -41,7 +40,7 @@ class SafeCursor : public Cursor
 {
 private:
     typedef SafeCursor<Cursor, LowerExtent, UpperExtent> This;
-    static const int dim = PMacc::cursor::traits::dim<Cursor>::value;
+    static constexpr int dim = PMacc::cursor::traits::dim<Cursor>::value;
     math::Int<dim> offset;
 public:
     HDINLINE SafeCursor(const Cursor& cursor)
@@ -130,4 +129,3 @@ make_SafeCursor(const Cursor& cursor, LowerExtent, UpperExtent)
 } // cursor
 } // PMacc
 
-#endif // CURSOR_CT_SAVECURSOR_HPP

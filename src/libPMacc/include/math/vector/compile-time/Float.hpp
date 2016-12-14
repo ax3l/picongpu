@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include <boost/mpl/void.hpp>
-#include "../../utils/FloatWrapper.hpp"
 
 namespace mpl = boost::mpl;
 
@@ -44,7 +43,7 @@ struct Float
     typedef Y y;
     typedef Z z;
 
-    static const int dim = 3;
+    static constexpr int dim = 3;
 };
 
 template<>
@@ -55,7 +54,7 @@ struct Float<X>
 {
     typedef X x;
 
-    static const int dim = 1;
+    static constexpr int dim = 1;
 };
 
 template<typename X, typename Y>
@@ -64,7 +63,7 @@ struct Float<X, Y>
     typedef X x;
     typedef Y y;
 
-    static const int dim = 2u;
+    static constexpr int dim = 2u;
 };
 
 } // CT

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -19,7 +19,6 @@
  */
 
 
-
 #pragma once
 
 #include "version.hpp"
@@ -27,49 +26,34 @@
 #include "algorithms/PromoteType.hpp"
 #include "algorithms/ForEach.hpp"
 #include "algorithms/math.hpp"
+#include "traits/GetStringProperties.hpp"
 #include "traits/GetMargin.hpp"
-#include "traits/SplashToPIC.hpp"
-#include "traits/PICToSplash.hpp"
 #include "traits/GetComponentsType.hpp"
 #include "traits/NumberOfExchanges.hpp"
+#include "traits/GetDataBoxType.hpp"
 
 namespace picongpu
 {
-
-//! defines form of particle
-
-enum ParticleType
-{
-    ION = 0, ELECTRON = 1
-};
 
 //! define all elements which can send and resive
 
 enum CommunicationTag
 {
-    FIELD_B = 0u, FIELD_E = 1u, FIELD_J = 2u, FIELD_TMP = 3u,
-    PAR_IONS = 4u, PAR_ELECTRONS = 5u,
-    NO_COMMUNICATION = 16u
+    NO_COMMUNICATION = 0u,
+    FIELD_B = 1u,
+    FIELD_E = 2u,
+    FIELD_J = 3u,
+    FIELD_JRECV = 4u,
+    FIELD_TMP = 5u,
+    SPECIES_FIRSTTAG = 42u
 };
 
-
-//! define the place where data is stored
-
-enum DataPlace
-{
-    DEVICE, HOST
-};
 
 //! defines field types some various methods (e.g. Laser::manipulate)
 
 enum FieldType
 {
     FIELD_TYPE_E, FIELD_TYPE_B, FIELD_TYPE_TMP
-};
-
-enum Seeds
-{
-    TEMPERATURE_SEED = 255845, POSITION_SEED = 854666252
 };
 
 namespace precision32Bit
@@ -90,7 +74,3 @@ using namespace PMacc::traits;
 using namespace picongpu::traits;
 
 }
-
-
-
-

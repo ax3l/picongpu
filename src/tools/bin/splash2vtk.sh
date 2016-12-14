@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
-# Copyright 2013 Axel Huebl
+# Copyright 2013-2016 Axel Huebl
 #
 # This file is part of PIConGPU.
 #
@@ -21,8 +21,7 @@
 
 filename="$1"
 step=1000
-dataNames="fields_FieldE_y"
-#dataNames="fields_FieldE_y"
+dataNames="fields_E_y"
 dataEl=`echo "$dataNames" | wc -w`
 
 # dimensions & meta data
@@ -150,7 +149,7 @@ do
   #z=$((tz-1))
   #z=$tz
   echo "  <Piece Extent=\"1 $nx 1 $ny $z $zm\" Source=\"slab_$zm.vti\"/>" >> pslab.pvti
-  
+
   if [ $zm -lt $nz ]; then
     z=$((zm))
   else

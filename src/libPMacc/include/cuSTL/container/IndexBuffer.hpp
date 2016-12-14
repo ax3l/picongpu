@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONTAINER_INDEXBUFFER_HPP
-#define CONTAINER_INDEXBUFFER_HPP
+#pragma once
 
 #include <stdint.h>
 #include "../vector/UInt32.hpp"
@@ -94,4 +93,3 @@ public:
 } // container
 } // PMacc
 
-#endif // CONTAINER_INDEXBUFFER_HPP

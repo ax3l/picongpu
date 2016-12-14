@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -23,7 +23,7 @@
 #pragma once
 
 #include "particles/memory/boxes/TileDataBox.hpp"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "particles/memory/frames/NullFrame.hpp"
 
 namespace picongpu

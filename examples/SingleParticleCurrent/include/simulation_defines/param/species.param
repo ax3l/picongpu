@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -43,8 +43,9 @@ namespace picongpu
 
 /*! Particle Shape definitions -------------------------------------------------
  *  - particles::shapes::CIC : 1st order
- *  - particles::shapes::TSC : 2nd order (requires CUDA_ARCH>=sm_20)
- *  - particles::shapes::PCS : 3rd order (requires CUDA_ARCH>=sm_20)
+ *  - particles::shapes::TSC : 2nd order
+ *  - particles::shapes::PCS : 3rd order
+ *  - particles::shapes::P4S : 4th order
  *
  *  example:             typedef particles::shapes::CIC CICShape;
  */
@@ -54,13 +55,13 @@ typedef particles::shapes::CIC UsedParticleShape;
 typedef FieldToParticleInterpolation<UsedParticleShape, AssignedTrilinearInterpolation> UsedField2Particle;
 
 /*! select current solver method -----------------------------------------------
- * - currentSolver::Esirkepov<SHAPE>  : particle shapes - CIC, TSC, PCS (1st to 3rd order)
+ * - currentSolver::Esirkepov<SHAPE>  : particle shapes - CIC, TSC, PCS, P4S (1st to 4th order)
  * - currentSolver::VillaBune<>       : particle shapes - CIC (1st order) only
- * - currentSolver::ZigZag<SHAPE>     : particle shapes - CIC, TSC, PCS (1st to 3rd order)
  *
  * For development purposes: ---------------------------------------------------
  * - currentSolver::EsirkepovNative<SHAPE> : generic version of currentSolverEsirkepov
  *   without optimization (~4x slower and needs more shared memory)
+ * - currentSolver::ZigZag<SHAPE>     : particle shapes - CIC, TSC, PCS, P4S (1st to 4th order)
  */
 typedef currentSolver::Esirkepov<UsedParticleShape> UsedParticleCurrentSolver;
 
@@ -70,13 +71,14 @@ typedef currentSolver::Esirkepov<UsedParticleShape> UsedParticleCurrentSolver;
  *
  * - particles::pusher::Vay : better suited relativistic boris pusher
  * - particles::pusher::Boris : standard boris pusher
+ * - particles::pusher::ReducedLandauLifshitz : 4th order RungeKutta pusher
+ *                                              with classical radiation reaction
  *
  * For development purposes: ---------------------------------------------------
- * - particles::pusher::None : no particle is pushed
- * - particles::pusher::Axl : a pusher developed at HZDR during 2011 (testing)
+ * - particles::pusher::Axel : a pusher developed at HZDR during 2011 (testing)
  * - particles::pusher::Free : free propagation, ignore fields
  * (= free stream model)
- * - particles::pusher::Phot : propagate with c in direction of normalized mom.
+ * - particles::pusher::Photon : propagate with c in direction of normalized mom.
  */
 typedef particles::pusher::Boris UsedParticlePusher;
 

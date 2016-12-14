@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,15 +18,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef WINDOWHEADER_HPP
-#define	WINDOWHEADER_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
-#include "iostream"
-#include "stdlib.h"
+#include <iostream>
+#include <cstdlib>
 
 struct WindowHeader
 {
@@ -42,6 +39,4 @@ struct WindowHeader
     }
 
 };
-
-#endif	/* WINDOWHEADER_HPP */
 

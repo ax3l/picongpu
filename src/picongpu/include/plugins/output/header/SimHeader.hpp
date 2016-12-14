@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -20,10 +20,10 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
-#include "iostream"
-#include "stdlib.h"
+#include <iostream>
+#include <cstdlib>
 
 struct SimHeader
 {
@@ -33,9 +33,9 @@ struct SimHeader
     Size2D nodes;
     Size2D simOffsetToNull;
     uint32_t step;
-    float scale[2];
-    float cellSizeArr[2];
-    
+    picongpu::float_32 scale[2];
+    picongpu::float_32 cellSizeArr[2];
+
 
     SimHeader() : step(0)
     {
@@ -45,7 +45,7 @@ struct SimHeader
         cellSizeArr[1] = 0.f;
     }
 
-    void setScale(float x, float y)
+    void setScale(picongpu::float_32 x, picongpu::float_32 y)
     {
         scale[0] = x;
         scale[1] = y;

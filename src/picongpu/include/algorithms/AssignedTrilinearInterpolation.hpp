@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include <boost/type_traits/remove_reference.hpp>
 #include <result_of_Functor.hpp>
 
@@ -120,6 +120,12 @@ struct AssignedTrilinearInterpolation
             result_y += result_x * AssignmentFunction()(y - pos.y());
         }
         return result_y;
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "uniform" );
+        return propList;
     }
 };
 

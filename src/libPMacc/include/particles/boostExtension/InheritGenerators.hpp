@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -19,7 +19,6 @@
  * and the GNU Lesser General Public License along with libPMacc.
  * If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #pragma once
 
@@ -39,7 +38,6 @@
 namespace PMacc
 {
 
-
 template <class list_>
 struct LinearInherit;
 
@@ -51,7 +49,7 @@ class LinearInheritFork : public Base1, public Base2
 
 /** Rule if head is a class without Base template parameter
  *
- * Create a fork an inharid from head and combined classes from Vec
+ * Create a fork and inherit from head and combined classes from Vec
  */
 template <class Head, class Vec,bool isVectorEmpty=bmpl::empty<Vec>::value>
 struct TypelistLinearInherit;
@@ -64,7 +62,7 @@ struct TypelistLinearInherit<Head,Vec,false>
 
 
 
-/** Rule if head is a clase which can inharit from other class
+/** Rule if head is a class which can inherit from other class
  */
 template < template<class> class Head, class Vec>
 struct TypelistLinearInherit<Head<PMacc::NullFrame>, Vec ,false>
@@ -75,7 +73,7 @@ struct TypelistLinearInherit<Head<PMacc::NullFrame>, Vec ,false>
 
 /** Rule if Vec is empty but Head is valid
  *
- * This is the recursiv end rule
+ * This is the recursive end rule
  */
 template <class Head,class Vec>
 struct TypelistLinearInherit<Head, Vec ,true>
@@ -85,7 +83,7 @@ struct TypelistLinearInherit<Head, Vec ,true>
 
 
 
-/** Create a data strcture which inharid lineary
+/** Create a data structure which inherit linearly
  * \tparam vec_ boost mpl vector with classes
  *
  * class A<PMacc::NullFrame>;

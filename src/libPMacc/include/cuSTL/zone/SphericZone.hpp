@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ZONE_SPHERICZONE_HPP
-#define ZONE_SPHERICZONE_HPP
+#pragma once
 
 #include <stdint.h>
 #include "math/vector/Int.hpp"
@@ -48,12 +47,12 @@ template<int T_dim>
 struct SphericZone
 {
     typedef tag::SphericZone tag;
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
     math::Size_t<dim> size;
     math::Int<dim> offset;
 
     HDINLINE SphericZone() {}
-    HDINLINE SphericZone(const math::Size_t<dim>& size) : size(size), offset(math::Int<dim>(0)) {}
+    HDINLINE SphericZone(const math::Size_t<dim>& size) : size(size), offset(math::Int<dim>::create(0)) {}
     HDINLINE SphericZone(const math::Size_t<dim>& size,
                          const math::Int<dim>& offset) : size(size), offset(offset) {}
 
@@ -70,4 +69,3 @@ struct SphericZone
 } // zone
 } // PMacc
 
-#endif // ZONE_SPHERICZONE_HPP

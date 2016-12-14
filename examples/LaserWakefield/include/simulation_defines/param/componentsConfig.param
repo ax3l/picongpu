@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Anton Helm, Rene Widera, Felix Schmitt,
+ * Copyright 2013-2016 Axel Huebl, Anton Helm, Rene Widera, Felix Schmitt,
  *                     Richard Pausch
  *
  * This file is part of PIConGPU.
@@ -37,6 +37,7 @@ namespace simulation_starter = defaultPIConGPU;
  *                            in 'x' direction
  *  - laserWavepacket       : wavepacket (Gaussian in time and space, not focusing)
  *  - laserPlaneWave        : a plane wave
+ *  - laserPolynom          : a polynomial laser envelope
  */
 namespace laserProfile = laserGaussianBeam;
 
@@ -54,29 +55,6 @@ namespace laserProfile = laserGaussianBeam;
 #define PARAM_FIELDSOLVER fieldSolverYee
 #endif
 namespace fieldSolver = PARAM_FIELDSOLVER;
-
-/*! Gas Configuration------------------------------------------------------
- * Select a normed gas density profile
- *  - gasGaussian : super - Gaussian density profile
- *  - gasGaussianCloud : super - Gaussian density profile with a center position
- *  - gasLinExp : piecewise linear-exponential profile (linear first)
- *  - gasHomogeneous : constant gas density with a certain length
- *  - gasSphereFlanks : constant sphere droplet with exponentially decreasing envelope
- *  - gasFreeFormula: use a custom formula (slower)
- *  - gasFromHdf5: load gas density from HDF5 file
- *  - gasNone : just stay with a vacuum
- */
-#ifndef PARAM_GASPROFILE
-#define PARAM_GASPROFILE gasGaussian
-#endif
-namespace gasProfile = PARAM_GASPROFILE;
-
-/*! Particle Initialization ----------------------------------------------
- *  - particleInitRandomPos  : distribute your particles uniformly random
- *  - particleInitQuietStart : distribute your particles lattice-like
- */
-namespace particleInit = particleInitRandomPos;
-
 
 /*enable (1) or disable (0) current calculation*/
 #ifndef ENABLE_CURRENT

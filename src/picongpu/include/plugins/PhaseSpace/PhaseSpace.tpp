@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau
  *
  * This file is part of PIConGPU.
  *
@@ -90,7 +90,7 @@ namespace picongpu
             /* my plane means: the offset for the transversal plane to my r_element
              * should be zero
              */
-            PMacc::math::Int<simDim> longOffset(0);
+            PMacc::math::Int<simDim> longOffset(PMacc::math::Int<simDim>::create(0));
             longOffset[this->axis_element.space] = planePos;
 
             zone::SphericZone<simDim> zoneTransversalPlane( sizeTransversalPlane, longOffset );
@@ -102,7 +102,7 @@ namespace picongpu
             {
                 PMacc::math::Int<simDim> inPlaneGPU(gpuPos);
                 inPlaneGPU[this->axis_element.space] = 0;
-                if( inPlaneGPU == PMacc::math::Int<simDim>(0) )
+                if( inPlaneGPU == PMacc::math::Int<simDim>::create(0) )
                     isGroupRoot = true;
             }
 

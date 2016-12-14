@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -27,10 +27,11 @@
 #include "math/Vector.hpp"
 #include "algorithms/math.hpp"
 #include "algorithms/TypeCast.hpp"
+#include "algorithms/PromoteType.hpp"
 #include "mpi/GetMPI_StructAsArray.hpp"
 #include "traits/GetComponentsType.hpp"
 #include "traits/GetNComponents.hpp"
-#include "algorithms/PromoteType.hpp"
+#include "traits/GetInitializedInstance.hpp"
 
 namespace PMacc
 {
@@ -46,7 +47,19 @@ struct GetComponentsType<PMacc::math::Vector<T_DataType, T_Dim>, false >
 template<typename T_DataType, int T_Dim>
 struct GetNComponents<PMacc::math::Vector<T_DataType, T_Dim>,false >
 {
-    static const uint32_t value = (uint32_t) PMacc::math::Vector<T_DataType, T_Dim>::dim;
+    static constexpr uint32_t value = (uint32_t) PMacc::math::Vector<T_DataType, T_Dim>::dim;
+};
+
+template<typename T_Type, int T_dim, typename T_Accessor, typename T_Navigator, template<typename, int> class T_Storage>
+struct GetInitializedInstance<math::Vector<T_Type, T_dim, T_Accessor, T_Navigator, T_Storage> >
+{
+    typedef math::Vector<T_Type, T_dim, T_Accessor, T_Navigator, T_Storage> Type;
+    typedef typename Type::type ValueType;
+
+    HDINLINE Type operator()(const ValueType value) const
+    {
+        return Type::create(value);
+    }
 };
 
 } //namespace traits
@@ -72,7 +85,7 @@ struct Max< ::PMacc::math::Vector<Type, dim>, ::PMacc::math::Vector<Type, dim> >
     {
         result tmp;
         for ( int i = 0; i < dim; ++i )
-            tmp[i] = ::max( vector1[i], vector2[i] );
+            tmp[i] = PMacc::algorithms::math::max( vector1[i], vector2[i] );
         return tmp;
     }
 };
@@ -87,7 +100,7 @@ struct Min< ::PMacc::math::Vector<Type, dim>, ::PMacc::math::Vector<Type, dim> >
     {
         result tmp;
         for ( int i = 0; i < dim; ++i )
-            tmp[i] = ::min( vector1[i], vector2[i] );
+            tmp[i] = PMacc::algorithms::math::min( vector1[i], vector2[i] );
         return tmp;
     }
 };
@@ -181,6 +194,24 @@ struct Pow< ::PMacc::math::Vector<T1, dim>, T2 >
     }
 };
 
+/*#### floor #################################################################*/
+
+/*specialize floor algorithm*/
+template<typename Type, int dim>
+struct Floor< ::PMacc::math::Vector<Type, dim> >
+{
+    typedef ::PMacc::math::Vector<Type, dim> result;
+
+    HDINLINE result operator( )( ::PMacc::math::Vector<Type, dim> &vector )
+    {
+        result tmp;
+        for ( int i = 0; i < dim; ++i )
+            tmp[i] = PMacc::algorithms::math::floor( vector[i] );
+        return tmp;
+    }
+};
+
+
 } //namespace math
 } //namespace algorithms
 } // namespace PMacc
@@ -192,23 +223,44 @@ namespace algorithms
 namespace precisionCast
 {
 
-template<typename CastToType, int dim>
-struct TypeCast<CastToType, ::PMacc::math::Vector<CastToType, dim> >
+template<typename CastToType,
+int dim,
+typename T_Accessor,
+typename T_Navigator,
+template <typename, int> class T_Storage>
+struct TypeCast<
+    CastToType,
+    ::PMacc::math::Vector<CastToType, dim, T_Accessor, T_Navigator, T_Storage>
+>
 {
-    typedef const ::PMacc::math::Vector<CastToType, dim>& result;
+    typedef const ::PMacc::math::Vector<
+        CastToType,
+        dim,
+        T_Accessor,
+        T_Navigator,
+        T_Storage>& result;
 
-    HDINLINE result operator( )(const ::PMacc::math::Vector<CastToType, dim>& vector ) const
+    HDINLINE result operator( )( result vector ) const
     {
         return vector;
     }
 };
 
-template<typename CastToType, typename OldType, int dim>
-struct TypeCast<CastToType, ::PMacc::math::Vector<OldType, dim> >
+template<typename CastToType,
+typename OldType,
+int dim,
+typename T_Accessor,
+typename T_Navigator,
+template <typename, int> class T_Storage>
+struct TypeCast<
+    CastToType,
+    ::PMacc::math::Vector<OldType, dim, T_Accessor, T_Navigator, T_Storage>
+>
 {
     typedef ::PMacc::math::Vector<CastToType, dim> result;
+    typedef ::PMacc::math::Vector<OldType, dim, T_Accessor, T_Navigator, T_Storage> ParamType;
 
-    HDINLINE result operator( )(const ::PMacc::math::Vector<OldType, dim>& vector ) const
+    HDINLINE result operator( )(const ParamType& vector ) const
     {
         return result( vector );
     }

@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,16 +23,17 @@
 
 #pragma once
 
-#include "result_of_Functor.hpp"
-#include <builtin_types.h>
-#include <cuda_runtime.h>
-#include <boost/static_assert.hpp>
-#include <boost/mpl/size.hpp>
-#include <types.h>
-#include <iostream>
+#include <math/vector/accessor/StandardAccessor.hpp>
+#include <math/vector/navigator/StandardNavigator.hpp>
 #include <lambda/Expression.hpp>
-#include <math/vector/accessor/StandartAccessor.hpp>
-#include <math/vector/navigator/StandartNavigator.hpp>
+#include "result_of_Functor.hpp"
+#include "static_assert.hpp"
+#include "pmacc_types.hpp"
+#include "algorithms/math.hpp"
+
+#include <boost/mpl/size.hpp>
+#include <boost/call_traits.hpp>
+#include <iostream>
 
 namespace PMacc
 {
@@ -43,7 +45,8 @@ namespace detail
 template<typename T_Type, int T_Dim>
 struct Vector_components
 {
-    static const int dim = T_Dim;
+    static constexpr bool isConst = false;
+    static constexpr int dim = T_Dim;
     typedef T_Type type;
 
     /*align full vector*/
@@ -62,26 +65,63 @@ struct Vector_components
     }
 };
 
+
+/** functor to copy a object element wise
+ *
+ * @tparam isDestConst define if destination is const (not copyable) object
+ */
+template<bool isDestConst>
+struct CopyElementWise
+{
+    /** copy object element wise
+     *
+     * @tparam T_Dest destination object type
+     * @tparam T_Src source object type
+     */
+    template<typename T_Dest,typename T_Src>
+    HDINLINE void operator()(T_Dest& dest,const T_Src& src) const
+    {
+        PMACC_CASSERT_MSG(CopyElementWise_destination_and_source_had_different_dimension,
+                          T_Dest::dim == T_Src::dim);
+        for (int d = 0; d < T_Dest::dim; d++)
+            dest[d] = src[d];
+    }
+};
+
+/** specialization for constant destination
+ *
+ * the constant storage is already available and set in the destination
+ */
+template<>
+struct CopyElementWise<true>
+{
+    template<typename T_Dest,typename T_Src>
+    HDINLINE void operator()(T_Dest& dest,const T_Src& src) const
+    {
+    }
+};
+
 } //namespace detail
 
 namespace tag
 {
-struct Vector;
+    struct Vector;
 }
 
 template<typename T_Type, int T_dim,
-typename T_Accessor = StandartAccessor,
-typename T_Navigator = StandartNavigator,
+typename T_Accessor = StandardAccessor,
+typename T_Navigator = StandardNavigator,
 template <typename, int> class T_Storage = detail::Vector_components>
 struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protected T_Navigator
 {
     typedef T_Storage<T_Type, T_dim> Storage;
     typedef typename Storage::type type;
-    static const int dim = Storage::dim;
+    static constexpr int dim = Storage::dim;
     typedef tag::Vector tag;
     typedef T_Accessor Accessor;
     typedef T_Navigator Navigator;
     typedef Vector<type, dim, Accessor, Navigator, T_Storage> This;
+    typedef typename boost::call_traits<type>::param_type ParamType;
 
     /*Vectors without elements are not allowed*/
     PMACC_CASSERT_MSG(math_Vector__with_DIM_0_is_not_allowed,dim > 0);
@@ -101,7 +141,13 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
     };
 
     HDINLINE Vector()
+    {}
+
+    HDINLINE
+    Vector(const type x)
     {
+        PMACC_CASSERT_MSG(math_Vector__constructor_is_only_allowed_for_DIM1,dim == 1);
+        (*this)[0] = x;
     }
 
     HDINLINE
@@ -121,17 +167,9 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
         (*this)[2] = z;
     }
 
-    HDINLINE
-    Vector(const T_Type& value)
-    {
-        for (int i = 0; i < dim; i++)
-            (*this)[i] = value;
-    }
-
     HDINLINE Vector(const This& other)
     {
-        for (int i = 0; i < dim; i++)
-            (*this)[i] = other[i];
+        detail::CopyElementWise<Storage::isConst>()(*this,other);
     }
 
     template<
@@ -152,6 +190,22 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
             (*this)[i] = static_cast<type> (other[i]);
     }
 
+    /**
+     * Creates a Vector where all dimensions are set to the same value
+     *
+     * @param value Value which is set for all dimensions
+     * @return new Vector<...>
+     */
+    HDINLINE
+    static This create(ParamType value)
+    {
+        This result;
+        for (int i = 0; i < dim; i++)
+            result[i] = value;
+
+        return result;
+    }
+
     HDINLINE const This& toRT() const
     {
         return *this;
@@ -160,6 +214,15 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
     HDINLINE This& toRT()
     {
         return *this;
+    }
+
+    HDINLINE This revert()
+    {
+        This invertedVector;
+        for (int i = 0; i < dim; i++)
+            invertedVector[dim-1-i] = (*this)[i];
+
+        return invertedVector;
     }
 
     template<
@@ -221,7 +284,7 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
     }
 
     template<int shrinkedDim >
-    HDINLINE Vector<type, shrinkedDim, Accessor, Navigator, T_Storage> shrink(const int startIdx = 0) const
+    HDINLINE Vector<type, shrinkedDim, Accessor, Navigator> shrink(const int startIdx = 0) const
     {
         PMACC_CASSERT_MSG(math_Vector__shrinkedDim_DIM_must_be_lesser_or_equal_to_Vector_DIM,shrinkedDim <= dim);
         Vector<type, shrinkedDim, Accessor, Navigator> result;
@@ -321,7 +384,7 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
         return *this;
     }
 
-    HDINLINE This& operator+=(const type & other)
+    HDINLINE This& operator+=(ParamType other)
     {
 
         for (int i = 0; i < dim; i++)
@@ -329,7 +392,7 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
         return *this;
     }
 
-    HDINLINE This& operator-=(const type & other)
+    HDINLINE This& operator-=(ParamType other)
     {
 
         for (int i = 0; i < dim; i++)
@@ -337,7 +400,7 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
         return *this;
     }
 
-    HDINLINE This& operator*=(const type & other)
+    HDINLINE This& operator*=(ParamType other)
     {
 
         for (int i = 0; i < dim; i++)
@@ -345,7 +408,7 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
         return *this;
     }
 
-    HDINLINE This& operator/=(const type & other)
+    HDINLINE This& operator/=(ParamType other)
     {
 
         for (int i = 0; i < dim; i++)
@@ -363,10 +426,10 @@ struct Vector : private T_Storage<T_Type, T_dim>, protected T_Accessor, protecte
      */
     HDINLINE bool operator==(const This& rhs) const
     {
+        bool result = true;
         for (int i = 0; i < dim; i++)
-
-            if ((*this)[i] != rhs[i]) return false;
-        return true;
+            result = result && ((*this)[i] == rhs[i]);
+        return result;
     }
 
     /**
@@ -432,13 +495,32 @@ template<typename Type>
 struct Vector<Type, 0 >
 {
     typedef Type type;
-    static const int dim = 0;
+    static constexpr int dim = 0;
 
     template<typename OtherType >
     HDINLINE operator Vector<OtherType, 0 > () const
     {
-
         return Vector<OtherType, 0 > ();
+    }
+
+    /**
+     * == comparison operator.
+     *
+     * Returns always true
+     */
+    HDINLINE bool operator==(const Vector& rhs) const
+    {
+        return true;
+    }
+
+    /**
+     * != comparison operator.
+     *
+     * Returns always false
+     */
+    HDINLINE bool operator!=(const Vector& rhs) const
+    {
+        return false;
     }
 };
 
@@ -475,7 +557,7 @@ template <typename, int> class T_Storage
 >
 HDINLINE Vector<T_Type, T_Dim>
 operator+(const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& lhs,
-          const T_Type& rhs)
+          typename Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>::ParamType rhs)
 {
     /* to avoid allocation side effects the result is always a vector
      * with default policies*/
@@ -510,7 +592,7 @@ template <typename, int> class T_Storage
 >
 HDINLINE Vector<T_Type, T_Dim>
 operator-(const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& lhs,
-          const T_Type& rhs)
+          typename Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>::ParamType rhs)
 {
     /* to avoid allocation side effects the result is always a vector
      * with default policies*/
@@ -565,7 +647,8 @@ typename T_Navigator,
 template <typename, int> class T_Storage
 >
 HDINLINE Vector<T_Type, T_Dim>
-operator*(const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& lhs, const T_Type& rhs)
+operator*(const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& lhs,
+          typename Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>::ParamType rhs)
 {
     /* to avoid allocation side effects the result is always a vector
      * with default policies*/
@@ -581,7 +664,8 @@ typename T_Navigator,
 template <typename, int> class T_Storage
 >
 HDINLINE Vector<T_Type, T_Dim>
-operator*(const T_Type& lhs, const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& rhs)
+operator*(typename boost::call_traits<T_Type>::param_type lhs,
+          const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& rhs)
 {
     /* to avoid allocation side effects the result is always a vector
      * with default policies*/
@@ -597,7 +681,8 @@ typename T_Navigator,
 template <typename, int> class T_Storage
 >
 HDINLINE Vector<T_Type, T_Dim>
-operator/(const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& lhs, const T_Type& rhs)
+operator/(const Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>& lhs,
+          typename Vector<T_Type, T_Dim, T_Accessor, T_Navigator, T_Storage>::ParamType rhs)
 {
     /* to avoid allocation side effects the result is always a vector
      * with default policies*/
@@ -677,15 +762,6 @@ linearize(const Vector<T_Type, 2, T_Accessor, T_Navigator, T_Storage >& size,
     return pos.z() * size.x() * size.y() + pos.y() * size.x() + pos.x();
 }
 
-template<typename Vector>
-HDINLINE Vector floor(const Vector& vector)
-{
-    Vector result;
-
-    for (int i = 0; i < Vector::dim; i++)
-        result[i] = floorf(vector[i]);
-    return result;
-}
 
 template<typename Lhs, typename Rhs>
 HDINLINE Lhs operator%(const Lhs& lhs, const Rhs& rhs)
@@ -697,52 +773,21 @@ HDINLINE Lhs operator%(const Lhs& lhs, const Rhs& rhs)
     return result;
 }
 
-template<typename Type, int dim>
-HDINLINE Type abs2(const Vector<Type, dim>& vec)
-{
-    Type result = vec.x() * vec.x();
-
-    for (int i = 1; i < dim; i++)
-        result += vec[i] * vec[i];
-    return result;
-}
-
-template<typename Type, int dim>
-HDINLINE Type abs(const Vector<Type, dim>& vec)
-{
-
-    return sqrtf(abs2(vec));
-}
-
-template<typename Type, int dim>
-HDINLINE
-Type dot(const Vector<Type, dim>& a, const Vector<Type, dim>& b)
-{
-    Type result = a.x() * b.x();
-
-    for (int i = 1; i < dim; i++)
-        result += a[i] * b[i];
-    return result;
-}
-
 struct Abs2
 {
-
     template<typename Type, int dim >
     HDINLINE Type operator()(const Vector<Type, dim>& vec)
     {
-
-        return abs2(vec);
+        return PMacc::algorithms::math::abs2(vec);
     }
 };
 
 struct Abs
 {
-
     template<typename Type, int dim >
     HDINLINE Type operator()(const Vector<Type, dim>& vec)
     {
-        return abs(vec);
+        return PMacc::algorithms::math::abs(vec);
     }
 };
 

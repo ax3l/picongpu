@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LAMBDA_CT_EVAL_HPP
-#define LAMBDA_CT_EVAL_HPP
+#pragma once
 
 #define BOOST_BIND_NO_PLACEHOLDERS
 
@@ -29,7 +28,7 @@
 #include "Expression.hpp"
 #include "../placeholder.h"
 #include "../ExprTypes.h"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include <boost/mpl/void.hpp>
 #include <boost/mpl/int.hpp>
 #include <boost/type_traits/add_reference.hpp>
@@ -383,4 +382,3 @@ struct Eval<CT::Expression<lambda::Expression<exprTypes::subscript, mpl::vector<
 } // lambda
 } // PMacc
 
-#endif // LAMBDA_CT_EVAL_HPP

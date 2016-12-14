@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt, Axel Huebl
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt, Axel Huebl, Benjamin Worpitz,
+ *                     Heiko Burau
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,10 +23,11 @@
 
 #pragma once
 
-#include <list>
-
 #include "pluginSystem/INotify.hpp"
 #include "pluginSystem/IPlugin.hpp"
+
+#include <vector>
+#include <list>
 
 namespace PMacc
 {
@@ -43,13 +45,13 @@ namespace PMacc
 
         /** Register a plugin for loading/unloading and notifications
          *
+         * Plugins are loaded in the order they are registered and unloaded in reverse order.
          * To trigger plugin notifications, call \see setNotificationPeriod after
          * registration.
          *
          * @param plugin plugin to register
          */
         void registerPlugin(IPlugin *plugin)
-        throw (PluginException)
         {
             if (plugin != NULL)
             {
@@ -63,11 +65,10 @@ namespace PMacc
          * Calls load on all registered, not loaded plugins
          */
         void loadPlugins()
-        throw (PluginException)
         {
             // load all plugins
-            for (std::list<IPlugin*>::reverse_iterator iter = plugins.rbegin();
-                 iter != plugins.rend(); ++iter)
+            for (std::list<IPlugin*>::iterator iter = plugins.begin();
+                 iter != plugins.end(); ++iter)
             {
                 if (!(*iter)->isLoaded())
                 {
@@ -80,7 +81,6 @@ namespace PMacc
          * Unloads all registered, loaded plugins
          */
         void unloadPlugins()
-        throw (PluginException)
         {
             // unload all plugins
             for (std::list<IPlugin*>::reverse_iterator iter = plugins.rbegin();
@@ -180,6 +180,36 @@ namespace PMacc
             {
                 (*iter)->restart(restartStep, restartDirectory);
             }
+        }
+
+        /**
+         * Get a vector of pointers of all registered plugin instances of a given type.
+         *
+         * \tparam Plugin type of plugin
+         * @return vector of plugin pointers
+         */
+        template<typename Plugin>
+        std::vector<Plugin*> getPluginsFromType()
+        {
+            std::vector<Plugin*> result;
+            for(std::list<IPlugin*>::iterator iter = plugins.begin();
+                iter != plugins.end();
+                iter++)
+            {
+                Plugin* plugin = dynamic_cast<Plugin*>(*iter);
+                if(plugin != NULL)
+                    result.push_back(plugin);
+            }
+            return result;
+        }
+
+
+        /**
+         * Return a copied list of pointers to all registered plugins.
+         */
+        std::list<IPlugin*> getAllPlugins() const
+        {
+            return this->plugins;
         }
 
     private:

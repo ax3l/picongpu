@@ -1,5 +1,6 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Anton Helm, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Anton Helm, Rene Widera,
+ *                     Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -18,12 +19,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef LASERGAUSSIANBEAM_HPP
-#define	LASERGAUSSIANBEAM_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 namespace picongpu
@@ -40,25 +38,28 @@ namespace picongpu
          */
         HINLINE float3_X laserLongitudinal( uint32_t currentStep, float_X& phase )
         {
-            const double runTime = DELTA_T*currentStep;
-            const double f = SPEED_OF_LIGHT / WAVE_LENGTH;
+            const float_64 runTime = DELTA_T*currentStep;
+            const float_64 f = SPEED_OF_LIGHT / WAVE_LENGTH;
 
-            float3_X elong = float3_X(float_X(0.0), float_X(0.0), float_X(0.0));
+            float3_X elong(float3_X::create(0.0));
 
             // a symmetric pulse will be initialized at position z=0 for
             // a time of PULSE_INIT * PULSE_LENGTH = INIT_TIME.
             // we shift the complete pulse for the half of this time to start with
             // the front of the laser pulse.
-            const double mue = 0.5 * INIT_TIME;
+            const float_64 mue = 0.5 * INIT_TIME;
 
             //rayleigh length (in y-direction)
-            const double y_R = PI * W0 * W0 / WAVE_LENGTH;
+            const float_64 y_R = PI * W0 * W0 / WAVE_LENGTH;
             //gaussian beam waist in the nearfield: w_y(y=0) == W0
-            const double w_y = W0 * sqrt( 1.0 + ( FOCUS_POS / y_R )*( FOCUS_POS / y_R ) );
+            const float_64 w_y = W0 * sqrt( 1.0 + ( FOCUS_POS / y_R )*( FOCUS_POS / y_R ) );
 
-
-            const double envelope = double( AMPLITUDE ) * double( W0 ) / w_y;
-
+            float_64 envelope = float_64( AMPLITUDE );
+            if( simDim == DIM2 )
+                envelope *= math::sqrt( float_64( W0 ) / w_y );
+            else if( simDim == DIM3 )
+                envelope *= float_64( W0 ) / w_y;
+            /* no 1D representation/implementation */
 
             if( Polarisation == LINEAR_X )
             {
@@ -74,7 +75,7 @@ namespace picongpu
                 elong.z() = float_X( envelope / sqrt(2.0) );
             }
 
-            phase = 2.0f * float_X(PI ) * float_X(f ) * ( runTime - float_X(mue ) - FOCUS_POS / SPEED_OF_LIGHT );
+            phase = float_X(2.0) * float_X(PI ) * float_X(f ) * ( runTime - float_X(mue ) - FOCUS_POS / SPEED_OF_LIGHT) + LASER_PHASE;
 
             return elong;
         }
@@ -98,69 +99,36 @@ namespace picongpu
             const float_X R_y = -FOCUS_POS * ( float_X(1.0) + ( y_R / FOCUS_POS )*( y_R / FOCUS_POS ) );
 
 
-#if !defined(__CUDA_ARCH__) // Host code path
             //beam waist in the near field: w_y(y=0) == W0
-            const float_X w_y = W0 * sqrt( float_X(1.0) + ( FOCUS_POS / y_R )*( FOCUS_POS / y_R ) );
+            const float_X w_y = W0 * algorithms::math::sqrt( float_X(1.0) + ( FOCUS_POS / y_R )*( FOCUS_POS / y_R ) );
             //! the Gouy phase shift
-            const float_X xi_y = atan( -FOCUS_POS / y_R );
+            const float_X xi_y = algorithms::math::atan( -FOCUS_POS / y_R );
 
             if( Polarisation == LINEAR_X || Polarisation == LINEAR_Z )
             {
-                elong *= math::exp( -r2 / w_y / w_y ) * cos( 2.0f * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - 2.0f * float_X( PI ) / WAVE_LENGTH * r2 / 2.0f / R_y + xi_y + phase )
-                    * math::exp( -( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                       *( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                       / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( 2.0f * PULSE_LENGTH ) / ( 2.0f * PULSE_LENGTH ) );
+                elong *= math::exp( -r2 / w_y / w_y ) * math::cos( float_X(2.0) * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - float_X(2.0) * float_X( PI ) / WAVE_LENGTH * r2 / float_X(2.0) / R_y + xi_y + phase )
+                    * math::exp( -( r2 / float_X(2.0) / R_y - FOCUS_POS - phase / float_X(2.0) / float_X( PI ) * WAVE_LENGTH )
+                          *( r2 / float_X(2.0) / R_y - FOCUS_POS - phase / float_X(2.0) / float_X( PI ) * WAVE_LENGTH )
+                          / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( float_X(2.0) * PULSE_LENGTH ) / ( float_X(2.0) * PULSE_LENGTH ) );
             }
             else if( Polarisation == CIRCULAR )
             {
-                elong.x() *= math::exp( -r2 / w_y / w_y ) * cos( 2.0f * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - 2.0f * float_X( PI ) / WAVE_LENGTH * r2 / 2.0f / R_y + xi_y + phase )
-                    * math::exp( -( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                       *( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                       / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( 2.0f * PULSE_LENGTH ) / ( 2.0f * PULSE_LENGTH ) );
+                elong.x() *= math::exp( -r2 / w_y / w_y ) * math::cos( float_X(2.0) * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - float_X(2.0) * float_X( PI ) / WAVE_LENGTH * r2 / float_X(2.0) / R_y + xi_y + phase )
+                    * math::exp( -( r2 / float_X(2.0) / R_y - FOCUS_POS - phase / float_X(2.0) / float_X( PI ) * WAVE_LENGTH )
+                          *( r2 / float_X(2.0) / R_y - FOCUS_POS - phase / float_X(2.0) / float_X( PI ) * WAVE_LENGTH )
+                          / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( float_X(2.0) * PULSE_LENGTH ) / ( float_X(2.0) * PULSE_LENGTH ) );
                 phase += float_X( PI / 2.0 );
-                elong.z() *= math::exp( -r2 / w_y / w_y ) * cos( 2.0f * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - 2.0f * float_X( PI ) / WAVE_LENGTH * r2 / 2.0f / R_y + xi_y + phase )
-                    * math::exp( -( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                       *( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                       / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( 2.0f * PULSE_LENGTH ) / ( 2.0f * PULSE_LENGTH ) );
+                elong.z() *= math::exp( -r2 / w_y / w_y ) * math::cos( float_X(2.0) * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - float_X(2.0) * float_X( PI ) / WAVE_LENGTH * r2 / float_X(2.0) / R_y + xi_y + phase )
+                    * math::exp( -( r2 / float_X(2.0) / R_y - FOCUS_POS - phase / float_X(2.0) / float_X( PI ) * WAVE_LENGTH )
+                          *( r2 / float_X(2.0) / R_y - FOCUS_POS - phase / float_X(2.0) / float_X( PI ) * WAVE_LENGTH )
+                          / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( float_X(2.0) * PULSE_LENGTH ) / ( float_X(2.0) * PULSE_LENGTH ) );
                 phase -= float_X( PI / 2.0 );
             }
 
             return elong;
-#else
-            //beam waist in the near field: w_y(y=0) == W0
-            const float_X w_y = W0 * sqrtf( float_X(1.0) + ( FOCUS_POS / y_R )*( FOCUS_POS / y_R ) );
-            //! the Gouy phase shift
-            const float_X xi_y = atanf( -FOCUS_POS / y_R );
 
-            if( Polarisation == LINEAR_X || Polarisation == LINEAR_Z )
-            {
-                elong *= math::exp( -r2 / w_y / w_y ) * __cosf( 2.0f * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - 2.0f * float_X( PI ) / WAVE_LENGTH * r2 / 2.0f / R_y + xi_y + phase )
-                    * math::exp( -( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                          *( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                          / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( 2.0f * PULSE_LENGTH ) / ( 2.0f * PULSE_LENGTH ) );
-            }
-            else if( Polarisation == CIRCULAR )
-            {
-                elong.x() *= math::exp( -r2 / w_y / w_y ) * __cosf( 2.0f * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - 2.0f * float_X( PI ) / WAVE_LENGTH * r2 / 2.0f / R_y + xi_y + phase )
-                    * math::exp( -( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                          *( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                          / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( 2.0f * PULSE_LENGTH ) / ( 2.0f * PULSE_LENGTH ) );
-                phase += float_X( PI / 2.0 );
-                elong.z() *= math::exp( -r2 / w_y / w_y ) * __cosf( 2.0f * float_X( PI ) / WAVE_LENGTH * FOCUS_POS - 2.0f * float_X( PI ) / WAVE_LENGTH * r2 / 2.0f / R_y + xi_y + phase )
-                    * math::exp( -( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                          *( r2 / 2.0f / R_y - FOCUS_POS - phase / 2.0f / float_X( PI ) * WAVE_LENGTH )
-                          / SPEED_OF_LIGHT / SPEED_OF_LIGHT / ( 2.0f * PULSE_LENGTH ) / ( 2.0f * PULSE_LENGTH ) );
-                phase -= float_X( PI / 2.0 );
-            }
-
-            return elong;
-#endif
         }
 
     }
 }
-
-#endif	/* LASERGAUSSIANBEAM_HPP */
-
-
 

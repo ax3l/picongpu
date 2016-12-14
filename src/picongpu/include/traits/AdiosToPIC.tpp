@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -30,32 +30,41 @@ namespace picongpu
 
 namespace traits
 {
-    /** Trait for adios_integer */
+
     template<>
     struct AdiosToPIC<adios_integer>
     {
-        typedef int type;
+        typedef int32_t type;
     };
-    
-    /** Trait for adios_unsigned_integer */
+
     template<>
     struct AdiosToPIC<adios_unsigned_integer>
     {
-        typedef unsigned int type;
+        typedef uint32_t type;
     };
 
-    /** Trait for adios_real */
+    template<>
+    struct AdiosToPIC<adios_long>
+    {
+        typedef int64_t type;
+    };
+
+    template<>
+    struct AdiosToPIC<adios_unsigned_long>
+    {
+        typedef uint64_t type;
+    };
+
     template<>
     struct AdiosToPIC<adios_real>
     {
-        typedef float type;
+        typedef float_32 type;
     };
-    
-    /** Trait for adios_double */
+
     template<>
     struct AdiosToPIC<adios_double>
     {
-        typedef double type;
+        typedef float_64 type;
     };
 
 } //namespace traits

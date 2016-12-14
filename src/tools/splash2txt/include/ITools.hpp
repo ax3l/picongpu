@@ -1,10 +1,10 @@
 /*
- * Copyright 2013-2014 Felix Schmitt
+ * Copyright 2013-2016 Felix Schmitt
  *
  * This file is part of splash2txt.
  *
  * splash2txt is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -29,9 +29,9 @@ class ITools
 public:
 
     ITools(ProgramOptions &options, Dims &mpiTopology, std::ostream &outStream) :
-    options(options),
-    mpiTopology(mpiTopology),
-    outStream(outStream)
+    m_options(options),
+    m_mpiTopology(mpiTopology),
+    m_outStream(outStream)
     {
 
     }
@@ -46,9 +46,9 @@ public:
     virtual void listAvailableDatasets() = 0;
 
 protected:
-    ProgramOptions &options;
-    Dims &mpiTopology;
-    std::ostream &outStream;
+    ProgramOptions &m_options;
+    Dims &m_mpiTopology;
+    std::ostream &m_outStream;
 };
 
 #endif	/* ITOOLS_HPP */

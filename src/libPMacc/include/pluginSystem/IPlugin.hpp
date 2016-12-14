@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt, Richard Pausch
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt, Richard Pausch
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -115,6 +115,21 @@ namespace PMacc
          * @return plugin name
          */
         virtual std::string pluginGetName() const = 0;
+
+        /**
+         * Called each timestep if particles are leaving the global simulation volume.
+         *
+         * This method is only called for species which are marked with the
+         * `GuardHandlerCallPlugins` policy in their descpription.
+         *
+         * The order in which the plugins are called is undefined, so this means
+         * read-only access to the particles.
+         *
+         * \param speciesName name of the particle species
+         * \param direction the direction the particles are leaving the simulation
+         */
+        virtual void onParticleLeave(const std::string& /*speciesName*/, const int32_t /*direction*/)
+        {}
 
         /** When was the plugin checkpointed last?
          *

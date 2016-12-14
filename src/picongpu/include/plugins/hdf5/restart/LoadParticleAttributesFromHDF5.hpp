@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -23,13 +23,15 @@
 #pragma once
 
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_types.hpp"
 #include "plugins/hdf5/HDF5Writer.def"
 #include "traits/PICToSplash.hpp"
+#include "traits/PICToOpenPMD.hpp"
 #include "traits/GetComponentsType.hpp"
 #include "traits/GetNComponents.hpp"
 #include "traits/Resolve.hpp"
+#include "assert.hpp"
 
 
 namespace picongpu
@@ -83,8 +85,9 @@ struct LoadParticleAttributesFromHDF5
         ParallelDomainCollector* dataCollector = params->dataCollector;
         for (uint32_t d = 0; d < components; d++)
         {
+            OpenPMDName<T_Identifier> openPMDName;
             std::stringstream datasetName;
-            datasetName << subGroup << "/" << T_Identifier::getName();
+            datasetName << subGroup << "/" << openPMDName();
             if (components > 1)
                 datasetName << "/" << name_lookup[d];
 
@@ -98,9 +101,10 @@ struct LoadParticleAttributesFromHDF5
                                sizeRead,
                                tmpArray
                                );
-            assert(sizeRead[0] == elements);
+            PMACC_ASSERT(sizeRead[0] == elements);
 
             /* copy component from temporary array to array of structs */
+            #pragma omp parallel for
             for (size_t i = 0; i < elements; ++i)
             {
                 ComponentType& ref = ((ComponentType*) dataPtr)[i * components + d];

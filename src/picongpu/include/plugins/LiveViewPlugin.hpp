@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 #include "dimensions/DataSpace.hpp"
@@ -33,8 +33,6 @@
 #include <list>
 #include "plugins/output/images/Visualisation.hpp"
 #include "plugins/output/images/LiveViewClient.hpp"
-
-#include <cassert>
 
 #include <stdexcept>
 
@@ -53,9 +51,9 @@ namespace picongpu
         typedef Visualisation<ParticlesType, LiveViewClient> VisType;
         typedef std::list<VisType*> VisPointerList;
 
-        LiveViewPlugin(std::string name, std::string prefix) :
-        analyzerName(name),
-        analyzerPrefix(prefix),
+        LiveViewPlugin() :
+        analyzerName("LiveViewPlugin: 2D (plane) insitu live visualisation of a species"),
+        analyzerPrefix(ParticlesType::FrameType::getName() + std::string("_liveView")),
         cellDescription(NULL)
         {
             Environment<>::get().PluginConnector().registerPlugin(this);
@@ -78,7 +76,7 @@ namespace picongpu
                     ((analyzerPrefix + ".ip").c_str(), po::value<std::vector<std::string > > (&ips)->multitoken(), "ip of server")
                     ((analyzerPrefix + ".port").c_str(), po::value<std::vector<std::string > > (&ports)->multitoken(), "port of server")
                     ((analyzerPrefix + ".axis").c_str(), po::value<std::vector<std::string > > (&axis)->multitoken(), "axis which are shown [valid values x,y,z] example: yz")
-                    ((analyzerPrefix + ".slicePoint").c_str(), po::value<std::vector<float> > (&slicePoints)->multitoken(), "value range: 0 <= x <= 1 , point of the slice");
+                    ((analyzerPrefix + ".slicePoint").c_str(), po::value<std::vector<float_32> > (&slicePoints)->multitoken(), "value range: 0 <= x <= 1 , point of the slice");
         }
 
         void setMappingDescription(MappingDesc *cellDescription)
@@ -174,7 +172,7 @@ namespace picongpu
         std::string analyzerPrefix;
 
         std::vector<uint32_t> notifyFrequencys;
-        std::vector<float> slicePoints;
+        std::vector<float_32> slicePoints;
         std::vector<std::string> ips;
         std::vector<std::string> ports;
         std::vector<std::string> axis;

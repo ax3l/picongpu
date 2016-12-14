@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,20 +23,19 @@
 
 #pragma once
 
-#include <cuda_runtime_api.h>
-#include <cuda.h>
-
-#include "memory/buffers/DeviceBuffer.hpp"
 #include "dimensions/DataSpace.hpp"
-#include "memory/boxes/DataBox.hpp"
-
-#include "eventSystem/EventSystem.hpp"
-#include "memory/buffers/DeviceBuffer.hpp"
-#include "eventSystem/tasks/StreamTask.hpp"
 #include "mappings/simulation/EnvironmentController.hpp"
+#include "memory/buffers/DeviceBuffer.hpp"
+#include "memory/boxes/DataBox.hpp"
+#include "eventSystem/EventSystem.hpp"
+#include "eventSystem/tasks/StreamTask.hpp"
+#include "nvidia/gpuEntryFunction.hpp"
 
 #include <boost/type_traits/remove_pointer.hpp>
 #include <boost/type_traits.hpp>
+
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 
 namespace PMacc
 {
@@ -83,20 +83,22 @@ getValue(T_Type& value)
 
 }
 
-template <class DataBox, typename T_ValueType, typename Space>
-__global__ void kernelSetValue(DataBox data, const T_ValueType value, const Space size)
+struct KernelSetValue
 {
-    const Space threadIndex(threadIdx);
-    const Space blockIndex(blockIdx);
-    const Space gridSize(blockDim);
+    template <class DataBox, typename T_ValueType, typename Space>
+    DINLINE void operator()(DataBox data, const T_ValueType value, const Space size) const
+    {
+        const Space threadIndex(threadIdx);
+        const Space blockIndex(blockIdx);
+        const Space gridSize(blockDim);
 
-    Space idx(gridSize * blockIndex + threadIndex);
+        Space idx(gridSize * blockIndex + threadIndex);
 
-    if (idx.x() >= size.x())
-        return;
-    data(idx) = taskSetValueHelper::getValue(value);
-}
-
+        if (idx.x() >= size.x())
+            return;
+        data(idx) = taskSetValueHelper::getValue(value);
+    }
+};
 
 template <class TYPE, unsigned DIM>
 class DeviceBuffer;
@@ -115,7 +117,7 @@ class TaskSetValueBase : public StreamTask
 {
 public:
     typedef T_ValueType ValueType;
-    static const uint32_t dim = T_dim;
+    static constexpr uint32_t dim = T_dim;
 
     TaskSetValueBase(DeviceBuffer<ValueType, dim>& dst, const ValueType& value) :
     StreamTask(),
@@ -132,7 +134,7 @@ public:
 
     virtual void init() = 0;
 
-    bool executeIntern() throw (std::runtime_error)
+    bool executeIntern()
     {
         return isFinished();
     }
@@ -159,7 +161,7 @@ class TaskSetValue<T_ValueType, T_dim, true> : public TaskSetValueBase<T_ValueTy
 {
 public:
     typedef T_ValueType ValueType;
-    static const uint32_t dim = T_dim;
+    static constexpr uint32_t dim = T_dim;
 
     TaskSetValue(DeviceBuffer<ValueType, dim>& dst, const ValueType& value) :
     TaskSetValueBase<ValueType, dim>(dst, value)
@@ -175,19 +177,32 @@ public:
     {
         size_t current_size = this->destination->getCurrentSize();
         const DataSpace<dim> area_size(this->destination->getCurrentDataSpace(current_size));
-        dim3 gridSize = area_size;
 
-        /* line wise thread blocks*/
-        gridSize.x = ceil(double(gridSize.x) / 256.);
+        if(area_size.productOfComponents() != 0)
+        {
+            auto gridSize = area_size;
 
-        kernelSetValue << <gridSize, 256, 0, this->getCudaStream() >> >
-            (this->destination->getDataBox(), this->value, area_size);
+            /* line wise thread blocks*/
+            gridSize.x() = ceil(double(gridSize.x()) / 256.);
 
+            auto destBox = this->destination->getDataBox();
+            nvidia::gpuEntryFunction<<<
+                gridSize,
+                256,
+                0,
+                this->getCudaStream()
+            >>>(
+                KernelSetValue{},
+                destBox,
+                this->value,
+                area_size
+            );
+        }
         this->activate();
     }
 };
 
-/** implementation for small values (>256 byte)
+/** implementation for big values (>256 byte)
  *
  * This class uses CUDA memcopy to copy an instance of T_ValueType to the GPU
  * and runs a kernel which assigns this value to all cells.
@@ -197,7 +212,7 @@ class TaskSetValue<T_ValueType, T_dim, false> : public TaskSetValueBase<T_ValueT
 {
 public:
     typedef T_ValueType ValueType;
-    static const uint32_t dim = T_dim;
+    static constexpr uint32_t dim = T_dim;
 
     TaskSetValue(DeviceBuffer<ValueType, dim>& dst, const ValueType& value) :
     TaskSetValueBase<ValueType, dim>(dst, value), valuePointer_host(NULL)
@@ -217,21 +232,35 @@ public:
     {
         size_t current_size = this->destination->getCurrentSize();
         const DataSpace<dim> area_size(this->destination->getCurrentDataSpace(current_size));
-        dim3 gridSize = area_size;
+        if(area_size.productOfComponents() != 0)
+        {
+            auto gridSize = area_size;
 
-        /* line wise thread blocks*/
-        gridSize.x = ceil(double(gridSize.x) / 256.);
+            /* line wise thread blocks*/
+            gridSize.x()= ceil(double(gridSize.x()) / 256.);
 
-        ValueType* devicePtr = this->destination->getPointer();
+            ValueType* devicePtr = this->destination->getPointer();
 
-        CUDA_CHECK(cudaMallocHost(&valuePointer_host, sizeof (ValueType)));
-        *valuePointer_host = this->value; //copy value to new place
+            CUDA_CHECK(cudaMallocHost(&valuePointer_host, sizeof (ValueType)));
+            *valuePointer_host = this->value; //copy value to new place
 
-        CUDA_CHECK(cudaMemcpyAsync(
-                                   devicePtr, valuePointer_host, sizeof (ValueType),
-                                   cudaMemcpyHostToDevice, this->getCudaStream()));
-        kernelSetValue << <gridSize, 256, 0, this->getCudaStream() >> >
-            (this->destination->getDataBox(), devicePtr, area_size);
+            CUDA_CHECK(cudaMemcpyAsync(
+                                       devicePtr, valuePointer_host, sizeof (ValueType),
+                                       cudaMemcpyHostToDevice, this->getCudaStream()));
+
+            auto destBox = this->destination->getDataBox();
+            nvidia::gpuEntryFunction<<<
+                gridSize,
+                256,
+                0,
+                this->getCudaStream()
+            >>>(
+                KernelSetValue{},
+                destBox,
+                devicePtr,
+                area_size
+            );
+        }
 
         this->activate();
     }

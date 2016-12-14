@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Richard Pausch, Axel Huebl
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Richard Pausch,
+ *                     Axel Huebl, Alexander Debus
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,8 +23,10 @@
 
 #pragma once
 
-#include "types.h"
-#include <float.h>
+#include "pmacc_types.hpp"
+#include <cfloat>
+#include <cmath>
+
 
 namespace PMacc
 {
@@ -44,6 +47,21 @@ struct Sin<float>
 };
 
 template<>
+struct ASin<float>
+{
+    typedef float result;
+
+    HDINLINE float operator( )(const float& value)
+    {
+#if __CUDA_ARCH__
+        return ::asinf( value );
+#else
+        return ::asin( value );
+#endif
+    }
+};
+
+template<>
 struct Cos<float>
 {
     typedef float result;
@@ -51,6 +69,21 @@ struct Cos<float>
     HDINLINE float operator( )(const float& value )
     {
         return ::cosf( value );
+    }
+};
+
+template<>
+struct ACos<float>
+{
+    typedef float result;
+
+    HDINLINE float operator( )(const float& value)
+    {
+#if __CUDA_ARCH__
+        return ::acosf( value );
+#else
+        return ::acos( value );
+#endif
     }
 };
 
@@ -66,13 +99,29 @@ struct Tan<float>
 };
 
 template<>
+struct ATan<float>
+{
+    typedef float result;
+
+    HDINLINE float operator( )(const float& value)
+    {
+        return ::atanf( value );
+    }
+};
+
+template<>
 struct SinCos<float, float, float>
 {
     typedef void result;
 
     HDINLINE void operator( )(float arg, float& sinValue, float& cosValue )
     {
+#if defined(_MSC_VER) && !defined(__CUDA_ARCH__)
+        sinValue = ::sinf(arg);
+        cosValue = ::cosf(arg);
+#else
         ::sincosf( arg, &sinValue, &cosValue );
+#endif
     }
 };
 
@@ -83,12 +132,23 @@ struct Sinc<float>
 {
     typedef float result;
 
-    HDINLINE double operator( )(const float& value )
+    HDINLINE float operator( )(const float& value )
     {
-      if(::fabsf(value) < FLT_EPSILON)
-	return 1.0;
-      else
-	return ::sinf( value )/value;
+        if(PMacc::algorithms::math::abs(value) < FLT_EPSILON)
+            return 1.0;
+        else
+            return PMacc::algorithms::math::sin( value )/value;
+    }
+};
+
+template<>
+struct Atan2<float>
+{
+    typedef float result;
+
+    HDINLINE float operator( )(const float& val1, const float& val2 )
+    {
+        return ::atan2f( val1, val2 );
     }
 };
 

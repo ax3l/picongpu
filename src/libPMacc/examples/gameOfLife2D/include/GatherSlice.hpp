@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Maximilian Knespel
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera,
+ *                     Maximilian Knespel, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -19,19 +20,14 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef GATHERSLICE_HPP
-#define	GATHERSLICE_HPP
-
-#include "types.h"
-
-
-#include <mpi.h>
 #include "mappings/simulation/GridController.hpp"
-
-//c includes
 #include "memory/boxes/PitchedBox.hpp"
 #include "dimensions/DataSpace.hpp"
+#include "pmacc_types.hpp"                                  // DIM*
+
+#include <mpi.h>
 
 namespace gol
 {
@@ -94,7 +90,9 @@ struct GatherSlice
     }
 
     /*
-     * @return true if object has reduced data after reduce call else false
+     * Saves the message header and creates a new MPI group with all ranks
+     * that called this with isActive = true
+     * @return true if the current rank is the master of the new MPI group
      */
     bool init(const MessageHeader mHeader, bool isActive)
     {
@@ -184,9 +182,10 @@ struct GatherSlice
             for (int i = 0; i < numRanks; ++i)
             {
                 MessageHeader* head = (MessageHeader*) (recvHeader + sizeof(MessageHeader)* i);
+                size_t offset = header.nodeSize.productOfComponents() * static_cast<size_t>(i);
                 Box srcBox = Box(PitchedBox<ValueType, DIM2 > (
-                                                               (ValueType*) fullData,
-                                                               Space(0, head->nodeSize.y() * i),
+                                                               reinterpret_cast<ValueType*>(fullData) + offset,
+                                                               Space(),
                                                                head->nodeSize,
                                                                head->nodeSize.x() * sizeof (ValueType)
                                                                ));
@@ -227,5 +226,4 @@ private:
 
 }//namespace
 
-#endif	/* GATHERSLICE_HPP */
 

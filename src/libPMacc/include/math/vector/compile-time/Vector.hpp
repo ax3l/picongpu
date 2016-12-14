@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include "types.h"
-#include <stdint.h>
 #include <boost/mpl/size.hpp>
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
@@ -37,6 +35,9 @@
 #include <boost/mpl/accumulate.hpp>
 #include <boost/mpl/less.hpp>
 #include "math/Vector.hpp"
+#include "pmacc_types.hpp"
+
+#include <stdint.h>
 
 namespace PMacc
 {
@@ -97,7 +98,14 @@ struct VectorFromCT<3>
 template<typename Arg0>
 struct TypeSelector
 {
-    typedef typename Arg0::value_type type;
+    typedef Arg0 type;
+};
+
+/** get integral type*/
+template<typename T, T value>
+struct TypeSelector<mpl::integral_c<T, value > >
+{
+    typedef T type;
 };
 
 template<>
@@ -127,7 +135,7 @@ struct Vector
         typedef typename mpl::at_c<mplVector, element>::type type;
     };
 
-    static const int dim = mpl::size<mplVector >::type::value;
+    static constexpr int dim = mpl::size<mplVector >::type::value;
 
     typedef typename detail::TypeSelector<x>::type type;
     typedef Vector<x, y, z> This;
@@ -145,8 +153,7 @@ struct Vector
 
     /** Create a runtime Vector
      *
-     *  Creates the corresponding runtime vector
-     *  object
+     *  Creates the corresponding runtime vector object.
      *
      *  \return RT_type runtime vector with same value type
      */

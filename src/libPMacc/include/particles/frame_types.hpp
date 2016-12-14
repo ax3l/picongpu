@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,11 +20,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef FRAME_TYPES_HPP
-#define	FRAME_TYPES_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 
 //define which index means that the index is invalid
 #define INV_IDX 0xFFFFFFFF
@@ -34,16 +32,11 @@
 
 namespace PMacc
 {
-
-
-
     /**
      * Is used for indirect pointer layer.
      * This type is limited by atomicSub on device (in CUDA 3.2 we can use 32 Bit int only).
      */
-    typedef  unsigned  int vint_t;
-
-
+    typedef unsigned int vint_t;
 
     /**
      * Defines the local cell id type in a supercell
@@ -55,7 +48,3 @@ namespace PMacc
      */
     enum FrameType { CORE_FRAME = 0u, BORDER_FRAME =1u , BIG_FRAME=2u};
 }
-
-
-#endif	/* FRAME_TYPES_HPP */
-

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Felix Schmitt, Heiko Burau, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera, Wolfgang Hoenig
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -21,8 +21,6 @@
  */
 
 #pragma once
-
-#include <cassert>
 
 #include "dimensions/DataSpace.hpp"
 #include "mappings/simulation/GridController.hpp"
@@ -62,13 +60,22 @@ namespace PMacc
 
         /**
          * Set offset of the local domain.
-         * (Note: this used to be called 'global offset')
          *
          * @param offset offset of local domain
          */
         void setLocalDomainOffset(const Size& offset)
         {
             localDomain = Selection<DIM>(localDomain.size, offset);
+        }
+
+        /**
+         * Set offset of the global domain.
+         *
+         * @param offset offset of global domain
+         */
+        void setGlobalDomainOffset(const Size& offset)
+        {
+            globalDomain = Selection<DIM>(globalDomain.size, offset);
         }
 
         /**

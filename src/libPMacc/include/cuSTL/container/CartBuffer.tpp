@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,9 +21,14 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "cuSTL/container/allocator/tag.h"
+#include "eventSystem/EventSystem.hpp"
+#include "Environment.hpp"
 #include <iostream>
-#include <eventSystem/EventSystem.hpp>
+#include <exception>
+#include <sstream>
 
 namespace PMacc
 {
@@ -31,12 +37,16 @@ namespace container
 
 namespace detail
 {
-    template<int dim> struct PitchHelper;
+    template<int dim>
+    struct PitchHelper;
+
     template<>
     struct PitchHelper<1>
     {
         template<typename TCursor>
         HDINLINE math::Size_t<0u> operator()(const TCursor&) {return math::Size_t<0u>();}
+
+        HDINLINE math::Size_t<0u> operator()(const math::Size_t<1u>&) {return math::Size_t<0u>();}
     };
     template<>
     struct PitchHelper<2>
@@ -44,7 +54,12 @@ namespace detail
         template<typename TCursor>
         HDINLINE math::Size_t<1> operator()(const TCursor& cursor)
         {
-            return math::Size_t<1>((char*)cursor(0, 1).getMarker() - (char*)cursor.getMarker());
+            return math::Size_t<1>(size_t((char*)cursor(0, 1).getMarker() - (char*)cursor.getMarker()));
+        }
+
+        HDINLINE math::Size_t<1> operator()(const math::Size_t<2>& size)
+        {
+            return math::Size_t<1>(size.x());
         }
     };
     template<>
@@ -53,8 +68,13 @@ namespace detail
         template<typename TCursor>
         HDINLINE math::Size_t<2> operator()(const TCursor& cursor)
         {
-            return math::Size_t<2>((char*)cursor(0, 1, 0).getMarker() - (char*)cursor.getMarker(),
-                                     (char*)cursor(0, 0, 1).getMarker() - (char*)cursor.getMarker());
+            return math::Size_t<2>((size_t)((char*)cursor(0, 1, 0).getMarker() - (char*)cursor.getMarker()),
+                                   (size_t)((char*)cursor(0, 0, 1).getMarker() - (char*)cursor.getMarker()));
+        }
+
+        HDINLINE math::Size_t<2> operator()(const math::Size_t<3>& size)
+        {
+            return math::Size_t<2>(size.x(), size.x() * size.y());
         }
     };
 
@@ -82,7 +102,7 @@ namespace detail
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
-(const math::Size_t<T_dim>& _size)
+(const math::Size_t<T_dim>& _size) : refCount(NULL)
 {
     this->_size = _size;
     init();
@@ -90,28 +110,28 @@ CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
-(size_t x)
+(size_t x) : refCount(NULL)
 {
     this->_size = math::Size_t<1>(x); init();
 }
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
-(size_t x, size_t y)
+(size_t x, size_t y) : refCount(NULL)
 {
     this->_size = math::Size_t<2>(x, y); init();
 }
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
-(size_t x, size_t y, size_t z)
+(size_t x, size_t y, size_t z) : refCount(NULL)
 {
     this->_size = math::Size_t<3>(x, y, z); init();
 }
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
-(const CartBuffer<Type, T_dim, Allocator, Copier, Assigner>& other)
+(const CartBuffer<Type, T_dim, Allocator, Copier, Assigner>& other) : refCount(NULL)
 {
     this->dataPointer = other.dataPointer;
     this->refCount = other.refCount;
@@ -124,11 +144,14 @@ CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::CartBuffer
-(BOOST_RV_REF(CartBuffer<Type COMMA T_dim COMMA Allocator COMMA Copier COMMA Assigner>) other)
+(BOOST_RV_REF(CartBuffer<Type COMMA T_dim COMMA Allocator COMMA Copier COMMA Assigner>) other) : refCount(NULL)
 {
-    this->dataPointer = 0;
-    this->refCount = 0;
-    *this = other;
+    this->dataPointer = other.dataPointer;
+    this->refCount = other.refCount;
+    this->_size = other._size;
+    this->pitch = other.pitch;
+    other.dataPointer = NULL;
+    other.refCount = NULL;
 }
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
@@ -167,8 +190,17 @@ void CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::exit()
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>&
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::operator=
-(const CartBuffer<Type, T_dim, Allocator, Copier, Assigner>& rhs)
+(BOOST_COPY_ASSIGN_REF(CartBuffer) rhs)
 {
+#ifndef __CUDA_ARCH__
+    if(rhs.size() != this->size())
+        throw std::invalid_argument(static_cast<std::stringstream&>(
+            std::stringstream() << "Assignment: Sizes of buffers do not match: "
+                << this->size() << " <-> " << rhs.size() << std::endl).str());
+#else
+    assert(rhs.size() == this->size());
+#endif
+
     if(this->dataPointer == rhs.dataPointer) return *this;
     Copier::copy(this->dataPointer, this->pitch, rhs.dataPointer, rhs.pitch, rhs._size);
     return *this;
@@ -177,16 +209,25 @@ CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::operator=
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>&
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::operator=
-(BOOST_RV_REF(CartBuffer<Type COMMA T_dim COMMA Allocator COMMA Copier COMMA Assigner>) rhs)
+(BOOST_RV_REF(CartBuffer) rhs)
 {
+#ifndef __CUDA_ARCH__
+    if(rhs.size() != this->size())
+        throw std::invalid_argument(static_cast<std::stringstream&>(
+            std::stringstream() << "Assignment: Sizes of buffers do not match: "
+                << this->size() << " <-> " << rhs.size() << std::endl).str());
+#else
+    assert(rhs.size() == this->size());
+#endif
     if(this->dataPointer == rhs.dataPointer) return *this;
 
     exit();
     this->dataPointer = rhs.dataPointer;
     this->refCount = rhs.refCount;
-    (*this->refCount)++;
     this->_size = rhs._size;
     this->pitch = rhs.pitch;
+    rhs.dataPointer = NULL;
+    rhs.refCount = NULL;
     return *this;
 }
 
@@ -199,7 +240,7 @@ CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::view
 {
     a = (a + (math::Int<T_dim>)this->size()) % (math::Int<T_dim>)this->size();
     b = (b + (math::Int<T_dim>)this->size())
-            % ((math::Int<T_dim>)this->size() + math::Int<T_dim>(1));
+            % ((math::Int<T_dim>)this->size() + math::Int<T_dim>::create(1));
 
     View<CartBuffer<Type, T_dim, Allocator, Copier, Assigner> > result;
 
@@ -208,12 +249,6 @@ CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::view
     result.pitch = this->pitch;
     result.refCount = this->refCount;
     return result;
-}
-
-template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
-void CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::assign(const Type& value)
-{
-    Assigner::assign(this->dataPointer, this->pitch, value, this->_size);
 }
 
 template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
@@ -228,7 +263,7 @@ cursor::SafeCursor<cursor::BufferCursor<Type, T_dim> >
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::originSafe() const
 {
     return cursor::make_SafeCursor(this->origin(),
-                                   math::Int<T_dim>(0),
+                                   math::Int<T_dim>::create(0),
                                    math::Int<T_dim>(size()));
 }
 
@@ -240,7 +275,7 @@ CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::originCustomAxes(const mat
     factor[0] = sizeof(Type);
     if(dim > 1) factor[1] = this->pitch[0];
     if(dim > 2) factor[2] = this->pitch[1];
-    //\todo: is the conversation from size_t to uint32_t allowed?
+    //\todo: is the conversation from size_t to int32_t allowed?
     math::Int<dim> customFactor;
     for(int i = 0; i < dim; i++)
         customFactor[i] = (int)factor[axes[i]];
@@ -257,9 +292,16 @@ zone::SphericZone<T_dim>
 CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::zone() const
 {
     zone::SphericZone<T_dim> myZone;
-    myZone.offset = math::Int<T_dim>(0);
+    myZone.offset = math::Int<T_dim>::create(0);
     myZone.size = this->_size;
     return myZone;
+}
+
+template<typename Type, int T_dim, typename Allocator, typename Copier, typename Assigner>
+bool
+CartBuffer<Type, T_dim, Allocator, Copier, Assigner>::isContigousMemory() const
+{
+    return this->pitch == detail::PitchHelper<dim>()(this->_size);
 }
 
 template<typename Type, typename Allocator, typename Copier, typename Assigner>

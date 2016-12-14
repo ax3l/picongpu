@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -37,33 +37,33 @@ namespace picongpu
 
 namespace fieldSolverNone
 {
-    typedef typename picongpu::noSolver::NoSolver FieldSolver;
-    typedef yeeCell::YeeCell NumericalCellType;
+    typedef picongpu::noSolver::NoSolver FieldSolver;
+    namespace numericalCellType = yeeCell;
 }
 
 namespace fieldSolverYeeNative
 {
-    typedef typename picongpu::yeeSolver::YeeSolver<> FieldSolver;
-    typedef yeeCell::YeeCell NumericalCellType;
+    typedef picongpu::yeeSolver::YeeSolver<> FieldSolver;
+    namespace numericalCellType = yeeCell;
 }
 
 namespace fieldSolverYee
 {
-    typedef typename picongpu::yeeSolver::YeeSolver<> FieldSolver;
-    typedef yeeCell::YeeCell NumericalCellType;
+    typedef picongpu::yeeSolver::YeeSolver<> FieldSolver;
+    namespace numericalCellType = yeeCell;
 }
 
 #if(SIMDIM==DIM3)
 namespace fieldSolverDirSplitting
 {
     typedef picongpu::dirSplitting::DirSplitting FieldSolver;
-    typedef allCenteredCell::AllCenteredCell NumericalCellType;
+    namespace numericalCellType = emfCenteredCell;
 }
 
 namespace fieldSolverLehe
 {
-    typedef typename picongpu::leheSolver::LeheSolver FieldSolver;
-    typedef yeeCell::YeeCell NumericalCellType;
+    typedef picongpu::leheSolver::LeheSolver FieldSolver;
+    namespace numericalCellType = yeeCell;
 }
 #endif
 } //namespace picongpu

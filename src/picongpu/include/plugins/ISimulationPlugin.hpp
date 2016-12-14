@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Rene Widera, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 #include "simulation_classTypes.hpp"

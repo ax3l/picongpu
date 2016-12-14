@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,11 +22,8 @@
 
 #pragma once
 
-#include <cuda_runtime.h>
-
 #include "eventSystem/tasks/ITask.hpp"
-#include "eventSystem/events/CudaEvent.hpp"
-
+#include "eventSystem/events/CudaEventHandle.hpp"
 
 namespace PMacc
 {
@@ -59,14 +56,14 @@ namespace PMacc
          *
          * @return the task's cuda event
          */
-        CudaEvent getCudaEvent() const;
+        CudaEventHandle getCudaEventHandle() const;
 
         /**
          * Sets the
          *
          * @param cudaEvent
          */
-        void setCudaEvent(const CudaEvent& cudaEvent);
+        void setCudaEventHandle(const CudaEventHandle& cudaEvent);
 
         /**
          * Returns if this task is finished.
@@ -105,10 +102,9 @@ namespace PMacc
         inline void activate();
 
 
-    private:
         EventStream *stream;
-        CudaEvent cudaEvent;
-        bool hasCudaEvent;
+        CudaEventHandle cudaEvent;
+        bool hasCudaEventHandle;
         bool alwaysFinished;
     };
 

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -25,6 +25,7 @@
 
 #include "eventSystem/EventSystem.hpp"
 #include "traits/NumberOfExchanges.hpp"
+#include "assert.hpp"
 
 namespace PMacc
 {
@@ -71,8 +72,8 @@ namespace PMacc
                         __startTransaction();
                         lastSize = parBase.getParticlesBuffer().getReceiveExchangeStack(exchange).getHostParticlesCurrentSize();
                         parBase.insertParticles(exchange);
-                       // std::cout<<"brecv = "<<parBase.getParticlesBuffer().getReceiveExchangeStack(exchange).getHostCurrentSize()<<std::endl;
                         tmpEvent = __endTransaction();
+                        initDependency = tmpEvent;
                         state = WaitForInsert;
                     }
 
@@ -83,14 +84,10 @@ namespace PMacc
                     if (NULL == Environment<>::get().Manager().getITaskIfNotFinished(tmpEvent.getTaskId()))
                     {
                         state=Wait;
-                        assert(lastSize <= maxSize);
+                        PMACC_ASSERT(lastSize <= maxSize);
                         //check for next bash round
                         if (lastSize == maxSize)
-                        {
-                            std::cerr << "recv max size " << maxSize << " particles" << std::endl;
                             init(); //call init and run a full send cycle
-
-                        }
                         else
                         {
                             state = Finished;

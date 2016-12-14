@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,10 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef VELOCITY_HPP
-#define	VELOCITY_HPP
+#pragma once
 
 namespace picongpu
 {
@@ -42,6 +39,4 @@ namespace picongpu
         }
     };
 }
-
-#endif	/* VELOCITY_HPP */
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013  Rene Widera
+ * Copyright 2013-2016  Rene Widera
  *
  * This file is part of mpiInfo.
  *
@@ -20,6 +20,7 @@
 
 #include <mpi.h>
 #include <cstdlib>
+#include <iostream> // std::cerr
 
 #include <boost/program_options.hpp>
 #include <boost/program_options/options_description.hpp>

@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch,
+ *                     Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -23,9 +24,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 /*pic default*/
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_classTypes.hpp"
 
@@ -36,7 +38,7 @@
 /*libPMacc*/
 #include "memory/buffers/GridBuffer.hpp"
 #include "mappings/simulation/GridController.hpp"
-#include "fields/LaserPhysics.hpp"
+#include "fields/LaserPhysics.def"
 #include "memory/boxes/DataBox.hpp"
 #include "memory/boxes/PitchedBox.hpp"
 
@@ -51,8 +53,8 @@ namespace picongpu
     {
     public:
         typedef float3_X ValueType;
-        typedef typename promoteType<float_64, ValueType>::type UnitValueType;
-        static const int numComponents = ValueType::dim;
+        typedef promoteType<float_64, ValueType>::type UnitValueType;
+        static constexpr int numComponents = ValueType::dim;
 
         typedef DataBox<PitchedBox<ValueType, simDim> > DataBoxType;
 
@@ -65,6 +67,14 @@ namespace picongpu
         virtual void reset(uint32_t currentStep);
 
         HDINLINE static UnitValueType getUnit();
+
+        /** powers of the 7 base measures
+         *
+         * characterizing the record's unit in SI
+         * (length L, mass M, time T, electric current I,
+         *  thermodynamic temperature theta, amount of substance N,
+         *  luminous intensity J) */
+        HINLINE static std::vector<float_64> getUnitDimension();
 
         static std::string getName();
 
@@ -102,5 +112,3 @@ namespace picongpu
 
 
 }
-
-#include "fields/FieldB.tpp"

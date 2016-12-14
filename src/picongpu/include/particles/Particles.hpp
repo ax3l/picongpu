@@ -1,6 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt, 
- *                     Marco Garten
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
+ *                     Marco Garten, Alexander Grund
  *
  * This file is part of PIConGPU.
  *
@@ -21,16 +21,21 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_classTypes.hpp"
 
 #include "fields/Fields.def"
+#include "fields/Fields.hpp"
 #include "particles/ParticlesBase.hpp"
 #include "particles/memory/buffers/ParticlesBuffer.hpp"
+#include "particles/manipulators/manipulators.def"
 
+#include "memory/dataTypes/Mask.hpp"
+#include "mappings/simulation/GridController.hpp"
 #include "dataManagement/ISimulationData.hpp"
 
-#include <curand_kernel.h>
+#include <string>
+#include <sstream>
 
 namespace picongpu
 {
@@ -52,46 +57,88 @@ public:
 
     virtual ~Particles();
 
-    void createParticleBuffer(size_t gpuMemory);
-
-
-    virtual void reset(uint32_t currentStep);
+    void createParticleBuffer();
 
     void init(FieldE &fieldE, FieldB &fieldB, FieldJ &fieldJ, FieldTmp &fieldTmp);
 
     void update(uint32_t currentStep);
 
-    void initFill(uint32_t currentStep);
+    template<typename T_GasFunctor, typename T_PositionFunctor>
+    void initGas(T_GasFunctor& gasFunctor, T_PositionFunctor& positionFunctor, const uint32_t currentStep);
 
-    template< typename t_ParticleDescription>
-    void deviceCloneFrom(Particles<t_ParticleDescription> &src);
+    template< typename T_SrcParticleDescription,
+              typename T_ManipulateFunctor>
+    void deviceDeriveFrom(Particles<T_SrcParticleDescription> &src, T_ManipulateFunctor& manipulateFunctor);
 
-    void deviceAddTemperature(float_X temperature);
-
-    void deviceSetDrift(uint32_t currentStep);
+    template<typename T_Functor>
+    void manipulateAllParticles(uint32_t currentStep, T_Functor& functor);
 
     SimulationDataId getUniqueId();
 
+    /* sync device data to host
+     *
+     * ATTENTION: - in the current implementation only supercell meta data are copied!
+     *            - the shared (between all species) mallocMC buffer must be copied once
+     *              by the user
+     */
     void synchronize();
 
     void syncToDevice();
-    
-    //Ionization
-    template<typename T_Elec>
-    void ionize(T_Elec electrons, uint32_t currentStep);
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList;
+        const DataSpace<DIM3> periodic =
+            Environment<simDim>::get().EnvironmentController().getCommunicator().getPeriodic();
+
+        for( uint32_t i = 1; i < NumberOfExchanges<simDim>::value; ++i )
+        {
+            // for each planar direction: left right top bottom back front
+            if( FRONT % i == 0 )
+            {
+                const std::string directionName = ExchangeTypeNames()[i];
+                const DataSpace<DIM3> relDir = Mask::getRelativeDirections<DIM3>(i);
+
+                const bool isPeriodic =
+                    (relDir * periodic) != DataSpace<DIM3>::create(0);
+
+                std::string boundaryName = "absorbing";
+                if( isPeriodic )
+                    boundaryName = "periodic";
+
+                if( boundaryName == "absorbing" )
+                {
+                    propList[directionName]["param"] = std::string("without field correction");
+                }
+                else
+                {
+                    propList[directionName]["param"] = std::string("none");
+                }
+
+                propList[directionName]["name"] = boundaryName;
+            }
+        }
+        return propList;
+    }
 
 private:
-    SimulationDataId datasetID;
-    GridLayout<simDim> gridLayout;
+    SimulationDataId m_datasetID;
+    GridLayout<simDim> m_gridLayout;
 
 
     FieldE *fieldE;
     FieldB *fieldB;
-    FieldJ *fieldJurrent;
+    FieldJ *fieldJcurrent;
     FieldTmp *fieldTmp;
-
-    curandState* randState;
 };
 
+namespace traits
+{
+template<typename T_ParticleDescription>
+struct GetDataBoxType<picongpu::Particles<T_ParticleDescription> >
+{
+    typedef typename picongpu::Particles<T_ParticleDescription>::ParticlesBoxType type;
+};
 
+} //namespace traits
 } //namespace picongpu

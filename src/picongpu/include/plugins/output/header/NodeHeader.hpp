@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,15 +18,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef NODEHEADER_HPP
-#define	NODEHEADER_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
-#include "iostream"
-#include "stdlib.h"
+#include <iostream>
+#include <cstdlib>
 
 struct NodeHeader
 {
@@ -58,6 +55,4 @@ struct NodeHeader
     }
 
 };
-
-#endif	/* NODEHEADER_HPP */
 

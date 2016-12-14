@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -19,16 +19,13 @@
  */
 
 
+#pragma once
 
-#ifndef LASERPHYSICS_HPP
-#define LASERPHYSICS_HPP
-
-#include "types.h"
 #include "simulation_defines.hpp"
-
+#include "fields/LaserPhysics.def"
 #include "dimensions/GridLayout.hpp"
 #include "mappings/simulation/SubGrid.hpp"
-#include <math.h>
+#include <cmath>
 
 
 
@@ -41,31 +38,31 @@ class LaserManipulator
 public:
 
     HINLINE LaserManipulator(float3_X elong, DataSpace<simDim> globalCentered, float_X phase) :
-    elong(elong), globalCentered(globalCentered), phase(phase)
+    m_elong(elong), m_globalCentered(globalCentered), m_phase(phase)
     {
         //  std::cout<<globalCenteredXOffset<<std::endl;
     }
 
     HDINLINE float3_X getManipulation(DataSpace<simDim> iOffset)
     {
-        const float_X posX = float_X(globalCentered.x() + iOffset.x()) * CELL_WIDTH;
+        const float_X posX = float_X(m_globalCentered.x() + iOffset.x()) * CELL_WIDTH;
 
         /*! \todo this is very dirty, please fix laserTransversal interface and use floatD_X
             and not posX,posY */
         const float_X posZ =
 #if (SIMDIM==DIM3)
-        float_X(globalCentered.z() + iOffset.z()) * CELL_DEPTH;
+        float_X(m_globalCentered.z() + iOffset.z()) * CELL_DEPTH;
 #else
         0.0;
 #endif
 
-        return laserProfile::laserTransversal(elong, phase, posX, posZ);
+        return laserProfile::laserTransversal(m_elong, m_phase, posX, posZ);
     }
 
 private:
-    float3_X elong;
-    float_X phase;
-    DataSpace<simDim> globalCentered;
+    float3_X m_elong;
+    float_X m_phase;
+    DataSpace<simDim> m_globalCentered;
 };
 
 class LaserPhysics
@@ -73,7 +70,7 @@ class LaserPhysics
 public:
 
     LaserPhysics(GridLayout<simDim> layout) :
-    layout(layout)
+    m_layout(layout)
     {
     }
 
@@ -98,9 +95,6 @@ public:
 
 private:
 
-    GridLayout<simDim> layout;
+    GridLayout<simDim> m_layout;
 };
 }
-
-#endif  /* LASERPHYSICS_HPP */
-

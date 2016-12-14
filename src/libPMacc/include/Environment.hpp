@@ -1,10 +1,11 @@
 /**
- * Copyright 2014 Felix Schmitt, Conrad Schumann
+ * Copyright 2014-2016 Felix Schmitt, Conrad Schumann,
+ *                     Alexander Grund, Axel Huebl
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -32,8 +33,12 @@
 #include "dataManagement/DataConnector.hpp"
 #include "pluginSystem/PluginConnector.hpp"
 #include "nvidia/memory/MemoryInfo.hpp"
+#include "simulationControl/SimulationDescription.hpp"
 #include "mappings/simulation/Filesystem.hpp"
+#include "eventSystem/events/EventPool.hpp"
+#include "Environment.def"
 
+#include <cuda_runtime.h>
 
 namespace PMacc
 {
@@ -42,7 +47,7 @@ namespace PMacc
  * Global Environment singleton for Picongpu
  */
 
-template <unsigned DIM = DIM1>
+template <unsigned DIM>
 class Environment
 {
 public:
@@ -52,17 +57,17 @@ public:
         return PMacc::GridController<DIM>::getInstance();
     }
 
-    StreamController& StreamController()
+    PMacc::StreamController& StreamController()
     {
         return StreamController::getInstance();
     }
 
-    Manager& Manager()
+    PMacc::Manager& Manager()
     {
         return Manager::getInstance();
     }
 
-    TransactionManager& TransactionManager() const
+    PMacc::TransactionManager& TransactionManager() const
     {
         return TransactionManager::getInstance();
     }
@@ -72,34 +77,44 @@ public:
         return PMacc::SubGrid<DIM>::getInstance();
     }
 
-    EnvironmentController& EnvironmentController()
+    PMacc::EnvironmentController& EnvironmentController()
     {
         return EnvironmentController::getInstance();
     }
 
-    Factory& Factory()
+    PMacc::EventPool& EventPool()
+    {
+        return EventPool::getInstance();
+    }
+
+    PMacc::Factory& Factory()
     {
         return Factory::getInstance();
     }
 
-    ParticleFactory& ParticleFactory()
+    PMacc::ParticleFactory& ParticleFactory()
     {
         return ParticleFactory::getInstance();
     }
 
-    DataConnector& DataConnector()
+    PMacc::DataConnector& DataConnector()
     {
         return DataConnector::getInstance();
     }
 
-    PluginConnector& PluginConnector()
+    PMacc::PluginConnector& PluginConnector()
     {
         return PluginConnector::getInstance();
     }
 
-    nvidia::memory::MemoryInfo& EnvMemoryInfo()
+    nvidia::memory::MemoryInfo& MemoryInfo()
     {
         return nvidia::memory::MemoryInfo::getInstance();
+    }
+
+    simulationControl::SimulationDescription& SimulationDescription()
+    {
+        return simulationControl::SimulationDescription::getInstance();
     }
 
     PMacc::Filesystem<DIM>& Filesystem()
@@ -139,6 +154,7 @@ public:
 
         nvidia::memory::MemoryInfo::getInstance();
 
+        simulationControl::SimulationDescription::getInstance();
     }
 
     void finalize()
@@ -164,7 +180,7 @@ private:
         {
             throw std::runtime_error("no CUDA capable devices detected");
         }
-        else if (num_gpus < deviceNumber) //check if device can be selected by deviceNumber
+        else if (deviceNumber >= num_gpus) //check if device can be selected by deviceNumber
         {
             std::cerr << "no CUDA device " << deviceNumber << ", only " << num_gpus << " devices found" << std::endl;
             throw std::runtime_error("CUDA capable devices can't be selected");
@@ -185,16 +201,42 @@ private:
         {
             const int tryDeviceId = (deviceOffset + deviceNumber) % num_gpus;
             rc = cudaSetDevice(tryDeviceId);
+
+            if(rc == cudaSuccess)
+            {
+               cudaStream_t stream;
+               /* \todo: Check if this workaround is needed
+                *
+                * - since NVIDIA change something in driver cudaSetDevice never
+                * return an error if another process already use the selected
+                * device if gpu compute mode is set "process exclusive"
+                * - create a dummy stream to check if the device is already used by
+                * an other process.
+                * - cudaStreamCreate fail if gpu is already in use
+                */
+               rc = cudaStreamCreate(&stream);
+            }
+
             if (rc == cudaSuccess)
             {
                 cudaDeviceProp dprop;
-                cudaGetDeviceProperties(&dprop, deviceNumber);
+                CUDA_CHECK(cudaGetDeviceProperties(&dprop, tryDeviceId));
                 log<ggLog::CUDA_RT > ("Set device to %1%: %2%") % tryDeviceId % dprop.name;
-                CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
+                if(cudaErrorSetOnActiveProcess == cudaSetDeviceFlags(cudaDeviceScheduleSpin))
+                {
+                    cudaGetLastError(); //reset all errors
+                    /* - because of cudaStreamCreate was called cudaSetDeviceFlags crashed
+                     * - to set the flags reset the device and set flags again
+                     */
+                    CUDA_CHECK(cudaDeviceReset());
+                    CUDA_CHECK(cudaSetDeviceFlags(cudaDeviceScheduleSpin));
+                }
+                CUDA_CHECK(cudaGetLastError());
                 break;
             }
-            else if (rc == cudaErrorDeviceAlreadyInUse)
+            else if (rc == cudaErrorDeviceAlreadyInUse || rc==cudaErrorDevicesUnavailable)
             {
+                cudaGetLastError(); //reset all errors
                 log<ggLog::CUDA_RT > ("Device %1% already in use, try next.") % tryDeviceId;
                 continue;
             }
@@ -206,14 +248,40 @@ private:
     }
 };
 
-#define __startTransaction(...) (Environment<>::get().TransactionManager().startTransaction(__VA_ARGS__))
-#define __startAtomicTransaction(...) (Environment<>::get().TransactionManager().startAtomicTransaction(__VA_ARGS__))
-#define __endTransaction() (Environment<>::get().TransactionManager().endTransaction())
-#define __startOperation(opType) (Environment<>::get().TransactionManager().startOperation(opType))
-#define __getEventStream(opType) (Environment<>::get().TransactionManager().getEventStream(opType))
-#define __getTransactionEvent() (Environment<>::get().TransactionManager().getTransactionEvent())
-#define __setTransactionEvent(event) (Environment<>::get().TransactionManager().setTransactionEvent((event)))
-
 }
 
+/* No namespace for macro defines */
+
+/** start a dependency chain */
+#define __startTransaction(...) (PMacc::Environment<>::get().TransactionManager().startTransaction(__VA_ARGS__))
+
+/** end a opened dependency chain */
+#define __endTransaction() (PMacc::Environment<>::get().TransactionManager().endTransaction())
+
+/** mark the begin of an operation
+ *
+ * depended on the opType this method is blocking
+ *
+ * @param opType place were the operation is running
+ *               possible places are: `ITask::TASK_CUDA`, `ITask::TASK_MPI`, `ITask::TASK_HOST`
+ */
+#define __startOperation(opType) (PMacc::Environment<>::get().TransactionManager().startOperation(opType))
+
+/** get a `EventStream` that must be used for cuda calls
+ *
+ * depended on the opType this method is blocking
+ *
+ * @param opType place were the operation is running
+ *               possible places are: `ITask::TASK_CUDA`, `ITask::TASK_MPI`, `ITask::TASK_HOST`
+ */
+#define __getEventStream(opType) (PMacc::Environment<>::get().TransactionManager().getEventStream(opType))
+
+/** get the event of the current transaction */
+#define __getTransactionEvent() (PMacc::Environment<>::get().TransactionManager().getTransactionEvent())
+
+/** set a event to the current transaction */
+#define __setTransactionEvent(event) (PMacc::Environment<>::get().TransactionManager().setTransactionEvent((event)))
+
+#include "eventSystem/EventSystem.tpp"
 #include "particles/tasks/ParticleFactory.tpp"
+#include "eventSystem/events/CudaEvent.hpp"

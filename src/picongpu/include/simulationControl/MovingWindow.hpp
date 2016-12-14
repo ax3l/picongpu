@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 #include "simulationControl/Window.hpp"
@@ -43,7 +43,7 @@ private:
 
     MovingWindow(MovingWindow& cc);
 
-    void getCurrentSlideInfo(uint32_t currentStep, bool *doSlide, double *offsetFirstGPU)
+    void getCurrentSlideInfo(uint32_t currentStep, bool *doSlide, float_64 *offsetFirstGPU)
     {
         if (doSlide)
             *doSlide = false;
@@ -51,45 +51,122 @@ private:
         if (offsetFirstGPU)
             *offsetFirstGPU = 0.0;
 
-        const SubGrid<simDim>& subGrid = Environment<simDim>::get().SubGrid();
-        const uint32_t windowGlobalDimY =
-            subGrid.getGlobalDomain().size.y() - subGrid.getLocalDomain().size.y() * slidingWindowActive;
-
-        const uint32_t devices_y = Environment<simDim>::get().GridController().getGpuNodes().y();
-        const double cell_height = (double) CELL_HEIGHT;
-        const double light_way_per_step = ((double) SPEED_OF_LIGHT * (double) DELTA_T);
-        double stepsInFuture_tmp = (windowGlobalDimY * cell_height / light_way_per_step) * (1.0 - slide_point);
-        uint32_t stepsInFuture = ceil(stepsInFuture_tmp);
-        /* later used to calculate smoother offsets */
-        double stepsInFutureAfterComma = stepsInFuture_tmp - (double) stepsInFuture;
-
-        /* round to nearest step so we get smaller sliding dfference
-         * this is valid if we activate sliding window because y direction has
-         * the same size for all gpus
-         */
-        const uint32_t stepsPerGPU = (uint32_t) math::floor(
-                                                            (double) (subGrid.getLocalDomain().size.y() * cell_height) / light_way_per_step + 0.5);
-        const uint32_t firstSlideStep = stepsPerGPU * devices_y - stepsInFuture;
-        const uint32_t firstMoveStep = stepsPerGPU * (devices_y - 1) - stepsInFuture;
-
-        if (slidingWindowActive==true && firstMoveStep <= currentStep)
+        if (slidingWindowActive)
         {
-            const uint32_t stepsInLastGPU = (currentStep + stepsInFuture) % stepsPerGPU;
-            /* moving window start */
-            if (firstSlideStep <= currentStep && stepsInLastGPU == 0)
-            {
-                incrementSlideCounter(currentStep);
-                if (doSlide)
-                    *doSlide = true;
-            }
+            const SubGrid<simDim>& subGrid = Environment<simDim>::get().SubGrid();
 
-            /* round to nearest cell to have smoother offset jumps */
-            if (offsetFirstGPU)
+            /* speed of the moving window */
+            const float_64 windowMovingSpeed = float_64(SPEED_OF_LIGHT);
+
+            /* defines in which direction the window moves
+             *
+             * 0 == x,  1 == y , 2 == z direction
+             *
+             * note: currently only y direction is supported
+             */
+            const uint32_t moveDirection = 1;
+
+            /* the moving window is smaller than the global domain by exactly one
+             * GPU (local domain size)
+             * \todo calculation of the globalWindowSizeInMoveDirection is constant should be
+             * only done once in it's own central object/api
+             */
+            const uint32_t globalWindowSizeInMoveDirection =
+                subGrid.getGlobalDomain().size[moveDirection] - subGrid.getLocalDomain().size[moveDirection];
+
+            const uint32_t gpuNumberOfCellsInMoveDirection = subGrid.getLocalDomain().size[moveDirection];
+
+            /* unit PIConGPU length */
+            const float_64 cellSizeInMoveDirection = float_64(cellSize[moveDirection]);
+
+            const float_64 deltaWayPerStep = (windowMovingSpeed * float_64(DELTA_T));
+
+            /* How many cells the virtual particle with speed of light is pushed forward
+             * at the begin of the simulation.
+             * The number of cells is round up thus we avoid window moves and slides
+             * depends on half cells.
+             */
+            const uint32_t virtualParticleInitialStartCell = math::ceil(
+                float_64(globalWindowSizeInMoveDirection) * (float_64(1.0) - slide_point)
+            );
+
+            /* Is the time step when the virtual particle **passed** the GPU next to the last
+             * in the current to the next step
+             */
+            const uint32_t firstSlideStep = math::ceil(
+                float_64(subGrid.getGlobalDomain().size[moveDirection] - virtualParticleInitialStartCell) *
+                cellSizeInMoveDirection / deltaWayPerStep
+            ) - 1;
+
+            /* way which the virtual particle must move before the window begins
+             * to move the first time [in pic length] */
+            const float_64 wayToFirstMove =
+                float_64(globalWindowSizeInMoveDirection - virtualParticleInitialStartCell) *
+                cellSizeInMoveDirection;
+            /* Is the time step when the virtual particle **passed** the moving window
+             * in the current to the next step
+             */
+            const uint32_t firstMoveStep = math::ceil(
+                wayToFirstMove / deltaWayPerStep
+            ) - 1;
+
+            if (firstMoveStep <= currentStep)
             {
-                *offsetFirstGPU = math::floor(((double) stepsInLastGPU + stepsInFutureAfterComma) *
-                                              light_way_per_step / cell_height + 0.5);
+                /* calculate the current position of the virtual particle */
+                const float_64 virtualParticleWayPassed =
+                    deltaWayPerStep * float_64(currentStep);
+                const uint32_t virtualParticleWayPassedInCells = uint32_t(
+                    math::floor(virtualParticleWayPassed / cellSizeInMoveDirection)
+                );
+                const uint32_t virtualParticlePositionInCells =
+                    virtualParticleWayPassedInCells + virtualParticleInitialStartCell;
+
+                /* calculate the position of the virtual particle after the current step is calculated */
+                const float_64 nextVirtualParticleWayPassed =
+                    deltaWayPerStep * float_64(currentStep + 1);
+                const uint32_t nextVirtualParticleWayPassedInCells =
+                    uint32_t(math::floor(nextVirtualParticleWayPassed / cellSizeInMoveDirection));
+                /* This position is used to detect the point in time where the virtual particle
+                 * moves over a GPU border.
+                 */
+                const uint32_t nextVirtualParticlePositionInCells =
+                    nextVirtualParticleWayPassedInCells + virtualParticleInitialStartCell;
+
+                /* within the to be simulated time step (currentStep -> currentStep+1)
+                 * the virtual particle will have reached at least the position
+                 * of the cell behind the end of the initial global domain
+                 * (also true for all later time steps)
+                 */
+                const bool endOfInitialGlobalDomain = firstSlideStep <= currentStep;
+
+                /* virtual particle will pass a GPU border during the current
+                 * (to be simulated) time step
+                 */
+                const bool virtualParticlePassesGPUBorder =
+                    (nextVirtualParticlePositionInCells % gpuNumberOfCellsInMoveDirection) <
+                    (virtualParticlePositionInCells % gpuNumberOfCellsInMoveDirection);
+
+                if (endOfInitialGlobalDomain && virtualParticlePassesGPUBorder)
+                {
+                    incrementSlideCounter(currentStep);
+                    if (doSlide)
+                        *doSlide = true;
+                }
+
+                /* valid range for the offset is [0;GPU number of cells in move direction) */
+                if (offsetFirstGPU)
+                {
+                    /* since the moving window in PIConGPU always starts on the
+                     * first plane (3D) / row (2D) of GPUs in move direction, this
+                     * calculation is equal to the globalWindow.offset in move direction
+                     *
+                     * note: also works with windowMovingSpeed > c
+                     */
+                    *offsetFirstGPU = nextVirtualParticlePositionInCells % gpuNumberOfCellsInMoveDirection;
+                }
             }
         }
+
     }
 
     /** increment slide counter
@@ -218,20 +295,33 @@ public:
     Window getWindow(uint32_t currentStep)
     {
         const SubGrid<simDim>& subGrid = Environment<simDim>::get().SubGrid();
-        Window window;
 
-        window.localDimensions = Selection<simDim>(subGrid.getLocalDomain().size);
+        /* Without moving window, the selected window spans the whole global domain.
+         * \see https://github.com/ComputationalRadiationPhysics/picongpu/wiki/PIConGPU-domain-definitions
+         *
+         * The window's global offset is therefore zero inside the global domain.
+         * The window's global and local size are equal to the SubGrid quantities.
+         * The local window offset is the offset within the global window which
+         * is equal to the local domain offset of the GPU.
+         */
+        Window window;
+        window.localDimensions = subGrid.getLocalDomain();
         window.globalDimensions = Selection<simDim>(subGrid.getGlobalDomain().size);
 
-        /* If sliding is inactive, moving window is the same as global domain (substract 0)*/
-        window.globalDimensions.size.y() -= subGrid.getLocalDomain().size.y() * slidingWindowActive;
-
+        /* moving window can only slide in y direction */
         if (slidingWindowActive)
         {
-            double offsetFirstGPU = 0.0;
+            /* the moving window is smaller than the global domain by exactly one
+             * GPU (local domain size) in moving (y) direction
+             */
+            window.globalDimensions.size.y() -= subGrid.getLocalDomain().size.y();
+
+            float_64 offsetFirstGPU = 0.0;
             getCurrentSlideInfo(currentStep, NULL, &offsetFirstGPU);
 
-            /* global offset is all 0 except for y dimension */
+            /* while moving, the windows global offset within the global domain is between 0
+             * and smaller than the local domain's size in y.
+             */
             window.globalDimensions.offset.y() = offsetFirstGPU;
 
             /* set top/bottom if there are no communication partners
@@ -242,8 +332,9 @@ public:
 
             if (isTopGpu)
             {
-                /* local window offset is relative to global window start */
-                window.localDimensions.offset.y() = 0;
+                /* the windows local offset within the global window is reduced
+                 * by the global window offset within the global domain
+                 */
                 window.localDimensions.size.y() -= offsetFirstGPU;
             }
             else
@@ -271,7 +362,7 @@ public:
         Window window;
 
         window.localDimensions = subGrid.getLocalDomain();
-        window.globalDimensions = subGrid.getGlobalDomain();
+        window.globalDimensions = Selection<simDim>(subGrid.getGlobalDomain().size);
 
         return window;
     }

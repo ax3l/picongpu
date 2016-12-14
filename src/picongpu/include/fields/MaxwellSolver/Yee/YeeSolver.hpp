@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -24,9 +24,8 @@
 
 #include "YeeSolver.def"
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
-#include "basicOperations.hpp"
 
 #include "fields/SimulationFieldHelper.hpp"
 #include "dataManagement/ISimulationData.hpp"
@@ -57,22 +56,28 @@ class YeeSolver
 private:
     typedef MappingDesc::SuperCellSize SuperCellSize;
 
+
     FieldE* fieldE;
     FieldB* fieldB;
-    MappingDesc cellDescription;
+    MappingDesc m_cellDescription;
 
     template<uint32_t AREA>
     void updateE()
     {
+        /* Courant-Friedrichs-Levy-Condition for Yee Field Solver: */
+        PMACC_CASSERT_MSG(Courant_Friedrichs_Levy_condition_failure____check_your_gridConfig_param_file,
+            (SPEED_OF_LIGHT*SPEED_OF_LIGHT*DELTA_T*DELTA_T*INV_CELL2_SUM)<=1.0);
+
         typedef SuperCellDescription<
                 SuperCellSize,
                 typename CurlB::LowerMargin,
                 typename CurlB::UpperMargin
                 > BlockArea;
 
-        __picKernelArea((kernelUpdateE<BlockArea, CurlB>), cellDescription, AREA)
-                (SuperCellSize::toRT().toDim3())
-                (this->fieldE->getDeviceDataBox(), this->fieldB->getDeviceDataBox());
+        AreaMapping<AREA, MappingDesc> mapper(m_cellDescription);
+        PMACC_KERNEL(KernelUpdateE<BlockArea, CurlB>{})
+                (mapper.getGridDim(), SuperCellSize::toRT())
+                (this->fieldE->getDeviceDataBox(), this->fieldB->getDeviceDataBox(),mapper);
     }
 
     template<uint32_t AREA>
@@ -84,15 +89,17 @@ private:
                 typename CurlE::UpperMargin
                 > BlockArea;
 
-        __picKernelArea((kernelUpdateBHalf<BlockArea, CurlE>), cellDescription, AREA)
-                (SuperCellSize::toRT().toDim3())
+        AreaMapping<AREA, MappingDesc> mapper(m_cellDescription);
+        PMACC_KERNEL(KernelUpdateBHalf<BlockArea, CurlE>{})
+                (mapper.getGridDim(), SuperCellSize::toRT())
                 (this->fieldB->getDeviceDataBox(),
-                this->fieldE->getDeviceDataBox());
+                this->fieldE->getDeviceDataBox(),
+                mapper);
     }
 
 public:
 
-    YeeSolver(MappingDesc cellDescription) : cellDescription(cellDescription)
+    YeeSolver(MappingDesc cellDescription) : m_cellDescription(cellDescription)
     {
         DataConnector &dc = Environment<>::get().DataConnector();
 
@@ -112,7 +119,7 @@ public:
 
     void update_afterCurrent(uint32_t currentStep)
     {
-        FieldManipulator::absorbBorder(currentStep,this->cellDescription, this->fieldE->getDeviceDataBox());
+        FieldManipulator::absorbBorder(currentStep,this->m_cellDescription, this->fieldE->getDeviceDataBox());
         if (laserProfile::INIT_TIME > float_X(0.0))
             fieldE->laserManipulation(currentStep);
 
@@ -122,10 +129,16 @@ public:
         __setTransactionEvent(eRfieldE);
         updateBHalf < BORDER > ();
 
-        FieldManipulator::absorbBorder(currentStep,this->cellDescription, fieldB->getDeviceDataBox());
+        FieldManipulator::absorbBorder(currentStep,this->m_cellDescription, fieldB->getDeviceDataBox());
 
         EventTask eRfieldB = fieldB->asyncCommunication(__getTransactionEvent());
         __setTransactionEvent(eRfieldB);
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "Yee" );
+        return propList;
     }
 };
 

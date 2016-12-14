@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,13 +20,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef DEFAULTFILTER_HPP
-#define	DEFAULTFILTER_HPP
-
-#include "types.h"
-#include "particles/frame_types.hpp"
 #include "particles/memory/frames/NullFrame.hpp"
+#include "particles/frame_types.hpp"
+#include "pmacc_types.hpp"
 
 namespace PMacc
 {
@@ -98,6 +96,3 @@ class DefaultFilter<NullFrame>
 
 
 } //namespace Frame
-
-#endif	/* DEFAULTFILTER_HPP */
-

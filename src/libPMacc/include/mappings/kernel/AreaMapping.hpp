@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,10 +20,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AREAMAPPING_H
-#define	AREAMAPPING_H
 
-#include "types.h"
+#pragma once
+
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "mappings/kernel/AreaMappingMethods.hpp"
 
@@ -57,35 +57,29 @@ namespace PMacc
         }
 
         /**
-         * Generates cuda gridDim information for kernel call.
+         * Generate grid dimension information for kernel calls
          *
-         * @return dim3 with gridDim information
+         * @return size of the grid
          */
-        HINLINE DataSpace<DIM> getGridDim()
+        HINLINE DataSpace<DIM> getGridDim() const
         {
-            return this->reduce(AreaMappingMethods<areaType, DIM>::getGridDim(*this,
-                                                                        this->getGridSuperCells()));
+            return AreaMappingMethods<areaType, DIM>::getGridDim(*this,
+                                                                 this->getGridSuperCells());
         }
 
         /**
-         * Returns index of current logical block, depending on current cuda block id.
+         * Returns index of current logical block
          *
-         * @param _blockIdx current cuda block id (blockIdx)
-         * @return current logical block index
+         * @param realSuperCellIdx current SuperCell index (block index)
+         * @return mapped SuperCell index
          */
-        DINLINE DataSpace<DIM> getSuperCellIndex(const DataSpace<DIM>& realSuperCellIdx)
+        HDINLINE DataSpace<DIM> getSuperCellIndex(const DataSpace<DIM>& realSuperCellIdx) const
         {
             return AreaMappingMethods<areaType, DIM>::getBlockIndex(*this,
                                                                     this->getGridSuperCells(),
-                                                                    extend(realSuperCellIdx));
+                                                                    realSuperCellIdx);
         }
 
     };
 
-
 } // namespace PMacc
-
-
-
-#endif	/* AREAMAPPING_H */
-

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2015 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
  *                      Marco Garten
  *
  * This file is part of PIConGPU.
@@ -27,9 +27,10 @@
 #pragma once
 
 #include "simulation_defines/unitless/physicalConstants.unitless"
+#include "simulation_defines/unitless/speciesConstants.unitless"
 #include "simulation_defines/unitless/gridConfig.unitless"
-#include "simulation_defines/unitless/gasConfig.unitless"
 #include "simulation_defines/unitless/laserConfig.unitless"
+#include "simulation_defines/unitless/gasConfig.unitless"
 #include "simulation_defines/unitless/particleConfig.unitless"
 #include "simulation_defines/unitless/fieldSolver.unitless"
 #include "simulation_defines/unitless/visualization.unitless"
@@ -38,5 +39,8 @@
 #include "simulation_defines/unitless/radiationConfig.unitless"
 #include "simulation_defines/unitless/speciesAttributes.unitless"
 #include "simulation_defines/unitless/speciesDefinition.unitless"
+#include "simulation_defines/unitless/speciesInitialization.unitless"
+#include "simulation_defines/unitless/fieldBackground.unitless"
 #include "simulation_defines/unitless/fileOutput.unitless"
 #include "simulation_defines/unitless/checkpoints.unitless"
+#include "simulation_defines/unitless/synchrotronPhotons.unitless"

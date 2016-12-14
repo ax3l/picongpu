@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,28 +22,26 @@
 
 #pragma once
 
-#include <builtin_types.h>
 #include <stdexcept>
+#include "verify.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "dimensions/DataSpaceOperations.hpp"
 #include "mappings/simulation/GridController.hpp"
 #include "dimensions/GridLayout.hpp"
-#include "mappings/kernel/CudaGridDimRestrictions.hpp"
 #include "math/Vector.hpp"
 
 namespace PMacc
 {
 
 /**
- * Abstracts logical block information from cuda block variables.
+ * Abstracts logical block information from block variables.
  *
  * @tparam DIM dimension for grid/blocks
  * @tparam SuperCellSize mapper class for logical grid information
  */
 
 template<unsigned DIM, class SuperCellSize_>
-class MappingDescription :
-public CudaGridDimRestrictions<DIM>
+class MappingDescription
 {
 public:
 
@@ -67,9 +65,9 @@ public:
         {
             minBlock = std::min(minBlock, gridSuperCells[2]);
         }
-        assert((guardingSuperCells == 0) || (minBlock >= 3));
+        PMACC_VERIFY((guardingSuperCells == 0) || (minBlock >= 3));
         /*border block count must smaller or equal to core blocks count*/
-        assert(borderSuperCells <= (minBlock - (2 * guardingSuperCells)));
+        PMACC_VERIFY(borderSuperCells <= (minBlock - (2 * guardingSuperCells)));
     }
 
     HDINLINE DataSpace<DIM> getGridSuperCells() const
@@ -97,7 +95,7 @@ public:
      * @param globaOffset cells
      * @return global index of the root supercell
      */
-    HINLINE DataSpace<DIM> getRootSuperCellCoordinate(const DataSpace<DIM> globalOffset)
+    HINLINE DataSpace<DIM> getRootSuperCellCoordinate(const DataSpace<DIM> globalOffset) const
     {
         return globalOffset/SuperCellSize::toRT();
     }

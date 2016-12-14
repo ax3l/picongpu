@@ -1,4 +1,4 @@
-/** Copyright 2013-2014 Axel Huebl
+/** Copyright 2013-2016 Axel Huebl
  *
  * This file is part of PIConGPU.
  *
@@ -29,9 +29,11 @@ namespace picongpu
     namespace po = boost::program_options;
 
     template<class AssignmentFunction, class Species>
-    PhaseSpaceMulti<AssignmentFunction, Species>::PhaseSpaceMulti( const std::string _name,
-                                                                   const std::string _prefix ) :
-        name(_name), prefix(_prefix), numChildren(0u), cellDescription(NULL)
+    PhaseSpaceMulti<AssignmentFunction, Species>::PhaseSpaceMulti( ) :
+        name("PhaseSpaceMulti: create phase space of a species"),
+        prefix(Species::FrameType::getName() + std::string("_phaseSpace")),
+        numChildren(0u),
+        cellDescription(NULL)
     {
         /* register our plugin during creation */
         Environment<>::get().PluginConnector().registerPlugin(this);
@@ -72,7 +74,8 @@ namespace picongpu
              * we correct that during the output of the pAxis range
              * (linearly shrinking the single particle scale again)
              */
-            float_X pRangeMakro_unit = float_X( frame::getMass<typename Species::FrameType>()*NUM_EL_PER_PARTICLE *
+            float_X pRangeMakro_unit = float_X( frame::getMass<typename Species::FrameType>()*
+                                                particles::TYPICAL_NUM_PARTICLES_PER_MACROPARTICLE *
                                                 SPEED_OF_LIGHT );
             std::pair<float_X, float_X> new_p_range(
                     this->momentum_range_min.at(i) * pRangeMakro_unit,
@@ -86,7 +89,7 @@ namespace picongpu
             else if( this->element_space.at(i) == "z" )
                 el_space = AxisDescription::z;
             else
-                throw PluginException("[Plugin] [" + this->name + "] space must be x, y or z" );
+                throw PluginException("[Plugin] [" + this->prefix + "] space must be x, y or z" );
 
             uint32_t el_momentum = AxisDescription::px;
             if( this->element_momentum.at(i) == "px" )
@@ -96,14 +99,14 @@ namespace picongpu
             else if( this->element_momentum.at(i) == "pz" )
                 el_momentum = AxisDescription::pz;
             else
-                throw PluginException("[Plugin] [" + this->name + "] momentum must be px, py or pz" );
+                throw PluginException("[Plugin] [" + this->prefix + "] momentum must be px, py or pz" );
 
             AxisDescription new_elements;
             new_elements.momentum = el_momentum;
             new_elements.space = el_space;
 
             if( simDim == DIM2 && el_space == AxisDescription::z )
-                std::cerr << "[Plugin] [" + this->name + "] Skip requested output for "
+                std::cerr << "[Plugin] [" + this->prefix + "] Skip requested output for "
                           << this->element_space.at(i)
                           << this->element_momentum.at(i)
                           << std::endl;

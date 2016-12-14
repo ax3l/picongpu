@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 namespace picongpu
@@ -32,16 +32,28 @@ namespace particlePusherBoris
 template<class Velocity, class Gamma>
 struct Push
 {
+    /* this is an optional extension for sub-sampling pushes that enables grid to particle interpolation
+     * for particle positions outside the super cell in one push
+     */
+    typedef typename PMacc::math::CT::make_Int<simDim,0>::type LowerMargin;
+    typedef typename PMacc::math::CT::make_Int<simDim,0>::type UpperMargin;
 
-    template<typename EType, typename BType, typename PosType, typename MomType, typename MassType, typename ChargeType >
+    template<typename T_FunctorFieldE, typename T_FunctorFieldB, typename T_Pos, typename T_Mom, typename T_Mass,
+             typename T_Charge, typename T_Weighting>
         __host__ DINLINE void operator()(
-                                            const BType bField,
-                                            const EType eField,
-                                            PosType& pos,
-                                            MomType& mom,
-                                            const MassType mass,
-                                            const ChargeType charge)
+                                            const T_FunctorFieldB functorBField,
+                                            const T_FunctorFieldE functorEField,
+                                            T_Pos& pos,
+                                            T_Mom& mom,
+                                            const T_Mass mass,
+                                            const T_Charge charge,
+                                            const T_Weighting)
     {
+        typedef T_Mom MomType;
+
+        PMACC_AUTO( bField , functorBField(pos));
+        PMACC_AUTO( eField , functorEField(pos));
+
         const float_X QoM = charge / mass;
 
         const float_X deltaT = DELTA_T;
@@ -51,7 +63,7 @@ struct Push
         Gamma gamma;
         const float_X gamma_reci = float_X(1.0) / gamma(mom_minus, mass);
         const float3_X t = float_X(0.5) * QoM * bField * gamma_reci * deltaT;
-        const BType s = float_X(2.0) * t * (float_X(1.0) / (float_X(1.0) + math::abs2(t)));
+        PMACC_AUTO( s , float_X(2.0) * t * (float_X(1.0) / (float_X(1.0) + math::abs2(t))));
 
         const MomType mom_prime = mom_minus + math::cross(mom_minus, t);
         const MomType mom_plus = mom_minus + math::cross(mom_prime, s);
@@ -67,6 +79,12 @@ struct Push
             pos[d] += (vel[d] * deltaT) / cellSize[d];
         }
 
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "Boris" );
+        return propList;
     }
 };
 } //namespace particlePusherBoris

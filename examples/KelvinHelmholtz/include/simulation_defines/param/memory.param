@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -20,6 +20,7 @@
 
 
 #pragma once
+
 #include "math/Vector.hpp"
 #include "mappings/kernel/MappingDescription.hpp"
 
@@ -31,7 +32,7 @@ namespace picongpu
  *   - reduces
  *   - ...
  */
-const size_t totalFreeGpuMemory = 400 *1024*1024;
+constexpr size_t reservedGpuMemorySize = 400 *1024*1024;
 
 /* short namespace*/
 namespace mCT=PMacc::math::CT;
@@ -39,17 +40,17 @@ namespace mCT=PMacc::math::CT;
  *
  * volume of a superCell must be <= 1024
  */
-typedef typename mCT::shrinkTo<mCT::Int<8, 8, 4>, simDim>::type SuperCellSize;
+typedef mCT::shrinkTo<mCT::Int<8, 8, 4>, simDim>::type SuperCellSize;
 
 /** define the object for mapping superCells to cells*/
 typedef MappingDescription<simDim, SuperCellSize> MappingDesc;
 
-const uint32_t GUARD_SIZE = 1;
+constexpr uint32_t GUARD_SIZE = 1;
 
 //! how many bytes for buffer is reserved to communication in one direction
-const uint32_t BYTES_EXCHANGE_X = 8 * 256 * 1024; //8 MiB
-const uint32_t BYTES_EXCHANGE_Y = 12 * 512 * 1024; //12 MiB
-const uint32_t BYTES_EXCHANGE_Z = 8 * 256 * 1024; //8 MiB
-const uint32_t BYTES_CORNER = 16 * 1024; //16 kiB;
-const uint32_t BYTES_EDGES = 64 * 1024; //64 kiB;
+constexpr uint32_t BYTES_EXCHANGE_X = 8 * 256 * 1024; //8 MiB
+constexpr uint32_t BYTES_EXCHANGE_Y = 12 * 512 * 1024; //12 MiB
+constexpr uint32_t BYTES_EXCHANGE_Z = 8 * 256 * 1024; //8 MiB
+constexpr uint32_t BYTES_CORNER = 16 * 1024; //16 kiB;
+constexpr uint32_t BYTES_EDGES = 64 * 1024; //64 kiB;
 }//namespace picongpu

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,16 +20,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SUPERCELL_HPP
-#define	SUPERCELL_HPP
+#pragma once
 
-#include "types.h"
-
+#include "pmacc_types.hpp"
 
 namespace PMacc
 {
-
-
 
 template <class TYPE>
 class SuperCell
@@ -37,31 +33,31 @@ class SuperCell
 public:
 
     HDINLINE SuperCell() :
-    firstFrameIdx(INV_IDX),
-    lastFrameIdx(INV_IDX),
+    firstFramePtr(NULL),
+    lastFramePtr(NULL),
     mustShiftVal(false),
     sizeLastFrame(0)
     {
     }
 
-    HDINLINE TYPE& FirstFrameIdx()
+    HDINLINE TYPE* FirstFramePtr()
     {
-        return firstFrameIdx;
+        return firstFramePtr;
     }
 
-    HDINLINE TYPE& LastFrameIdx()
+    HDINLINE TYPE* LastFramePtr()
     {
-        return lastFrameIdx;
+        return lastFramePtr;
     }
 
-    HDINLINE TYPE FirstFrameIdx() const
+    HDINLINE const TYPE* FirstFramePtr() const
     {
-        return firstFrameIdx;
+        return firstFramePtr;
     }
 
-    HDINLINE TYPE LastFrameIdx() const
+    HDINLINE const TYPE* LastFramePtr() const
     {
-        return lastFrameIdx;
+        return lastFramePtr;
     }
 
     HDINLINE bool mustShift()
@@ -84,16 +80,13 @@ public:
         sizeLastFrame = size;
     }
 
+
 private:
-
-
-    PMACC_ALIGN(firstFrameIdx, TYPE);
-    PMACC_ALIGN(lastFrameIdx, TYPE);
     PMACC_ALIGN(mustShiftVal, bool);
     PMACC_ALIGN(sizeLastFrame, lcellId_t);
+public:
+    PMACC_ALIGN(firstFramePtr, TYPE*);
+    PMACC_ALIGN(lastFramePtr, TYPE*);
 };
 
 } //end namespace
-
-#endif	/* SUPERCELL_HPP */
-

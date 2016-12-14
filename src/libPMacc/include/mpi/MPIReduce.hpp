@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,17 +22,15 @@
 
 #pragma once
 
-#include "types.h"
-
-
-#include <mpi.h>
 #include "communication/manager_common.h"
 
+#include "mpi/reduceMethods/AllReduce.hpp"
 #include "mpi/GetMPI_StructAsArray.hpp"
 #include "mpi/GetMPI_Op.hpp"
+#include "assert.hpp"
+#include "pmacc_types.hpp"
 
-#include <cassert>
-#include "mpi/reduceMethods/AllReduce.hpp"
+#include <mpi.h>
 
 namespace PMacc
 {
@@ -61,7 +59,7 @@ struct MPIReduce
     template<class MPIMethod>
     bool hasResult(const MPIMethod & method) const
     {
-        assert(isMPICommInitialized == true);
+        PMACC_ASSERT(isMPICommInitialized == true);
         return method.hasResult(mpiRank);
     }
 
@@ -90,14 +88,14 @@ struct MPIReduce
 
         int countRanks;
         MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &countRanks));
-        int reduceRank[countRanks];
-        int groupRanks[countRanks];
+        std::vector<int> reduceRank(countRanks);
+        std::vector<int> groupRanks(countRanks);
         MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank));
 
         if (!isActive)
             mpiRank = -1;
 
-        MPI_CHECK(MPI_Allgather(&mpiRank, 1, MPI_INT, reduceRank, 1, MPI_INT, MPI_COMM_WORLD));
+        MPI_CHECK(MPI_Allgather(&mpiRank, 1, MPI_INT, &reduceRank[0], 1, MPI_INT, MPI_COMM_WORLD));
 
         for (int i = 0; i < countRanks; ++i)
         {
@@ -111,7 +109,7 @@ struct MPIReduce
         MPI_Group group = MPI_GROUP_NULL;
         MPI_Group newgroup = MPI_GROUP_NULL;
         MPI_CHECK(MPI_Comm_group(MPI_COMM_WORLD, &group));
-        MPI_CHECK(MPI_Group_incl(group, numRanks, groupRanks, &newgroup));
+        MPI_CHECK(MPI_Group_incl(group, numRanks, &groupRanks[0], &newgroup));
 
         MPI_CHECK(MPI_Comm_create(MPI_COMM_WORLD, newgroup, &comm));
 

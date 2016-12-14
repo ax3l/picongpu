@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_types.hpp"
 #include "particles/frame_types.hpp"
 #include "simulationControl/MovingWindow.hpp"
-
+#include <splash/splash.h>
 
 
 namespace picongpu
@@ -57,6 +57,9 @@ struct ThreadParams
 
     /** libSplash class */
     ParallelDomainCollector *dataCollector;
+
+    /** libSplash file's base name */
+    std::string h5Filename;
 
     /** description of the grid/field layout, including guards etc. */
     GridLayout<simDim> gridLayout;

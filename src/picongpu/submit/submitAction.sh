@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright 2013-2014 Axel Huebl, Rene Widera, Felix Schmitt
+#!/usr/bin/env bash
+# Copyright 2013-2016 Axel Huebl, Rene Widera, Felix Schmitt
 #
 # This file is part of PIConGPU.
 #
@@ -24,6 +24,10 @@ mkdir picongpu
 cp -r $TBG_projectPath/bin picongpu
 cp -r $TBG_projectPath/include picongpu
 cp -r $TBG_projectPath/submit picongpu
+if [ -f $TBG_projectPath/cmakeFlags ]
+then
+  cp $TBG_projectPath/cmakeFlags picongpu
+fi
 cp -a $TBG_cfgPath/openib.conf tbg
 cp $TBG_cfgPath/cuda.filter tbg
 cp $TBG_cfgPath/scorep.filter tbg

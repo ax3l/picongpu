@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -24,14 +24,7 @@
 #pragma once
 
 #include "compileTime/accessors/Identity.hpp"
-
-#include <boost/mpl/begin_end.hpp>
-#include <boost/mpl/next_prior.hpp>
-#include <boost/mpl/deref.hpp>
-#include <boost/mpl/bind.hpp>
-#include <boost/type_traits.hpp>
-
-#include <boost/mpl/if.hpp>
+#include "forward.hpp"
 
 #include <boost/preprocessor/repetition/enum.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
@@ -46,7 +39,12 @@
 #include <boost/preprocessor/repetition/enum_trailing.hpp>
 #include <boost/mpl/apply.hpp>
 #include <boost/mpl/transform.hpp>
-#include "forward.hpp"
+#include <boost/mpl/if.hpp>
+#include <boost/mpl/begin_end.hpp>
+#include <boost/mpl/next_prior.hpp>
+#include <boost/mpl/deref.hpp>
+#include <boost/mpl/bind.hpp>
+#include <boost/type_traits.hpp>
 
 
 /* Help to read this file:
@@ -72,11 +70,14 @@ namespace PMacc
 namespace algorithms
 {
 
+/** macro creates  typeNameN & */
+#define PMACC_UNUSED_REF(_, n, typeName) typeName##n &
+
 //########################### definitions for preprocessor #####################
 /** create operator() for EmptyFunctor
  *
  * template<typename T0, ... , typename TN>
- * HDINLINE void operator()(const T0, ..., const TN ) const {}
+ * HDINLINE void operator()(const T0&, ..., const TN& ) const {}
  *
  * All operator are empty and do nothing.
  * The operator parameters are plain type-only (without a name) to support
@@ -91,8 +92,8 @@ namespace algorithms
     /*  if N != 0 we add ```>``` */                                            \
     BOOST_PP_IF(BOOST_PP_NOT_EQUAL(N,0),>,BOOST_PP_EMPTY())                    \
     HDINLINE void                                                              \
-    /*        ( const T0, ... , cont TN         ) */                           \
-    operator()( BOOST_PP_ENUM_PARAMS(N, const T)) PMACC_PP_CONST               \
+    /*        ( const T0& , ... , const TN&                ) */                \
+    operator()( BOOST_PP_ENUM(N, PMACC_UNUSED_REF, const T)) PMACC_PP_CONST    \
     {                                                                          \
     }/*end of operator()*/
 
@@ -103,7 +104,7 @@ namespace algorithms
 /** create operator() for ForEach
  *
  * template<typename T0, ... , typename TN>
- * HDINLINE void operator()(const T0 t0, ..., const TN tN) const {}
+ * HDINLINE void operator()(const T0&, ..., const TN&) const {}
  */
 #define PMACC_FOREACH_OPERATOR(Z, N, PMACC_PP_CONST)                           \
     PMACC_NO_NVCC_HDWARNING                                                    \
@@ -147,13 +148,13 @@ struct CallFunctorOfIterator
 
     /* N=PMACC_MAX_FUNCTOR_OPERATOR_PARAMS
      * template<typename T0, ... , typename TN>
-     * create operator()(const T0 t0,...,const TN tN) const {} */
+     * create operator()(const T0&, ..., const TN&) const {} */
     BOOST_PP_REPEAT_FROM_TO(0, BOOST_PP_INC(PMACC_MAX_FUNCTOR_OPERATOR_PARAMS),
                             PMACC_FOREACH_OPERATOR, const)
 
     /* N=PMACC_MAX_FUNCTOR_OPERATOR_PARAMS
      * template<typename T0, ... , typename TN>
-     * create operator()(const T0 t0,...,const TN tN) {} */
+     * create operator()(const T0&, ..., const TN&) {} */
     BOOST_PP_REPEAT_FROM_TO(0, BOOST_PP_INC(PMACC_MAX_FUNCTOR_OPERATOR_PARAMS),
                             PMACC_FOREACH_OPERATOR, BOOST_PP_EMPTY())
 };
@@ -167,7 +168,7 @@ struct CallFunctorOfIterator<itBegin, itEnd, true>
     /* N=PMACC_MAX_FUNCTOR_OPERATOR_PARAMS
      * create:
      * template<typename T0, ... , TN>
-     * void operator()(const T0 ,...,const TN) const {} */
+     * void operator()(const T0&, ..., const TN&) const {} */
     BOOST_PP_REPEAT_FROM_TO(0, BOOST_PP_INC(PMACC_MAX_FUNCTOR_OPERATOR_PARAMS),
                             PMACC_FOREACH_OPERATOR_NO_USAGE, const)
 
@@ -175,7 +176,7 @@ struct CallFunctorOfIterator<itBegin, itEnd, true>
     /* N=PMACC_MAX_FUNCTOR_OPERATOR_PARAMS
      * create:
      * template<typename T0, ... , TN>
-     * void operator()(const T0 ,...,const TN) {} */
+     * void operator()(const T0&, ..., const TN&) {} */
     BOOST_PP_REPEAT_FROM_TO(0, BOOST_PP_INC(PMACC_MAX_FUNCTOR_OPERATOR_PARAMS),
                             PMACC_FOREACH_OPERATOR_NO_USAGE, BOOST_PP_EMPTY())
 };
@@ -227,14 +228,14 @@ struct ForEach
 
     /* N=PMACC_MAX_FUNCTOR_OPERATOR_PARAMS
      * template<typename T0, ... , typename TN>
-     * create operator()(const T0 t0,...,const TN tN) const {}*/
+     * create operator()(const T0&, ..., const TN&) const {}*/
     BOOST_PP_REPEAT_FROM_TO(0, BOOST_PP_INC(PMACC_MAX_FUNCTOR_OPERATOR_PARAMS),
                             PMACC_FOREACH_OPERATOR, const)
 
 
     /* N=PMACC_MAX_FUNCTOR_OPERATOR_PARAMS
      * template<typename T0, ... , typename TN>
-     * create operator()(const T0 t0,...,const TN tN) {}*/
+     * create operator()(const T0& t0,...,const TN& tN) {}*/
     BOOST_PP_REPEAT_FROM_TO(0, BOOST_PP_INC(PMACC_MAX_FUNCTOR_OPERATOR_PARAMS),
                             PMACC_FOREACH_OPERATOR, BOOST_PP_EMPTY())
 };

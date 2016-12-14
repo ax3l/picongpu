@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,11 +21,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef DATASPACEOPERATIONS_HPP
-#define	DATASPACEOPERATIONS_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "memory/dataTypes/Mask.hpp"
 #include "math/Vector.hpp"
@@ -99,6 +98,11 @@ namespace PMacc
         static HDINLINE uint32_t map(const DataSpace<DIM1>& pos)
         {
             return pos.x();
+        }
+
+        static HDINLINE DataSpace<DIM1> map(const DataSpace<DIM1>& size, uint32_t pos)
+        {
+            return DataSpace<DIM1 > (pos);
         }
 
         static HDINLINE DataSpace<DIM2> extend(DataSpace<DIM1> ds, uint32_t ex,
@@ -294,5 +298,3 @@ namespace PMacc
         }
     };
 }
-
-#endif	/* DATASPACEOPERATIONS_HPP */

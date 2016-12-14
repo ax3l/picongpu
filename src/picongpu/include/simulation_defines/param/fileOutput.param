@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Rene Widera, Felix Schmitt,
+ * Benjamin Worpitz, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -24,6 +25,7 @@
 
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/pair.hpp>
+#include <boost/mpl/int.hpp>
 
 #include "compileTime/conversion/MakeSeq.hpp"
 
@@ -37,40 +39,56 @@ namespace picongpu
      *
      * you can choose any of these particle to grid projections:
      *   - CreateDensityOperation: particle position + shape on the grid
-     *   - CreateCounterOperation: counts point like particles per cell
-     *   - CreateEnergyDensityOperation: particle energy density with respect to shape
+     *   - CreateChargeDensityOperation: density * charge
+     *   - CreateMidCurrentDensityComponentOperation:
+     *                                   density * charge * velocity_component
+     *   - CreateCounterOperation: counts point like particles per cell (debug)
+     *   - CreateEnergyDensityOperation: particle energy density with respect
+     *                                   to shape
      *   - CreateEnergyOperation: particle energy with respect to shape
-     *   - CreateLarmorEnergyOperation: radiated larmor energy (needs ENABLE_RADIATION)
+     *   - CreateMomentumComponentOperation: ratio between a selected momentum
+     *                                       component and the absolute
+     *                                       momentum with respect to shape
+     *   - CreateLarmorPowerOperation: radiated larmor power (needs ENABLE_RADIATION)
      */
     using namespace particleToGrid;
 
-    /* Density section */
-    typedef typename bmpl::transform<
+    /* ChargeDensity section */
+    typedef bmpl::transform<
             VectorAllSpecies,
-            CreateDensityOperation<bmpl::_1>
-            >::type Density_Seq;
+            CreateChargeDensityOperation<bmpl::_1>
+            >::type ChargeDensity_Seq;
 
     /* ParticleCounter section */
-    typedef typename bmpl::transform<
+    typedef bmpl::transform<
             VectorAllSpecies,
             CreateCounterOperation<bmpl::_1>
             >::type Counter_Seq;
 
     /* EnergyDensity section */
-    typedef typename bmpl::transform<
+    typedef bmpl::transform<
             VectorAllSpecies,
             CreateEnergyDensityOperation<bmpl::_1>
             >::type EnergyDensity_Seq;
+
+    /* CreateMomentumComponentOperation section: define "component" as
+       0=X (default), 1=Y or 2=Z (results: [-1.:1.])
+     */
+    typedef bmpl::transform<
+            VectorAllSpecies,
+            CreateMomentumComponentOperation<bmpl::_1, bmpl::int_<0> >
+            >::type MomentumComponent_Seq;
 
 
     /** FieldTmpSolvers groups all solvers that create data for FieldTmp ******
      *
      * FieldTmpSolvers is used in @see FieldTmp to calculate the exchange size
      */
-    typedef typename MakeSeq<
-        Density_Seq,
+    typedef MakeSeq<
+        ChargeDensity_Seq,
         Counter_Seq,
-        EnergyDensity_Seq
+        EnergyDensity_Seq,
+        MomentumComponent_Seq
     >::type FieldTmpSolvers;
 
 
@@ -78,9 +96,9 @@ namespace picongpu
 
     /** Possible native fields: FieldE, FieldB, FieldJ
      */
-    typedef typename MakeSeq<FieldE, FieldB>::type NativeFileOutputFields;
+    typedef MakeSeq<FieldE, FieldB>::type NativeFileOutputFields;
 
-    typedef typename MakeSeq<
+    typedef MakeSeq<
         NativeFileOutputFields,
         FieldTmpSolvers
     >::type FileOutputFields;

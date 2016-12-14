@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,11 +20,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALGORITHM_KERNEL_DETAIL_SPHERICMAPPER_HPP
-#define ALGORITHM_KERNEL_DETAIL_SPHERICMAPPER_HPP
+#pragma once
 
-#include "types.h"
 #include "math/vector/Size_t.hpp"
+#include "pmacc_types.hpp"
+
 #include <boost/mpl/void.hpp>
 
 namespace PMacc
@@ -53,11 +53,16 @@ struct SphericMapper;
 template<typename BlockSize>
 struct SphericMapper<1, BlockSize>
 {
-    static const int dim = 1;
+    static constexpr int dim = 1;
 
-    dim3 cudaGridDim(const math::Size_t<1>& size) const
+    typename math::Size_t<3>::BaseType
+    cudaGridDim(const math::Size_t<1>& size) const
     {
-        return dim3(size.x() / BlockSize::x::value, 1, 1);
+        return math::Size_t<3>(
+            size.x() / BlockSize::x::value,
+            1u,
+            1u
+        );
     }
 
     HDINLINE
@@ -70,20 +75,24 @@ struct SphericMapper<1, BlockSize>
     HDINLINE
     math::Int<1> operator()(const dim3& _blockIdx, const dim3& _threadIdx = dim3(0,0,0)) const
     {
-        return operator()(math::Int<1>(_blockIdx.x),
-                          math::Int<1>(_threadIdx.x));
+        return operator()(math::Int<1>((int)_blockIdx.x),
+                          math::Int<1>((int)_threadIdx.x));
     }
 };
 
 template<typename BlockSize>
 struct SphericMapper<2, BlockSize>
 {
-    static const int dim = 2;
+    static constexpr int dim = 2;
 
-    dim3 cudaGridDim(const math::Size_t<2>& size) const
+    typename math::Size_t<3>::BaseType
+    cudaGridDim(const math::Size_t<2>& size) const
     {
-        return dim3(size.x() / BlockSize::x::value,
-                    size.y() / BlockSize::y::value, 1);
+        return math::Size_t<3>(
+            size.x() / BlockSize::x::value,
+            size.y() / BlockSize::y::value,
+            1u
+         );
     }
 
     HDINLINE
@@ -105,13 +114,16 @@ struct SphericMapper<2, BlockSize>
 template<typename BlockSize>
 struct SphericMapper<3, BlockSize>
 {
-    static const int dim = 3;
+    static constexpr int dim = 3;
 
-    dim3 cudaGridDim(const math::Size_t<3>& size) const
+    typename math::Size_t<3>::BaseType
+    cudaGridDim(const math::Size_t<3>& size) const
     {
-        return dim3(size.x() / BlockSize::x::value,
-                    size.y() / BlockSize::y::value,
-                    size.z() / BlockSize::z::value);
+        return math::Size_t<3>(
+            size.x() / BlockSize::x::value,
+            size.y() / BlockSize::y::value,
+            size.z() / BlockSize::z::value
+        );
     }
 
     HDINLINE
@@ -134,11 +146,16 @@ struct SphericMapper<3, BlockSize>
 template<>
 struct SphericMapper<1, mpl::void_>
 {
-    static const int dim = 1;
+    static constexpr int dim = 1;
 
-    dim3 cudaGridDim(const math::Size_t<1>& size, const math::Size_t<3>& blockDim) const
+    typename math::Size_t<3>::BaseType
+    cudaGridDim(const math::Size_t<1>& size, const math::Size_t<3>& blockDim) const
     {
-        return dim3(size.x() / blockDim.x(), 1, 1);
+        return math::Size_t<3>(
+            size.x() / blockDim.x(),
+            1u,
+            1u
+        );
     }
 
     DINLINE
@@ -151,20 +168,24 @@ struct SphericMapper<1, mpl::void_>
     DINLINE
     math::Int<1> operator()(const dim3& _blockIdx, const dim3& _threadIdx = dim3(0,0,0)) const
     {
-        return operator()(math::Int<1>(_blockIdx.x),
-                          math::Int<1>(_threadIdx.x));
+        return operator()(math::Int<1>((int)_blockIdx.x),
+                          math::Int<1>((int)_threadIdx.x));
     }
 };
 
 template<>
 struct SphericMapper<2, mpl::void_>
 {
-    static const int dim = 2;
+    static constexpr int dim = 2;
 
-    dim3 cudaGridDim(const math::Size_t<2>& size, const math::Size_t<3>& blockDim) const
+    typename math::Size_t<3>::BaseType
+    cudaGridDim(const math::Size_t<2>& size, const math::Size_t<3>& blockDim) const
     {
-        return dim3(size.x() / blockDim.x(),
-                    size.y() / blockDim.y(), 1);
+        return math::Size_t<3>(
+            size.x() / blockDim.x(),
+            size.y() / blockDim.y(),
+            1
+        );
     }
 
     DINLINE
@@ -186,13 +207,16 @@ struct SphericMapper<2, mpl::void_>
 template<>
 struct SphericMapper<3, mpl::void_>
 {
-    static const int dim = 3;
+    static constexpr int dim = 3;
 
-    dim3 cudaGridDim(const math::Size_t<3>& size, const math::Size_t<3>& blockDim) const
+    typename math::Size_t<3>::BaseType
+    cudaGridDim(const math::Size_t<3>& size, const math::Size_t<3>& blockDim) const
     {
-        return dim3(size.x() / blockDim.x(),
-                    size.y() / blockDim.y(),
-                    size.z() / blockDim.z());
+        return math::Size_t<3>(
+            size.x() / blockDim.x(),
+            size.y() / blockDim.y(),
+            size.z() / blockDim.z()
+        );
     }
 
     DINLINE
@@ -216,5 +240,3 @@ struct SphericMapper<3, mpl::void_>
 } // kernel
 } // algorithm
 } // PMacc
-
-#endif // ALGORITHM_KERNEL_DETAIL_SPHERICMAPPER_HPP

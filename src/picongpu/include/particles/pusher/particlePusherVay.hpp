@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 namespace picongpu
@@ -32,17 +32,27 @@ namespace particlePusherVay
 template<class Velocity, class Gamma>
 struct Push
 {
+    /* this is an optional extension for sub-sampling pushes that enables grid to particle interpolation
+     * for particle positions outside the super cell in one push
+     */
+    typedef typename PMacc::math::CT::make_Int<simDim,0>::type LowerMargin;
+    typedef typename PMacc::math::CT::make_Int<simDim,0>::type UpperMargin;
 
-    template<typename EType, typename BType, typename PosType, typename MomType, typename MassType, typename ChargeType >
+    template<typename T_FunctorFieldE, typename T_FunctorFieldB, typename T_Pos, typename T_Mom, typename T_Mass,
+             typename T_Charge, typename T_Weighting >
         __host__ DINLINE void operator()(
-                                            const BType bField, /* at t=0 */
-                                            const EType eField, /* at t=0 */
-                                            PosType& pos, /* at t=0 */
-                                            MomType& mom, /* at t=-1/2 */
-                                            const MassType mass,
-                                            const ChargeType charge)
+                                            const T_FunctorFieldB functorBField, /* at t=0 */
+                                            const T_FunctorFieldE functorEField, /* at t=0 */
+                                            T_Pos& pos, /* at t=0 */
+                                            T_Mom& mom, /* at t=-1/2 */
+                                            const T_Mass mass,
+                                            const T_Charge charge,
+                                            const  T_Weighting)
     {
+        typedef T_Mom MomType;
 
+        PMACC_AUTO( bField , functorBField(pos));
+        PMACC_AUTO( eField , functorEField(pos));
         /*
              time index in paper is reduced by a half: i=0 --> i=-1/2 so that momenta are
              at half time steps and fields and locations are at full time steps
@@ -63,7 +73,7 @@ struct Push
         // second step in Vay paper:
         const MomType momentum_prime = momentum_atZero + factor * eField;
         const float_X gamma_prime = gamma(momentum_prime, mass);
-        //sqrtf(1.0 + abs2(momentum_prime*(1.0/(mass * SPEED_OF_LIGHT))));
+        //algorithms::math::sqrt(1.0 + abs2(momentum_prime*(1.0/(mass * SPEED_OF_LIGHT))));
         const sqrt_Vay::float3_X tau(factor / mass * bField);
         const sqrt_Vay::float_X u_star = math::dot( precisionCast<sqrt_Vay::float_X>(momentum_prime), tau ) / precisionCast<sqrt_Vay::float_X>( SPEED_OF_LIGHT * mass );
         const sqrt_Vay::float_X sigma = gamma_prime * gamma_prime - math::abs2( tau );
@@ -85,6 +95,12 @@ struct Push
         {
             pos[d] += (vel[d] * DELTA_T) / cellSize[d];
         }
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "Vay" );
+        return propList;
     }
 };
 } //namespace particlePusherVay

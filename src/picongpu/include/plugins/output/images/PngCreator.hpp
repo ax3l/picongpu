@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,12 +18,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef PNGCREATOR_HPP
-#define	PNGCREATOR_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 
@@ -39,9 +36,12 @@
 
 #include "memory/boxes/PitchedBox.hpp"
 #include "memory/boxes/DataBox.hpp"
+#include "plugins/output/header/MessageHeader.hpp"
 
+
+#include <boost/thread.hpp>
 //c includes
-#include "sys/stat.h"
+#include <sys/stat.h>
 
 namespace picongpu
 {
@@ -51,52 +51,107 @@ namespace picongpu
     struct PngCreator
     {
 
-        PngCreator(std::string name, std::string folder) : name(folder + "/" + name), folder(folder), createFolder(true)
+        PngCreator(std::string name, std::string folder) :
+            m_name(folder + "/" + name),
+            m_folder(folder),
+            m_createFolder(true),
+            m_isThreadActive(false)
         {
+        }
+
+        static std::string getName()
+        {
+            return std::string("png");
+        }
+
+        /** block until all shared resource are free
+         *
+         * take care that all resources used by `operator()`
+         * can safely used without conflicts
+         */
+        void join()
+        {
+            if(m_isThreadActive)
+            {
+                workerThread.join();
+                m_isThreadActive = false;
+            }
         }
 
         ~PngCreator()
         {
+            if(m_isThreadActive)
+            {
+                workerThread.join();
+                m_isThreadActive = false;
+            }
         }
 
+        PngCreator(const PngCreator& other)
+        {
+            m_name = other.m_name;
+            m_folder = other.m_folder;
+            m_createFolder = other.m_createFolder;
+            m_isThreadActive = false;
+        }
+
+        /** create image
+         *
+         * @param data input data for png
+         *             this object must be alive until destructor
+         *             of `PngCreator` or method `join()` is called
+         * @param size size of data
+         * @param header meta information about the simulation
+         */
         template<class Box>
         void operator()(
                         const Box data,
                         const Size2D size,
-                        const MessageHeader & header);
+                        const MessageHeader  header)
+        {
+            if(m_isThreadActive)
+            {
+                workerThread.join();
+            }
+            m_isThreadActive = true;
+            workerThread = boost::thread(&PngCreator::createImage<Box>, this, data, size, header);
+        }
 
     private:
 
-        void resizeAndScaleImage(pngwriter* png, double scaleFactor)
-        {
-            if (scaleFactor != 1.)
-                png->scale_k(scaleFactor);
-        }
+        template<class Box>
+        void createImage(const Box data,
+                        const Size2D size,
+                        const MessageHeader header);
 
-        std::string name;
-        std::string folder;
-        bool createFolder;
+        std::string m_name;
+        std::string m_folder;
+        bool m_createFolder;
+        /* boost::thread is not copy able,
+         * therefore we must define an own copy constructor
+         */
+        boost::thread workerThread;
+        /* status whether a thread is currently active */
+        bool m_isThreadActive;
 
     };
 
-    template<>
-    inline void PngCreator::operator() < DataBox<PitchedBox<float3_X, DIM2 > > >(
-                                                                               const DataBox<PitchedBox<float3_X, DIM2 > > data,
-                                                                               const Size2D size,
-                                                                               const MessageHeader& header
-                                                                               )
+    template<class Box>
+    inline void PngCreator::createImage(
+                                        const Box data,
+                                        const Size2D size,
+                                        const MessageHeader header
+                                        )
     {
-        if (createFolder)
+        if (m_createFolder)
         {
-            Environment<simDim>::get().Filesystem().createDirectoryWithPermissions(folder);
-            createFolder = false;
+            Environment<simDim>::get().Filesystem().createDirectoryWithPermissions(m_folder);
+            m_createFolder = false;
         }
 
         std::stringstream step;
         step << std::setw(6) << std::setfill('0') << header.sim.step;
-        float_X scale_x = header.sim.scale[0];
-        float_X scale_y = header.sim.scale[1];
-        std::string filename(name + "_" + step.str() + ".png");
+        std::string filename(m_name + "_" + step.str() + ".png");
 
         pngwriter png(size.x(), size.y(), 0, filename.c_str());
 
@@ -115,16 +170,26 @@ namespace picongpu
             }
         }
 
-        // scale to real cell size
-        // but, to prevent artifacts:
-        //   scale only, if at least one of
-        //   scale_x and scale_y is != 1.0
-        if (scale_to_cellsize)
-            if ((scale_x != float_X(1.0)) || (scale_y != float_X(1.0)))
-                png.scale_kxky(scale_x, scale_y);
+        /* scale the image by a user defined relative factor
+         * `scale_image` is defined in `visualization.param`
+         */
+        float_X scale_x(scale_image);
+        float_X scale_y(scale_image);
 
-        // global rescales to save disk space
-        resizeAndScaleImage(&png, scale_image);
+
+        if (scale_to_cellsize)
+        {
+            // scale to real cell size
+            scale_x *= header.sim.scale[0];
+            scale_y *= header.sim.scale[1];
+        }
+
+        /* to prevent artifacts scale only, if at least one of scale_x and
+         * scale_y is != 1.0
+         */
+        if ((scale_x != float_X(1.0)) || (scale_y != float_X(1.0)))
+            //process the cell size and by factor scaling within one step
+            png.scale_kxky(scale_x, scale_y);
 
         // add some meta information
         //header.writeToConsole( std::cout );
@@ -133,16 +198,13 @@ namespace picongpu
         header.writeToConsole( description );
 
         char title[] = "PIConGPU preview image";
-        char author[] = "The awesome PIConGPU-Team";
+        std::string author = Environment<>::get().SimulationDescription().getAuthor();
         char software[] = "PIConGPU with PNGwriter";
 
-        png.settext( title, author, description.str().c_str(), software);
+        png.settext( title, author.c_str(), description.str().c_str(), software);
 
         // write to disk and close object
         png.close();
     }
 
-}//namespace
-
-#endif	/* PNGCREATOR_HPP */
-
+} /* namespace picongpu */

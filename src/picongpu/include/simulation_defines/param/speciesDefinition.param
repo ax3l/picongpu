@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz, Heiko Burau
  *
  * This file is part of PIConGPU.
  *
@@ -30,9 +30,12 @@
 #include "identifier/alias.hpp"
 #include "identifier/value_identifier.hpp"
 
+#include "particles/traits/FilterByFlag.hpp"
 #include "particles/Particles.hpp"
 #include "particles/ParticleDescription.hpp"
 #include <boost/mpl/string.hpp>
+
+#include "particles/ionization/byField/ionizers.def"
 
 namespace picongpu
 {
@@ -40,7 +43,7 @@ namespace picongpu
 /*########################### define particle attributes #####################*/
 
 /** describe attributes of a particle*/
-typedef typename MakeSeq<position<position_pic>, momentum, weighting>::type DefaultParticleAttributes;
+typedef MakeSeq<position<position_pic>, momentum, weighting>::type DefaultParticleAttributes;
 
 
 /** \todo: not nice, we change this later with nice interfaces
@@ -48,21 +51,20 @@ typedef typename MakeSeq<position<position_pic>, momentum, weighting>::type Defa
  */
 
 /*add old momentum for radiation plugin*/
-typedef typename MakeSeq<
+typedef MakeSeq<
 #if(ENABLE_RADIATION == 1)
 momentumPrev1
 #endif
 >::type AttributMomentum_mt1;
 
 /*add old radiation flag for radiation plugin*/
-typedef typename MakeSeq<
+typedef MakeSeq<
 #if(RAD_MARK_PARTICLE>1) || (RAD_ACTIVATE_GAMMA_FILTER!=0)
 radiationFlag
 #endif
 >::type AttributRadiationFlag;
 
-typedef
-typename MakeSeq<
+typedef MakeSeq<
 DefaultParticleAttributes,
 AttributMomentum_mt1,
 AttributRadiationFlag
@@ -72,42 +74,121 @@ AttributRadiationFlag
 
 /*########################### define species #################################*/
 
+/*--------------------------- photons -------------------------------------------*/
+
+value_identifier(float_X, DummyMass, 1.0);
+value_identifier(float_X, DummyCharge, 0.0);
+
+typedef bmpl::vector<
+    particlePusher<particles::pusher::Photon>,
+    shape<UsedParticleShape>,
+    interpolation<UsedField2Particle>,
+    current<UsedParticleCurrentSolver>,
+    massRatio<DummyMass>,
+    chargeRatio<DummyCharge>
+> ParticleFlagsPhotons;
+
+/*define species photons*/
+typedef Particles<
+    ParticleDescription<
+        bmpl::string<'p', 'h'>,
+        SuperCellSize,
+        DefaultAttributesSeq,
+        ParticleFlagsPhotons
+    >
+> PIC_Photons;
 
 /*--------------------------- electrons --------------------------------------*/
+
+/* ratio relative to BASE_CHARGE and BASE_MASS */
+value_identifier(float_X, MassRatioElectrons, 1.0);
+value_identifier(float_X, ChargeRatioElectrons, 1.0);
 
 typedef bmpl::vector<
     particlePusher<UsedParticlePusher>,
     shape<UsedParticleShape>,
     interpolation<UsedField2Particle>,
-    current<UsedParticleCurrentSolver>
+    current<UsedParticleCurrentSolver>,
+    massRatio<MassRatioElectrons>,
+    chargeRatio<ChargeRatioElectrons>
+#if(ENABLE_SYNCHROTRON_PHOTONS == 1)
+    , synchrotronPhotons<PIC_Photons>
+#endif
 > ParticleFlagsElectrons;
 
 /*define specie electrons*/
-typedef Particles<ParticleDescription<
-    bmpl::string<'e'>,
-    SuperCellSize,
-    DefaultAttributesSeq,
-    ParticleFlagsElectrons,
-    typename MakeSeq<CommunicationId<PAR_ELECTRONS>,MemoryFactor<2> >::type  >
+typedef Particles<
+    ParticleDescription<
+        bmpl::string<'e'>,
+        SuperCellSize,
+        DefaultAttributesSeq,
+        ParticleFlagsElectrons
+    >
 > PIC_Electrons;
 
 /*--------------------------- ions -------------------------------------------*/
 
-typedef particles::shapes::CIC IonShape;
+/* ratio relative to BASE_CHARGE and BASE_MASS */
+value_identifier(float_X, MassRatioIons, 1836.152672);
+value_identifier(float_X, ChargeRatioIons, -1.0);
+
+/*! Specify (chemical) element
+ *
+ * Proton and neutron numbers define the chemical element that the ion species
+ * is based on. This value can be non-integer for physical models taking
+ * charge shielding effects into account.
+ * @see http://en.wikipedia.org/wiki/Effective_nuclear_charge
+ *
+ * It is wrapped into a struct because of C++ restricting floats from being
+ * template arguments.
+ *
+ * Do not forget to set the correct mass of the atom in
+ * @see physicalConstants.param !
+ */
+struct Hydrogen
+{
+    static constexpr float_X numberOfProtons  = 1.0;
+    static constexpr float_X numberOfNeutrons = 0.0;
+};
+
+/*! Ionization Model Configuration ----------------------------------------
+ *
+ * - None : no particle is ionized
+ * - BSIHydrogenLike : simple barrier suppression ionization
+ * - ADKLinPol : Ammosov-Delone-Krainov tunneling ionization (H-like)
+ *               -> linearly polarized lasers
+ * - ADKCircPol : Ammosov-Delone-Krainov tunneling ionization (H-like)
+ *                -> circularly polarized lasers
+ * - Keldysh : Keldysh ionization model
+ *
+ * Research and development: ----------------------------------------------
+ * - BSIEffectiveZ : BSI taking electron shielding into account via an effective
+ *                   atomic number Z_eff
+ * - BSIStarkShifted : BSI for hydrogen-like atoms and ions considering the
+ *                     Stark upshift of ionization potentials
+ *
+ * Usage: Add a flag to the list of particle flags that has the following structure
+ *
+ *        ionizer<IonizationModel<Species2BCreated> >
+ */
+
 typedef bmpl::vector<
     particlePusher<UsedParticlePusher>,
     shape<UsedParticleShape>,
     interpolation<UsedField2Particle>,
-    current<UsedParticleCurrentSolver>
+    current<UsedParticleCurrentSolver>,
+    massRatio<MassRatioIons>,
+    chargeRatio<ChargeRatioIons>
 > ParticleFlagsIons;
 
 /*define specie ions*/
-typedef Particles<ParticleDescription<
-    bmpl::string<'i'>,
-    SuperCellSize,
-    DefaultAttributesSeq,
-    ParticleFlagsIons,
-    typename MakeSeq<CommunicationId<PAR_IONS>,MemoryFactor<2> >::type >
+typedef Particles<
+    ParticleDescription<
+        bmpl::string<'i'>,
+        SuperCellSize,
+        DefaultAttributesSeq,
+        ParticleFlagsIons
+    >
 > PIC_Ions;
 
 /*########################### end species ####################################*/
@@ -116,22 +197,24 @@ typedef Particles<ParticleDescription<
 /*! we delete this ugly definition of VectorAllSpecies after all picongpu components
  * support multi species */
 /** \todo: not nice, but this should be changed in the future*/
-typedef typename MakeSeq<
+typedef MakeSeq<
 #if (ENABLE_ELECTRONS == 1)
 PIC_Electrons
 #endif
 >::type Species1;
 
-typedef typename MakeSeq<
+typedef MakeSeq<
 #if (ENABLE_IONS == 1)
 PIC_Ions
 #endif
 >::type Species2;
 
-typedef typename MakeSeq<
+typedef MakeSeq<
 Species1,
 Species2
+#if(ENABLE_SYNCHROTRON_PHOTONS == 1)
+,PIC_Photons
+#endif
 >::type VectorAllSpecies;
-
 
 } //namespace picongpu

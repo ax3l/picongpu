@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -24,58 +24,82 @@
 #include <adios.h>
 
 #include "simulation_defines.hpp"
+#include <boost/mpl/if.hpp>
+#include <boost/type_traits.hpp>
 
 namespace picongpu
 {
 
 namespace traits
 {
-    /** Trait for int */
     template<>
-    struct PICToAdios<int>
+    struct PICToAdios<int32_t>
     {
         ADIOS_DATATYPES type;
-        
+
         PICToAdios() :
         type(adios_integer) {}
     };
-    
-    /** Trait for uint32_t */
+
     template<>
     struct PICToAdios<uint32_t>
     {
         ADIOS_DATATYPES type;
-        
+
         PICToAdios() :
         type(adios_unsigned_integer) {}
     };
-    
-    /** Trait for uint64_t */
+
+    template<>
+    struct PICToAdios<int64_t>
+    {
+        ADIOS_DATATYPES type;
+
+        PICToAdios() :
+        type(adios_long) {}
+    };
+
     template<>
     struct PICToAdios<uint64_t>
     {
         ADIOS_DATATYPES type;
-        
+
         PICToAdios() :
         type(adios_unsigned_long) {}
     };
 
-    /** Trait for float */
+    /** Specialization for uint64_cu.
+     *  If uint64_cu happens to be the same as uint64_t we use an unused dummy type
+     *  to avoid duplicate specialization
+     */
+    struct uint64_cu_unused_adios;
     template<>
-    struct PICToAdios<float>
+    struct PICToAdios<
+                        typename bmpl::if_<
+                            typename bmpl::or_<
+                                boost::is_same<uint64_t, uint64_cu>,
+                                bmpl::bool_<sizeof(uint64_cu) != sizeof(uint64_t)>
+                            >::type,
+                            uint64_cu_unused_adios,
+                            uint64_cu
+                        >::type
+                     >: public PICToAdios<uint64_t>
+    {};
+
+    template<>
+    struct PICToAdios<float_32>
     {
         ADIOS_DATATYPES type;
-        
+
         PICToAdios() :
         type(adios_real) {}
     };
 
-    /** Trait for double */
     template<>
-    struct PICToAdios<double>
+    struct PICToAdios<float_64>
     {
         ADIOS_DATATYPES type;
-        
+
         PICToAdios() :
         type(adios_double) {}
     };

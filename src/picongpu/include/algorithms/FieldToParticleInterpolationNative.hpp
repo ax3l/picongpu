@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -44,10 +44,10 @@ template<class T_Shape, class InterpolationMethod>
 struct FieldToParticleInterpolationNative
 {
     typedef typename T_Shape::ChargeAssignment AssignmentFunction;
-    static const int supp = AssignmentFunction::support;
+    static constexpr int supp = AssignmentFunction::support;
 
-    static const int lowerMargin = supp / 2;
-    static const int upperMargin = (supp + 1) / 2;
+    static constexpr int lowerMargin = supp / 2;
+    static constexpr int upperMargin = (supp + 1) / 2;
     typedef typename PMacc::math::CT::make_Int<simDim,lowerMargin>::type LowerMargin;
     typedef typename PMacc::math::CT::make_Int<simDim,upperMargin>::type UpperMargin;
 

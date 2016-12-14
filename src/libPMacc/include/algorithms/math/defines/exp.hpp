@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -37,6 +37,9 @@ struct Exp;
 template<typename Type>
 struct Log;
 
+template<typename Type>
+struct Log10;
+
 template<typename T1>
 HDINLINE typename Exp< T1 >::result exp(const T1& value)
 {
@@ -49,6 +52,11 @@ HDINLINE typename Log< T1 >::result log(const T1& value)
     return Log< T1 > ()(value);
 }
 
+template<typename T1>
+HDINLINE typename Log10< T1 >::result log10(const T1& value)
+{
+    return Log10< T1 > ()(value);
+}
 
 } //namespace math
 } //namespace algorithms

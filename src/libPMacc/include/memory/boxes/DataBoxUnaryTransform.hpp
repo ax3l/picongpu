@@ -1,10 +1,10 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 
 
@@ -48,7 +48,7 @@ public:
 
     typedef typename UnaryFunctor::result ValueType;
     typedef ValueType RefValueType;
-    static const uint32_t Dim = Base::Dim;
+    static constexpr uint32_t Dim = Base::Dim;
 
     HDINLINE DataBoxUnaryTransform(const Base& base) : Base(base)
     {

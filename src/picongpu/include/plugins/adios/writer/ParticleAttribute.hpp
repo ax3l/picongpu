@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2014-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -20,10 +20,9 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_types.hpp"
 #include "plugins/adios/ADIOSWriter.def"
-#include "traits/PICToAdios.hpp"
 #include "traits/GetComponentsType.hpp"
 #include "traits/GetNComponents.hpp"
 #include "traits/Resolve.hpp"
@@ -72,6 +71,7 @@ struct ParticleAttribute
             ValueType* dataPtr = frame.getIdentifier(Identifier()).getPointer();
 
             /* copy strided data from source to temporary buffer */
+            #pragma omp parallel for
             for (size_t i = 0; i < elements; ++i)
             {
                 tmpBfr[i] = ((ComponentType*) dataPtr)[d + i * components];
@@ -79,6 +79,7 @@ struct ParticleAttribute
 
             int64_t adiosAttributeVarId = *(params->adiosParticleAttrVarIds.begin());
             params->adiosParticleAttrVarIds.pop_front();
+
             ADIOS_CMD(adios_write_byid(params->adiosFileHandle, adiosAttributeVarId, tmpBfr));
         }
 

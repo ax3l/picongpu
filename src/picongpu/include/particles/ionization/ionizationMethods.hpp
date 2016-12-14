@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Marco Garten
+ * Copyright 2014-2016 Marco Garten
  *
  * This file is part of PIConGPU.
  *
@@ -18,14 +18,21 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** \file 
+/** \file
  * This file contains methods needed for ionization like: particle creation functors  */
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "particles/operations/Assign.hpp"
 #include "traits/attribute/GetMass.hpp"
+
+#include "nvidia/rng/RNG.hpp"
+#include "nvidia/rng/methods/Xor.hpp"
+#include "nvidia/rng/distributions/Uniform_float.hpp"
+#include "mpi/SeedPerRank.hpp"
+#include "traits/GetUniqueTypeId.hpp"
+#include "particles/operations/Deselect.hpp"
 
 namespace picongpu
 {
@@ -35,18 +42,18 @@ namespace ionization
 {
 
     using namespace PMacc;
-    
+
     /* operations on particles */
     namespace partOp = PMacc::particles::operations;
-    
+
     /** \struct WriteElectronIntoFrame
-     * 
+     *
      * \brief functor that fills an electron frame entry with details about the created particle
      */
     struct WriteElectronIntoFrame
     {
         /** Functor implementation
-         * 
+         *
          * \tparam T_parentIon type of the particle which is ionized
          * \tparam T_childElectron type of the electron that will be created
          */
@@ -61,12 +68,13 @@ namespace ionization
             /* each thread initializes a clone of the parent ion but leaving out
              * some attributes:
              * - multiMask: reading from global memory takes longer than just setting it again explicitly
-             * - momentum: because the electron would get a higher energy because of the ion mass 
+             * - momentum: because the electron would get a higher energy because of the ion mass
              * - boundElectrons: because species other than ions or atoms do not have them
-             * (gets AUTOMATICALLY deselected because electrons do not have this attribute) */
+             * (gets AUTOMATICALLY deselected because electrons do not have this attribute)
+             */
             PMACC_AUTO(targetElectronClone, partOp::deselect<bmpl::vector2<multiMask, momentum> >(childElectron));
 
-            partOp::assign(targetElectronClone, parentIon);
+            partOp::assign(targetElectronClone, partOp::deselect<particleId>(parentIon));
 
             float_X massIon = attribute::getMass(weighting,parentIon);
             const float_X massElectron = attribute::getMass(weighting,childElectron);
@@ -74,16 +82,16 @@ namespace ionization
             float3_X electronMomentum (parentIon[momentum_]*(massElectron/massIon));
 
             childElectron[momentum_] = electronMomentum;
-            
+
             /* conservation of momentum
              * \todo add conservation of mass */
             parentIon[momentum_] -= electronMomentum;
         }
     };
-    
+
 } // namespace ionization
 
 } // namespace particles
-    
+
 } // namespace picongpu
 

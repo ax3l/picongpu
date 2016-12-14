@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -41,10 +41,13 @@
 #include "compileTime/conversion/RemoveFromSeq.hpp"
 #include "mappings/kernel/AreaMapping.hpp"
 #include "particles/ParticleDescription.hpp"
+#include "particles/operations/splitIntoListOfFrames.kernel"
 
 #include "plugins/output/WriteSpeciesCommon.hpp"
-#include "plugins/kernel/CopySpeciesGlobal2Local.kernel"
 #include "plugins/hdf5/restart/LoadParticleAttributesFromHDF5.hpp"
+
+#include "plugins/common/particlePatches.hpp"
+#include "plugins/hdf5/openPMD/patchReader.hpp"
 
 namespace picongpu
 {
@@ -75,10 +78,10 @@ public:
     typedef bmpl::vector2<multiMask, localCellIdx> TypesToDelete;
     typedef typename RemoveFromSeq<ParticleAttributeList, TypesToDelete>::type ParticleCleanedAttributeList;
 
-    /* add globalCellIdx for hdf5 particle*/
+    /* add totalCellIdx for hdf5 particle*/
     typedef typename MakeSeq<
-    ParticleCleanedAttributeList,
-    globalCellIdx<globalCellIdx_pic>
+        ParticleCleanedAttributeList,
+        totalCellIdx
     >::type ParticleNewAttributeList;
 
     typedef
@@ -99,41 +102,72 @@ public:
         DataConnector &dc = Environment<>::get().DataConnector();
         GridController<simDim> &gc = Environment<simDim>::get().GridController();
 
-        std::string subGroup = std::string("particles/") + FrameType::getName();
+        const std::string speciesSubGroup(
+            std::string("particles/") + FrameType::getName() + std::string("/")
+        );
         const PMacc::Selection<simDim>& localDomain = Environment<simDim>::get().SubGrid().getLocalDomain();
+        const PMacc::Selection<simDim>& globalDomain = Environment<simDim>::get().SubGrid().getGlobalDomain();
 
-        /* load particle without copying particle data to host */
+        // load particle without copying particle data to host
         ThisSpecies* speciesTmp = &(dc.getData<ThisSpecies >(ThisSpecies::FrameType::getName(), true));
 
-        /* count total number of particles on the device */
+        // count total number of particles on the device
         uint64_cu totalNumParticles = 0;
-
-        /* load particles info table entry for this process
-           particlesInfo is (part-count, scalar pos, x, y, z) */
-        typedef uint64_t uint64Quint[5];
-        uint64Quint particlesInfo[gc.getGlobalSize()];
-        Dimensions particlesInfoSizeRead;
-
-        params->dataCollector->read(params->currentStep,
-                                    (std::string(subGroup) + std::string("/particles_info")).c_str(),
-                                    particlesInfoSizeRead,
-                                    particlesInfo);
-
-        assert(particlesInfoSizeRead[0] == gc.getGlobalSize());
-
-        /* search my entry (using my scalar position) in particlesInfo */
         uint64_t particleOffset = 0;
-        uint64_t myScalarPos = gc.getScalarPosition();
 
-        for (size_t i = 0; i < particlesInfoSizeRead[0]; ++i)
+        // load particle patches offsets to find own patch
+        const std::string particlePatchesPath(
+            speciesSubGroup + std::string("particlePatches/")
+        );
+
+        // read particle patches
+        openPMD::PatchReader patchReader;
+
+        picongpu::openPMD::ParticlePatches particlePatches(
+            patchReader(
+                params->dataCollector,
+                gc.getGlobalSize(),
+                simDim,
+                params->currentStep,
+                particlePatchesPath
+            )
+        );
+
+        /** search my entry (using my cell offset and my local grid size)
+         *
+         * \note if you want to restart with a changed GPU configuration, either
+         * post-process the particle-patches in the file or implement to find
+         * all contributing patches and then filter the particles inside those
+         * by position
+         *
+         * \see plugins/hdf5/WriteSpecies.hpp `WriteSpecies::operator()`
+         *      as its counterpart
+         */
+        const DataSpace<simDim> patchOffset =
+            globalDomain.offset +
+            params->window.globalDimensions.offset +
+            params->window.localDimensions.offset;
+        const DataSpace<simDim> patchExtent =
+            params->window.localDimensions.size;
+
+        for( size_t i = 0; i < gc.getGlobalSize(); ++i )
         {
-            if (particlesInfo[i][1] == myScalarPos)
+            bool exactlyMyPatch = true;
+
+            for( uint32_t d = 0; d < simDim; ++d )
             {
-                totalNumParticles = particlesInfo[i][0];
-                break;
+                if( particlePatches.getOffsetComp( d )[ i ] != (uint64_t)patchOffset[ d ] )
+                    exactlyMyPatch = false;
+                if( particlePatches.getExtentComp( d )[ i ] != (uint64_t)patchExtent[ d ] )
+                    exactlyMyPatch = false;
             }
 
-            particleOffset += particlesInfo[i][0];
+            if( exactlyMyPatch )
+            {
+                totalNumParticles = particlePatches.numParticles[ i ];
+                particleOffset = particlePatches.numParticlesOffset[ i ];
+                break;
+            }
         }
 
         log<picLog::INPUT_OUTPUT > ("Loading %1% particles from offset %2%") %
@@ -152,58 +186,20 @@ public:
         getDevicePtr(forward(deviceFrame), forward(hostFrame));
 
         ForEach<typename Hdf5FrameType::ValueTypeSeq, LoadParticleAttributesFromHDF5<bmpl::_1> > loadAttributes;
-        loadAttributes(forward(params), forward(hostFrame), subGroup, particleOffset, totalNumParticles);
+        loadAttributes(forward(params), forward(hostFrame), speciesSubGroup, particleOffset, totalNumParticles);
 
         if (totalNumParticles != 0)
         {
-            dim3 block(PMacc::math::CT::volume<SuperCellSize>::type::value);
-
-            /* counter is used to apply for work, count used frames and count loaded particles
-             * [0] -> offset for loading particles
-             * [1] -> number of loaded particles
-             * [2] -> number of used frames
-             *
-             * all values are zero after initialization
-             */
-            GridBuffer<uint32_t, DIM1> counterBuffer(DataSpace<DIM1>(3));
-
-            const uint32_t cellsInSuperCell = PMacc::math::CT::volume<SuperCellSize>::type::value;
-
-            const uint32_t iterationsForLoad = ceil(double(totalNumParticles) / double(restartChunkSize));
-            uint32_t leftOverParticles = totalNumParticles;
-
-            __startAtomicTransaction(__getTransactionEvent());
-
-            for (uint32_t i = 0; i < iterationsForLoad; ++i)
-            {
-                /* only load a chunk of particles per iteration to avoid blow up of frame usage
-                 */
-                uint32_t currentChunkSize = std::min(leftOverParticles, restartChunkSize);
-                log<picLog::INPUT_OUTPUT > ("HDF5:   load particles on device chunk offset=%1%; chunk size=%2%; left particles %3%") %
-                    (i * restartChunkSize) % currentChunkSize % leftOverParticles;
-                __cudaKernel(copySpeciesGlobal2Local)
-                    (ceil(double(currentChunkSize) / double(cellsInSuperCell)), cellsInSuperCell)
-                    (counterBuffer.getDeviceBuffer().getDataBox(),
-                     speciesTmp->getDeviceParticlesBox(), deviceFrame,
-                     (int) totalNumParticles,
-                     localDomain.offset, /*relative to data domain (not to physical domain)*/
-                     *(params->cellDescription)
-                     );
-                speciesTmp->fillAllGaps();
-                leftOverParticles -= currentChunkSize;
-            }
-            __setTransactionEvent(__endTransaction());
-            counterBuffer.deviceToHost();
-            log<picLog::INPUT_OUTPUT > ("HDF5:  wait for last processed chunk: %1%") % Hdf5FrameType::getName();
-            __getTransactionEvent().waitForFinished();
-
-            log<picLog::INPUT_OUTPUT > ("HDF5: used frames to load particles: %1%") % counterBuffer.getHostBuffer().getDataBox()[2];
-
-            if ((uint64_cu) counterBuffer.getHostBuffer().getDataBox()[1] != totalNumParticles)
-            {
-                log<picLog::INPUT_OUTPUT >("HDF5:  error load species | counter is %1% but should %2%") % counterBuffer.getHostBuffer().getDataBox()[1] % totalNumParticles;
-            }
-            assert((uint64_cu) counterBuffer.getHostBuffer().getDataBox()[1] == totalNumParticles);
+            PMacc::particles::operations::splitIntoListOfFrames(
+                *speciesTmp,
+                deviceFrame,
+                totalNumParticles,
+                restartChunkSize,
+                globalDomain.offset + localDomain.offset,
+                totalCellIdx_,
+                *(params->cellDescription),
+                picLog::INPUT_OUTPUT()
+            );
 
             /*free host memory*/
             ForEach<typename Hdf5FrameType::ValueTypeSeq, FreeMemory<bmpl::_1> > freeMem;

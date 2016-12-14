@@ -1,5 +1,5 @@
 #
-# Copyright 2014 Axel Huebl, Benjamin Schneider, Felix Schmitt, Heiko Burau, Rene Widera
+# Copyright 2014-2016 Axel Huebl, Benjamin Schneider, Felix Schmitt, Heiko Burau, Rene Widera
 #
 # This file is part of PIConGPU.
 #
@@ -22,7 +22,7 @@
 # Required cmake version
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.12.2)
 
 
 ################################################################################
@@ -32,8 +32,14 @@ cmake_minimum_required(VERSION 2.8.5)
 project(png2gas)
 
 # set helper pathes to find libraries and packages
-set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/" "$ENV{BOOST_ROOT}" "$ENV{MPI_ROOT}"
-    "$ENV{HDF5_ROOT}")
+# Add specific hints
+list(APPEND CMAKE_PREFIX_PATH "$ENV{MPI_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{BOOST_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{HDF5_ROOT}")
+# Add from environment after specific env vars
+list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
+# Last add generic system path to the end (as last fallback)
+list(APPEND "/usr/lib/x86_64-linux-gnu/")
 
 # install prefix
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -43,7 +49,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wno-pmf-conversions -Wno-depre
 
 # own modules for find_packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../thirdParty/cmake-modules/)
 
 
 ################################################################################
@@ -78,7 +84,7 @@ set(LIBS ${LIBS} ${Boost_LIBRARIES})
 # find libSplash installation
 # prefer static libraries over shared ones (but do not force them)
 set(Splash_USE_STATIC_LIBS ON)
-find_package(Splash 1.2.4 REQUIRED COMPONENTS PARALLEL)
+find_package(Splash 1.6.0 REQUIRED COMPONENTS PARALLEL)
 
 if(Splash_FOUND)
     include_directories(SYSTEM ${Splash_INCLUDE_DIRS})
@@ -93,7 +99,7 @@ endif(Splash_FOUND)
 ################################################################################
 
 # find PNGwriter installation
-find_package(PNGwriter REQUIRED)
+find_package(PNGwriter 0.5.6 REQUIRED)
 
 if(PNGwriter_FOUND)
     include_directories(SYSTEM ${PNGwriter_INCLUDE_DIRS})

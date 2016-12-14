@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2014-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -21,7 +21,7 @@
 #pragma once
 
 #include "simulation_defines.hpp"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "cuSTL/cursor/Cursor.hpp"
 #include "basicOperations.hpp"
 #include <cuSTL/cursor/tools/twistVectorFieldAxes.hpp>
@@ -47,10 +47,10 @@ template<typename T_ParticleShape>
 struct Esirkepov<T_ParticleShape, DIM2>
 {
     typedef typename T_ParticleShape::ChargeAssignment ParticleAssign;
-    static const int supp = ParticleAssign::support;
+    static constexpr int supp = ParticleAssign::support;
 
-    static const int currentLowerMargin = supp / 2 + 1 - (supp + 1) % 2;
-    static const int currentUpperMargin = (supp + 1) / 2 + 1;
+    static constexpr int currentLowerMargin = supp / 2 + 1 - (supp + 1) % 2;
+    static constexpr int currentUpperMargin = (supp + 1) / 2 + 1;
     typedef typename PMacc::math::CT::make_Int<DIM2, currentLowerMargin>::type LowerMargin;
     typedef typename PMacc::math::CT::make_Int<DIM2, currentUpperMargin>::type UpperMargin;
 
@@ -62,8 +62,8 @@ struct Esirkepov<T_ParticleShape, DIM2>
      * For the case were previous position is greater than current position we correct
      * begin and end on runtime and add +1 to begin and end.
      */
-    static const int begin = -currentLowerMargin;
-    static const int end = begin + supp + 1;
+    static constexpr int begin = -currentLowerMargin;
+    static constexpr int end = begin + supp + 1;
 
     float_X charge;
 
@@ -108,8 +108,8 @@ struct Esirkepov<T_ParticleShape, DIM2>
                                                       coordinate_shift.y()
                                                       ));
             //same as: pos = pos - coordinate_shift;
-            line.pos0 -= (coordinate_shift);
-            line.pos1 -= (coordinate_shift);
+            line.m_pos0 -= (coordinate_shift);
+            line.m_pos1 -= (coordinate_shift);
         }
 
         /**
@@ -142,8 +142,8 @@ struct Esirkepov<T_ParticleShape, DIM2>
          * If previous position was greater than current position we change our interval
          * from [begin,end) to [begin+1,end+1).
          */
-        const int offset_i = line.pos0.x() > line.pos1.x() ? 1 : 0;
-        const int offset_j = line.pos0.y() > line.pos1.y() ? 1 : 0;
+        const int offset_i = line.m_pos0.x() > line.m_pos1.x() ? 1 : 0;
+        const int offset_j = line.m_pos0.y() > line.m_pos1.y() ? 1 : 0;
 
 
         for (int j = begin + offset_j; j < end + offset_j; ++j)
@@ -158,6 +158,8 @@ struct Esirkepov<T_ParticleShape, DIM2>
             for (int i = begin + offset_i; i < end + offset_i; ++i)
             {
                 float_X W = DS(line, i, 0) * tmp;
+                /* We multiply with `cellEdgeLength` due to the fact that the attribute for the
+                 * in-cell particle `position` (and it's change in DELTA_T) is normalize to [0,1) */
                 accumulated_J += -this->charge * (float_X(1.0) / float_X(CELL_VOLUME * DELTA_T)) * W * cellEdgeLength;
                 /* the branch divergence here still over-compensates for the fewer collisions in the (expensive) atomic adds */
                 if (accumulated_J != float_X(0.0))
@@ -178,8 +180,8 @@ struct Esirkepov<T_ParticleShape, DIM2>
          * If previous position was greater than current position we change our interval
          * from [begin,end) to [begin+1,end+1).
          */
-        const int offset_i = line.pos0.x() > line.pos1.x() ? 1 : 0;
-        const int offset_j = line.pos0.y() > line.pos1.y() ? 1 : 0;
+        const int offset_i = line.m_pos0.x() > line.m_pos1.x() ? 1 : 0;
+        const int offset_j = line.m_pos0.y() > line.m_pos1.y() ? 1 : 0;
 
 
         for (int j = begin + offset_j; j < end + offset_j; ++j)
@@ -207,7 +209,7 @@ struct Esirkepov<T_ParticleShape, DIM2>
      */
     DINLINE float_X S0(const Line<float2_X>& line, const float_X gridPoint, const uint32_t d)
     {
-        return ParticleAssign()(gridPoint - line.pos0[d]);
+        return ParticleAssign()(gridPoint - line.m_pos0[d]);
     }
 
     /** calculate DS (see paper)
@@ -218,7 +220,13 @@ struct Esirkepov<T_ParticleShape, DIM2>
      */
     DINLINE float_X DS(const Line<float2_X>& line, const float_X gridPoint, const uint32_t d)
     {
-        return ParticleAssign()(gridPoint - line.pos1[d]) - ParticleAssign()(gridPoint - line.pos0[d]);
+        return ParticleAssign()(gridPoint - line.m_pos1[d]) - ParticleAssign()(gridPoint - line.m_pos0[d]);
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "Esirkepov" );
+        return propList;
     }
 };
 

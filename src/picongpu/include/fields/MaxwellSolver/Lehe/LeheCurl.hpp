@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera, Remi Lehe
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Remi Lehe
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "math/Vector.hpp"
 
 namespace picongpu
@@ -225,7 +225,7 @@ namespace picongpu
                 const float_X d_dir2 = d_dir * d_dir;
 
                 /** \todo all constants, calculate once at CPU and use as parameter
-                 *  \todo cast to double to force high-precision sinus
+                 *  \todo cast to float_64 to force high-precision sinus
                  */
                 const float_X mySin = math::sin( float_X( 0.5 ) * float_X( M_PI ) *
                                                  SPEED_OF_LIGHT * DELTA_T / d_dir );

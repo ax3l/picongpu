@@ -1,10 +1,10 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,118 +23,80 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
+#include "eventSystem/events/CudaEventHandle.hpp"
+#include "eventSystem/events/CudaEvent.hpp"
 #include <cuda_runtime.h>
 
 namespace PMacc
 {
-
-/**
- * Wrapper for cuda events
- */
-class CudaEvent
-{
-private:
-
-    cudaEvent_t event;
-    cudaStream_t stream;
-    /* state if event is recorded */
-    bool isRecorded;
-    bool isValid;
-
-
-public:
-
-    /**
-     * Constructor
-     *
-     * no data is allocated @see create()
-     */
-    CudaEvent() : isRecorded(false), isValid(false)
+    CudaEvent::CudaEvent( ) : isRecorded( false ), finished( true ), refCounter( 0u )
     {
-
-    }
-
-    /**
-     * Destructor
-     *
-     * no data is freed @see destroy()
-     */
-    virtual ~CudaEvent()
-    {
-
-    }
-
-    /**
-     *  create valid object
-     *
-     * - internal memory is allocated
-     * - event must be destroyed with @see destroy
-     */
-    static CudaEvent create()
-    {
-        CudaEvent ev;
-        ev.isValid = true;
-        CUDA_CHECK(cudaEventCreateWithFlags(&(ev.event), cudaEventDisableTiming));
-        return ev;
-    }
-
-    /**
-     * free allocated memory
-     */
-    static void destroy(const CudaEvent& ev)
-    {
-        CUDA_CHECK(cudaEventSynchronize(ev.event));
-        CUDA_CHECK(cudaEventDestroy(ev.event));
-    }
-
-    /**
-     * get native cuda event
-     *
-     * @return native cuda event
-     */
-    cudaEvent_t operator*() const
-    {
-        assert(isValid);
-        return event;
-    }
-
-    /**
-     * check whether the event is finished
-     *
-     * @return true if event is finished else false
-     */
-    bool isFinished() const
-    {
-        assert(isValid);
-        return cudaEventQuery(event) == cudaSuccess;
+        log( ggLog::CUDA_RT()+ggLog::MEMORY(), "create event" );
+        CUDA_CHECK( cudaEventCreateWithFlags( &event, cudaEventDisableTiming ) );
     }
 
 
-    /**
-     * get stream in which this event is recorded
-     *
-     * @return native cuda stream
-     */
-    cudaStream_t getStream() const
+    CudaEvent::~CudaEvent( )
     {
-        assert(isRecorded);
-        return stream;
+        PMACC_ASSERT( refCounter == 0u );
+        log( ggLog::CUDA_RT()+ggLog::MEMORY(), "sync and delete event" );
+        // free cuda event
+        CUDA_CHECK( cudaEventSynchronize( event ) );
+        CUDA_CHECK( cudaEventDestroy( event ) );
+
     }
 
-    /**
-     * record event in a device stream
-     *
-     * @param stream native cuda stream
-     */
-    void recordEvent(cudaStream_t stream)
+    void CudaEvent::registerHandle()
+    {
+        ++refCounter;
+    }
+
+    void CudaEvent::releaseHandle()
+    {
+        assert( refCounter != 0u );
+        // get old value and decrement
+        uint32_t oldCounter = refCounter--;
+        if( oldCounter == 1u )
+        {
+            // reset event meta data
+            isRecorded = false;
+            finished = true;
+
+            Environment<>::get().EventPool( ).push( this );
+        }
+    }
+
+
+    bool CudaEvent::isFinished()
+    {
+        // avoid cuda driver calls if event is already finished
+        if( finished )
+            return true;
+        assert( isRecorded );
+
+        cudaError_t rc = cudaEventQuery(event);
+
+        if(rc == cudaSuccess)
+        {
+            finished = true;
+            return true;
+        }
+        else if(rc == cudaErrorNotReady)
+            return false;
+        else
+            PMACC_PRINT_CUDA_ERROR_AND_THROW(rc, "Event query failed");
+    }
+
+
+    void CudaEvent::recordEvent(cudaStream_t stream)
     {
         /* disallow double recording */
-        assert(isRecorded==false);
+        assert(isRecorded == false);
         isRecorded = true;
+        finished = false;
         this->stream = stream;
         CUDA_CHECK(cudaEventRecord(event, stream));
     }
 
-};
-}
+} // namepsace PMacc

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,10 +20,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONTAINER_CT_CTCARTBUFFER_HPP
-#define CONTAINER_CT_CTCARTBUFFER_HPP
+#pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "math/Vector.hpp"
 #include "cuSTL/cursor/compile-time/BufferCursor.hpp"
 #include "cuSTL/cursor/navigator/CartNavigator.hpp"
@@ -48,7 +47,7 @@ public:
     typedef _Size Size;
     typedef typename Allocator::Pitch Pitch;
     typedef cursor::CT::BufferCursor<Type, Pitch> Cursor;
-    static const int dim = Size::dim;
+    static constexpr int dim = Size::dim;
     typedef zone::CT::SphericZone<_Size, typename math::CT::make_Int<dim, 0>::type> Zone;
 private:
     Type* dataPointer;
@@ -79,4 +78,3 @@ public:
 
 #include "CartBuffer.tpp"
 
-#endif // CONTAINER_CT_CTCARTBUFFER_HPP

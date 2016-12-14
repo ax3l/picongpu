@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Felix Schmitt, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Wolfgang Hoenig,
+ *                     Benjamin Worpitz, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,12 +23,11 @@
 
 #pragma once
 
-#include <map>
-#include <cassert>
-
 #include "eventSystem/tasks/ITask.hpp"
-#include "eventSystem/events/EventPool.hpp"
+#include "Environment.def"
 
+#include <map>
+#include <set>
 
 namespace PMacc
 {
@@ -72,11 +72,8 @@ namespace PMacc
 
         void addPassiveTask(ITask *task);
 
-        EventPool& getEventPool();
 
-        int getCount();
-
-
+        std::size_t getCount();
 
     private:
 
@@ -102,7 +99,6 @@ namespace PMacc
 
         TaskMap tasks;
         TaskMap passiveTasks;
-        EventPool *eventPool;
     };
 
 } //namespace PMacc

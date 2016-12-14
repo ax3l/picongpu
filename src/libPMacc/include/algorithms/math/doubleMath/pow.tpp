@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,8 +23,8 @@
 
 #pragma once
 
-#include "types.h"
-#include <math.h> /*provide host version of pow*/
+#include "pmacc_types.hpp"
+#include <cmath>
 
 namespace PMacc
 {
@@ -52,7 +52,15 @@ struct Pow<double, int>
 
     HDINLINE result operator()(const double& base, const int& exponent)
     {
+#ifdef __CUDA_ARCH__ /*device version*/
+        /* @todo: There is an incompatibility with C++11 + CUDA + GCC where no device function
+         *        pow(double, int) is defined: http://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-tools-title-known
+         *        Use the pow(double, double) instead which reduces performance or implement an own (faster) version
+         */
+        return ::pow(base, static_cast<double>(exponent));
+#else
         return ::pow(base, exponent);
+#endif
     }
 };
 

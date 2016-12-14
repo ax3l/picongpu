@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Marco Garten
+ * Copyright 2014-2016 Marco Garten
  *
  * This file is part of PIConGPU.
  *
@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "particles/memory/frames/Frame.hpp"
 #include "traits/GetFlagType.hpp"
@@ -27,25 +28,31 @@
 #include "simulation_defines/param/speciesDefinition.param"
 #include "simulation_defines/unitless/speciesDefinition.unitless"
 
+#include "particles/ionization/byField/ionizers.def"
+#include "particles/ionization/byField/ionizers.hpp"
+
 namespace picongpu
 {
 
-template<typename T_Species>
+namespace traits
+{
+template<typename T_SpeciesType>
 struct GetIonizer
 {
-    
-    typedef typename T_Species::FrameType FrameType;
 
-    typedef typename HasFlag<FrameType, ionizer<> >::type hasIonizer;
-    
+    typedef T_SpeciesType SpeciesType;
+    typedef typename SpeciesType::FrameType FrameType;
+
     /* The following line only fetches the alias */
     typedef typename GetFlagType<FrameType,ionizer<> >::type FoundIonizerAlias;
+
     /* This now resolves the alias into the actual object type */
     typedef typename PMacc::traits::Resolve<FoundIonizerAlias>::type FoundIonizer;
-    /* if no ionizer was defined we use IonizerNone as fallback */
-    typedef typename bmpl::if_<hasIonizer,FoundIonizer,particles::ionization::None >::type type;
-    
-};
 
+    /* specializes the designated ionization model with the particle species it is called upon */
+    typedef typename bmpl::apply1<typename FoundIonizer::type, SpeciesType>::type type;
+
+}; // struct GetIonizer
+
+}// namespace traits
 }// namespace picongpu
-

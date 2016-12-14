@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALLOCATOR_SHAREDMEMALLOCATOR_HPP
-#define ALLOCATOR_SHAREDMEMALLOCATOR_HPP
+#pragma once
 
 #include "math/Vector.hpp"
 #include "cuSTL/cursor/compile-time/BufferCursor.hpp"
@@ -40,13 +39,12 @@ struct SharedMemAllocator<Type, Size, 1, uid>
 {
     typedef Type type;
     typedef math::CT::UInt32<> Pitch;
-    static const int dim = 1;
+    static constexpr int dim = 1;
     typedef cursor::CT::BufferCursor<type, math::CT::UInt32<> > Cursor;
 
     __device__ static Cursor allocate()
     {
         __shared__ Type shMem[Size::x::value];
-        __syncthreads(); /*wait that all shared memory is initialised*/
         return Cursor((Type*)shMem);
     }
 };
@@ -56,13 +54,12 @@ struct SharedMemAllocator<Type, Size, 2, uid>
 {
     typedef Type type;
     typedef math::CT::UInt32<sizeof(Type) * Size::x::value> Pitch;
-    static const int dim = 2;
+    static constexpr int dim = 2;
     typedef cursor::CT::BufferCursor<type, Pitch> Cursor;
 
     __device__ static Cursor allocate()
     {
         __shared__ Type shMem[Size::x::value][Size::y::value];
-        __syncthreads(); /*wait that all shared memory is initialised*/
         return Cursor((Type*)shMem);
     }
 };
@@ -73,13 +70,12 @@ struct SharedMemAllocator<Type, Size, 3, uid>
     typedef Type type;
     typedef math::CT::UInt32<sizeof(Type) * Size::x::value,
                              sizeof(Type) * Size::x::value * Size::y::value> Pitch;
-    static const int dim = 3;
+    static constexpr int dim = 3;
     typedef cursor::CT::BufferCursor<type, Pitch> Cursor;
 
     __device__ static Cursor allocate()
     {
         __shared__ Type shMem[Size::x::value][Size::y::value][Size::z::value];
-        __syncthreads(); /*wait that all shared memory is initialised*/
         return Cursor((Type*)shMem);
     }
 };
@@ -88,4 +84,3 @@ struct SharedMemAllocator<Type, Size, 3, uid>
 } // allocator
 } // PMacc
 
-#endif // ALLOCATOR_SHAREDMEMALLOCATOR_HPP

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,25 +20,22 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
 #include "eventSystem/EventSystem.hpp"
 #include "eventSystem/tasks/ITask.hpp"
 #include "eventSystem/tasks/TaskLogicalAnd.hpp"
-#include <cassert>
 
 namespace PMacc
 {
 
     inline EventTask::EventTask(id_t taskId) :
-    taskId(taskId)
-    {
-    }
+        taskId(taskId)
+    {}
 
     inline EventTask::EventTask() :
-    taskId(0)
-    {
-
-    }
+        taskId(0)
+    {}
 
     inline std::string EventTask::toString()
     {
@@ -107,8 +104,5 @@ namespace PMacc
         return *this;
     }
 
-
-
 }
-
 

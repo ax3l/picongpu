@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,13 +20,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
+#include <cuSTL/container/HostBuffer.hpp>
 #include "memory/buffers/Buffer.hpp"
 #include "dimensions/DataSpace.hpp"
-
-
-#ifndef _HOSTBUFFER_HPP
-#define	_HOSTBUFFER_HPP
 
 namespace PMacc
 {
@@ -63,7 +61,7 @@ namespace PMacc
             __startOperation(ITask::TASK_HOST);
             return this->current_size;
         }
-        
+
         /**
          * Destructor.
          */
@@ -71,21 +69,33 @@ namespace PMacc
         {
         };
 
+        HINLINE
+        container::HostBuffer<TYPE, DIM>
+        cartBuffer()
+        {
+            math::Size_t<DIM - 1> pitch;
+            if(DIM >= 2)
+                pitch[0] = this->getPhysicalMemorySize()[0] * sizeof(TYPE);
+            if(DIM == 3)
+                pitch[1] = pitch[0] * this->getPhysicalMemorySize()[1];
+            container::HostBuffer<TYPE, DIM> result(this->getBasePointer(), this->getDataSpace(), false, pitch);
+            return result;
+        }
+
     protected:
 
-        /**
-         * Constructor.
+        /** Constructor.
          *
-         * @param dataSpace size of each dimension of the buffer
+         * @param size extent for each dimension (in elements)
+         *             if the buffer is a view to an existing buffer the size
+         *             can be less than `physicalMemorySize`
+         * @param physicalMemorySize size of the physical memory (in elements)
          */
-        HostBuffer(DataSpace<DIM> dataSpace) :
-        Buffer<TYPE, DIM>(dataSpace)
+        HostBuffer(DataSpace<DIM> size, DataSpace<DIM> physicalMemorySize) :
+        Buffer<TYPE, DIM>(size, physicalMemorySize)
         {
 
         }
     };
 
 } //namespace PMacc
-
-
-#endif	/* _HOSTBUFFER_HPP */

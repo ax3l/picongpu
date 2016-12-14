@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Felix Schmitt,
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Felix Schmitt,
  *                     Richard Pausch
  *
  * This file is part of PIConGPU.
@@ -25,14 +25,14 @@
 #include "math/vector/Float.hpp"
 #include "plugins/ILightweightPlugin.hpp"
 
+#include <string>
+
 namespace picongpu
 {
 
 using namespace PMacc;
 
 namespace po = boost::program_options;
-
-#include <string>
 
 template<typename Field>
 class SliceFieldPrinterMulti;
@@ -47,7 +47,7 @@ private:
     int plane;
     float_X slicePoint;
     MappingDesc *cellDescription;
-    container::DeviceBuffer<float3_64, 2>* dBuffer_SI;
+    container::DeviceBuffer<float3_64, simDim-1>* dBuffer_SI;
 
     void pluginLoad();
     void pluginUnload();

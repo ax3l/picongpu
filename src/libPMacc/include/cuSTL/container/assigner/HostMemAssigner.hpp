@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,9 +20,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ASSIGNER_HOSTMEMASSIGNER_HPP
-#define ASSIGNER_HOSTMEMASSIGNER_HPP
+#pragma once
 
+#include "cuSTL/algorithm/host/Foreach.hpp"
+#include "lambda/placeholder.h"
+#include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/int.hpp>
 #include <stdint.h>
 
 namespace PMacc
@@ -30,59 +33,26 @@ namespace PMacc
 namespace assigner
 {
 
-template<int dim>
-struct HostMemAssigner;
+namespace bmpl = boost::mpl;
 
-template<>
-struct HostMemAssigner<1>
+template<typename T_Dim = bmpl::_1, typename T_CartBuffer = bmpl::_2>
+struct HostMemAssigner
 {
-    static const int dim = 1;
-    template<typename Type>
-    static void assign(Type* data, const math::Size_t<dim-1>& pitch, const Type& value,
-                       const math::Size_t<dim>& size)
-    {
-        for(size_t i = 0; i < size.x(); i++) data[i] = value;
-    }
-};
+    static constexpr int dim = T_Dim::value;
+    typedef T_CartBuffer CartBuffer;
 
-template<>
-struct HostMemAssigner<2u>
-{
-    static const int dim = 2u;
     template<typename Type>
-    static void assign(Type* data, const math::Size_t<dim-1>& pitch, const Type& value,
-                       const math::Size_t<dim>& size)
+    HINLINE void assign(const Type& value)
     {
-        Type* tmpData = data;
-        for(size_t y = 0; y < size.y(); y++)
-        {
-            for(size_t x = 0; x < size.x(); x++) tmpData[x] = value;
-            tmpData = (Type*)(((char*)tmpData) + pitch.x());
-        }
-    }
-};
+        // "Curiously recurring template pattern"
+        CartBuffer* buffer = static_cast<CartBuffer*>(this);
 
-template<>
-struct HostMemAssigner<3>
-{
-    static const int dim = 3;
-    template<typename Type>
-    static void assign(Type* data, const math::Size_t<dim-1>& pitch, const Type& value,
-                       const math::Size_t<dim>& size)
-    {
-        for(size_t z = 0; z < size.z(); z++)
-        {
-            Type* dataXY = (Type*)(((char*)data) + z * pitch.y());
-            for(size_t y = 0; y < size.y(); y++)
-            {
-                for(size_t x = 0; x < size.x(); x++) dataXY[x] = value;
-                dataXY = (Type*)(((char*)dataXY) + pitch.x());
-            }
-        }
+        using namespace lambda;
+        algorithm::host::Foreach foreach;
+        foreach(buffer->zone(), buffer->origin(), _1 = value);
     }
 };
 
 } // assigner
 } // PMacc
 
-#endif // ASSIGNER_HOSTMEMASSIGNER_HPP

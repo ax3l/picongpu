@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,15 +21,14 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ISIMULATIONDATA_HPP
-#define	ISIMULATIONDATA_HPP
+#pragma once
 
 #include <string>
 
 namespace PMacc
 {
     typedef std::string SimulationDataId;
-    
+
     /**
      * Interface for simulation data which should be registered at DataConnector
      * for file output, visualization, etc.
@@ -36,21 +36,19 @@ namespace PMacc
     class ISimulationData
     {
     public:
+        virtual ~ISimulationData(){}
         /**
          * Synchronizes simulation data, meaning accessing (host side) data
          * will return up-to-date values.
          */
         virtual void synchronize() = 0;
-        
+
         /**
          * Return the globally unique identifier for this simulation data.
          *
          * @return globally unique identifier
          */
         virtual SimulationDataId getUniqueId() = 0;
-       
+
     };
 }
-
-#endif	/* ISIMULATIONDATA_HPP */
-

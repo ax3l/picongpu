@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau
+ * Copyright 2013-2016 Heiko Burau
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALGORITHM_MPI_GATHER_HPP
-#define ALGORITHM_MPI_GATHER_HPP
+#pragma once
 
 #include "mpi.h"
 #include "math/vector/Int.hpp"
@@ -46,27 +45,24 @@ private:
     std::vector<math::Int<dim> > positions;
     bool m_participate;
 
-    template<typename Type, int T_dim, int memDim>
-    struct CopyToDest;
-
-    template<typename Type>
-    struct CopyToDest<Type, 3, 2>
+    struct CopyToDest
     {
+        template<typename Type, int memDim, class T_Alloc, class T_Copy, class T_Assign>
         void operator()(const Gather<dim>& gather,
-                        container::HostBuffer<Type, 2>& dest,
+                        container::CartBuffer<Type, memDim, T_Alloc, T_Copy, T_Assign>& dest,
                         std::vector<Type>& tmpDest,
-                        container::HostBuffer<Type, 2>& source, int dir) const;
+                        int dir,
+                        const std::vector<math::Size_t<memDim> >& srcSizes,
+                        const std::vector<size_t>& srcOffsets) const;
     };
 
-    template<typename Type, int T_dim, int memDim>
-    friend class CopyToDest;
 public:
     Gather(const zone::SphericZone<dim>& p_zone);
     ~Gather();
 
-    template<typename Type, int memDim>
-    void operator()(container::HostBuffer<Type, memDim>& dest,
-                    container::HostBuffer<Type, memDim>& source,
+    template<typename Type, int memDim, class T_Alloc, class T_Copy, class T_Assign, class T_Alloc2, class T_Copy2, class T_Assign2>
+    void operator()(container::CartBuffer<Type, memDim, T_Alloc, T_Copy, T_Assign>& dest,
+                    container::CartBuffer<Type, memDim, T_Alloc2, T_Copy2, T_Assign2>& source,
                     int dir = -1) const;
 
     inline bool participate() const {return m_participate;}
@@ -79,5 +75,3 @@ public:
 } // PMacc
 
 #include "Gather.tpp"
-
-#endif // ALGORITHM_MPI_GATHER_HPP

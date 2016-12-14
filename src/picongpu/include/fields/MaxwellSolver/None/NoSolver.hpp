@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -24,7 +24,7 @@
 
 #include "NoSolver.def"
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 
@@ -34,29 +34,31 @@ namespace picongpu
     {
         using namespace PMacc;
 
+        /** Check Yee grid and time conditions
+         *
+         * This is a workaround that the condition check is only
+         * triggered if the current used solver is `NoSolver`
+         */
+        template<typename T_UsedSolver, typename T_Dummy=void>
+        struct ConditionCheck
+        {
+        };
 
-        class NoSolver
+        template<typename T_Dummy>
+        struct ConditionCheck<NoSolver, T_Dummy>
+        {
+            /* Courant-Friedrichs-Levy-Condition for Yee Field Solver: */
+            PMACC_CASSERT_MSG(Courant_Friedrichs_Levy_condition_failure____check_your_gridConfig_param_file,
+                (SPEED_OF_LIGHT*SPEED_OF_LIGHT*DELTA_T*DELTA_T*INV_CELL2_SUM)<=1.0);
+        };
+
+        class NoSolver : private ConditionCheck<fieldSolver::FieldSolver>
         {
         private:
             typedef MappingDesc::SuperCellSize SuperCellSize;
 
-            MappingDesc cellDescription;
-
-            template<uint32_t AREA>
-            void updateE()
-            {
-                return;
-            }
-
-            template<uint32_t AREA>
-            void updateBHalf()
-            {
-                return;
-            }
-
         public:
-
-            NoSolver(MappingDesc cellDescription) : cellDescription(cellDescription)
+            NoSolver(MappingDesc)
             {
 
             }
@@ -70,8 +72,14 @@ namespace picongpu
             {
 
             }
+
+            static PMacc::traits::StringProperty getStringProperties()
+            {
+                PMacc::traits::StringProperty propList( "name", "none" );
+                return propList;
+            }
         };
 
     } // namespace noSolver
 
-} // picongpu
+} // namespace picongpu

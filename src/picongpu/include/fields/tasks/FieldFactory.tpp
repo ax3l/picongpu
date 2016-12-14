@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,6 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
 #include "fields/tasks/FieldFactory.hpp"
 #include "fields/tasks/TaskFieldReceiveAndInsert.hpp"

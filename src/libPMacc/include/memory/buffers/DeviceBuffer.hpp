@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,24 +21,19 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef _DEVICEBUFFER_HPP
-#define	_DEVICEBUFFER_HPP
+#include <cuSTL/container/view/View.hpp>
+#include <cuSTL/container/DeviceBuffer.hpp>
+#include <math/vector/Int.hpp>
+#include <math/vector/Size_t.hpp>
+#include <memory/buffers/Buffer.hpp>
+#include "pmacc_types.hpp"
 
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
+
 #include <stdexcept>
-
-
-#include "memory/buffers/Buffer.hpp"
-
-
-#include <cuSTL/container/DeviceBuffer.hpp>
-#include <types.h>
-#include <math/vector/Int.hpp>
-#include <math/vector/Size_t.hpp>
-#include "cuSTL/container/view/View.hpp"
-
 
 namespace PMacc
 {
@@ -57,8 +53,15 @@ namespace PMacc
     {
     protected:
 
-        DeviceBuffer(DataSpace<DIM> dataSpace) :
-        Buffer<TYPE, DIM>(dataSpace)
+        /** constructor
+         *
+         * @param size extent for each dimension (in elements)
+         *             if the buffer is a view to an existing buffer the size
+         *             can be less than `physicalMemorySize`
+         * @param physicalMemorySize size of the physical memory (in elements)
+         */
+        DeviceBuffer(DataSpace<DIM> size, DataSpace<DIM> physicalMemorySize) :
+        Buffer<TYPE, DIM>(size, physicalMemorySize)
         {
 
         }
@@ -75,31 +78,21 @@ namespace PMacc
         };
 
 
-#define COMMA ,
-
-        __forceinline__
+        HINLINE
         container::CartBuffer<TYPE, DIM, allocator::DeviceMemAllocator<TYPE, DIM>,
                                 copier::D2DCopier<DIM>,
-                                assigner::DeviceMemAssigner<DIM> >
+                                assigner::DeviceMemAssigner<> >
         cartBuffer() const
         {
-            container::DeviceBuffer<TYPE, DIM> result;
             cudaPitchedPtr cudaData = this->getCudaPitched();
-            result.dataPointer = (TYPE*)cudaData.ptr;
-            result._size = (math::Size_t<DIM>)this->getDataSpace();
-            if(DIM == 2) result.pitch[0] = cudaData.pitch;
+            math::Size_t<DIM - 1> pitch;
+            if(DIM >= 2)
+                pitch[0] = cudaData.pitch;
             if(DIM == 3)
-            {
-                result.pitch[0] = cudaData.pitch;
-                result.pitch[1] = cudaData.pitch * result._size.y();
-            }
-#ifndef __CUDA_ARCH__
-            result.refCount = new int;
-#endif
-            *result.refCount = 2;
+                pitch[1] = pitch[0] * this->getPhysicalMemorySize()[1];
+            container::DeviceBuffer<TYPE, DIM> result((TYPE*)cudaData.ptr, this->getDataSpace(), false, pitch);
             return result;
         }
-#undef COMMA
 
 
         /**
@@ -170,6 +163,3 @@ namespace PMacc
     };
 
 } //namespace PMacc
-
-
-#endif	/* _DEVICEBUFFER_HPP */

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2015 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include "types.h"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "math/vector/Int.hpp"
 
 #include <boost/mpl/range_c.hpp>

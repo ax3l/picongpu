@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -29,18 +29,23 @@
 namespace PMacc
 {
 
-template<class ParBase>
+template<class T_Particles>
 class TaskParticlesSend : public MPITask
 {
 public:
 
+    typedef T_Particles Particles;
+    typedef typename Particles::HandleGuardRegion HandleGuardRegion;
+    typedef typename HandleGuardRegion::HandleExchanged HandleExchanged;
+    typedef typename HandleGuardRegion::HandleNotExchanged HandleNotExchanged;
+
     enum
     {
-        Dim = ParBase::Dim,
+        Dim = Particles::Dim,
         Exchanges = traits::NumberOfExchanges<Dim>::value
     };
 
-    TaskParticlesSend(ParBase &parBase) :
+    TaskParticlesSend(Particles &parBase) :
     parBase(parBase),
     state(Constructor)
     {
@@ -50,21 +55,22 @@ public:
     {
         state = Init;
         EventTask serialEvent = __getTransactionEvent();
+        HandleExchanged handleExchanged;
+        HandleNotExchanged handleNotExchanged;
 
         for (int i = 1; i < Exchanges; ++i)
         {
+            /* Start new transaction */
+            __startTransaction(serialEvent);
+
+            /* Handle particles */
             if (parBase.getParticlesBuffer().hasSendExchange(i))
-            {
-                __startAtomicTransaction(serialEvent);
-                Environment<>::get().ParticleFactory().createTaskSendParticlesExchange(parBase, i);
-                tmpEvent += __endTransaction();
-            }
+                handleExchanged.handleOutgoing(parBase, i);
             else
-            {
-                __startAtomicTransaction(serialEvent);
-                parBase.deleteGuardParticles(i);
-                tmpEvent += __endTransaction();
-            }
+                handleNotExchanged.handleOutgoing(parBase, i);
+
+            /* End transaction */
+            tmpEvent += __endTransaction();
         }
 
         state = WaitForSend;
@@ -110,7 +116,7 @@ private:
     };
 
 
-    ParBase& parBase;
+    Particles& parBase;
     state_t state;
     EventTask tmpEvent;
 };

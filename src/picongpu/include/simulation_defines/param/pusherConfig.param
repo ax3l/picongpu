@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -41,7 +41,7 @@ namespace picongpu
     }
 
 
-    namespace particlePusherAxl
+    namespace particlePusherAxel
     {
 
         enum TrajectoryInterpolationType
@@ -49,7 +49,7 @@ namespace picongpu
             LINEAR = 1u,
             NONLINEAR = 2u
         };
-        const TrajectoryInterpolationType TrajectoryInterpolation = LINEAR;
+        constexpr TrajectoryInterpolationType TrajectoryInterpolation = LINEAR;
 
     }
 
@@ -57,11 +57,11 @@ namespace picongpu
     {
     namespace pusher
     {
-        struct None;
         struct Vay;
         struct Boris;
         struct Photon;
         struct Free;
+        struct ReducedLandauLifshitz;
 #if(SIMDIM==DIM3)
         struct Axel;
 #endif

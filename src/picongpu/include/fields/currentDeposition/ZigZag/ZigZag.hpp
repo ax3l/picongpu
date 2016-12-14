@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -21,7 +21,7 @@
 #pragma once
 
 #include "simulation_defines.hpp"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "basicOperations.hpp"
 #include <cuSTL/cursor/tools/twistVectorFieldAxes.hpp>
@@ -142,10 +142,10 @@ struct ZigZag
      */
     typedef T_ParticleShape ParticleShape;
     typedef typename ParticleShape::ChargeAssignmentOnSupport ParticleAssign;
-    static const int supp = ParticleAssign::support;
+    static constexpr int supp = ParticleAssign::support;
 
-    static const int currentLowerMargin = supp / 2 + 1;
-    static const int currentUpperMargin = (supp + 1) / 2 + 1;
+    static constexpr int currentLowerMargin = supp / 2 + 1;
+    static constexpr int currentUpperMargin = (supp + 1) / 2 + 1;
     typedef typename PMacc::math::CT::make_Int<simDim, currentLowerMargin>::type LowerMargin;
     typedef typename PMacc::math::CT::make_Int<simDim, currentUpperMargin>::type UpperMargin;
 
@@ -154,15 +154,15 @@ struct ZigZag
      * @see ShiftCoordinateSystem
      * grid points were we calculate the current [begin;end)
      */
-    static const int begin = -supp / 2 + (supp + 1) % 2;
-    static const int end = begin + supp;
+    static constexpr int begin = -supp / 2 + (supp + 1) % 2;
+    static constexpr int end = begin + supp;
 
     /* same as begin and end but for the direction where we calculate j
      * supp_dir = support of the cloud shape
      */
-    static const int supp_dir = supp - 1;
-    static const int dir_begin = -supp_dir / 2 + (supp_dir + 1) % 2;
-    static const int dir_end = dir_begin + supp_dir;
+    static constexpr int supp_dir = supp - 1;
+    static constexpr int dir_begin = -supp_dir / 2 + (supp_dir + 1) % 2;
+    static constexpr int dir_end = dir_begin + supp_dir;
 
     /** functor to calculate current for one direction
      *
@@ -180,6 +180,9 @@ struct ZigZag
             typedef T_CurrentComponent CurrentComponent;
             const uint32_t dir = CurrentComponent::value;
 
+            /* if the flux is zero there is no need to deposit any current */
+            if (flux[dir] == float_X(0.0))
+                return;
             /* create support information to shift our coordinate system
              * use support of the particle assignment function
              */
@@ -195,7 +198,8 @@ struct ZigZag
              *   - run calculations in a shape optimized coordinate system
              *     with fixed interpolation points
              */
-            ShiftCoordinateSystem<Supports_direction>()(cursor, pos, fieldSolver::NumericalCellType::getEFieldPosition()[dir]);
+            const fieldSolver::numericalCellType::traits::FieldPosition<FieldJ> fieldPosJ;
+            ShiftCoordinateSystem<Supports_direction>()(cursor, pos, fieldPosJ()[dir]);
 
             /* define grid points where we evaluate the shape function*/
             typedef typename PMacc::math::CT::make_Vector<
@@ -264,7 +268,7 @@ struct ZigZag
          * it can be the same bug as
          * @see https://devtalk.nvidia.com/default/topic/752200/cuda-programming-and-performance/nvcc-loop-bug-since-cuda-5-5/
          */
-        for (float l = 0; l < 2; ++l)
+        for (float_32 l = 0; l < 2; ++l)
         {
             floatD_X inCellPos;
             float3_X flux;
@@ -279,13 +283,16 @@ struct ZigZag
                 const float_X pos_tmp = pos[parId][d];
                 const float_X tmpRelayPoint = relayPoint[d];
                 inCellPos[d] = calc_InCellPos(pos_tmp, tmpRelayPoint, I[parId][d]);
+                /* We multiply with `cellSize[d]` due to the fact that the attribute for the
+                 * in-cell particle `position` (and it's change in DELTA_T) is normalize to [0,1) */
                 flux[d] = sign * calc_chargeFlux(pos_tmp, tmpRelayPoint, deltaTime, charge) * volume_reci * cellSize[d];
             }
 
             /* this loop is only needed for 2D, we need a flux in z direction */
             for (uint32_t d = simDim; d < 3; ++d)
             {
-                flux[d] = float_X(0.5) *  charge * velocity[d] * volume_reci;
+                /* in 2D the full flux for the z direction is given to the virtual particle zero */
+                flux[d] = (parId == 0 ? charge * velocity[d] * volume_reci : float_X(0.0));
             }
 
             PMACC_AUTO(cursorJ, dataBoxJ.shift(precisionCast<int>(I[parId])).toCursor());
@@ -301,9 +308,20 @@ struct ZigZag
         }
     }
 
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "ZigZag" );
+        return propList;
+    }
+
 private:
 
     /** calculate virtual point were we split our particle trajectory
+     *
+     * The relay point calculation differs from the paper version in the point
+     * that the trajectory of a particle which does not leave the cell is not splitted.
+     * The relay point for a particle which does not leave the cell is set to the
+     * current position `x_2`
      *
      * @param i_1 grid point which is less than x_1 (`i_1=floor(x_1)`)
      * @param i_2 grid point which is less than x_2 (`i_2=floor(x_2)`)
@@ -314,12 +332,10 @@ private:
     DINLINE float_X
     calc_relayPoint(const float_X i_1, const float_X i_2, const float_X x_1, const float_X x_2) const
     {
-
-        const float_X min_1 = ::min(i_1, i_2) + float_X(1.0);
-        const float_X max_1 = ::max(i_1, i_2);
-        const float_X max_2 = ::max(max_1, (x_1 + x_2) / float_X(2.));
-        const float_X x_relayPoint = ::min(min_1, max_2);
-        return x_relayPoint;
+        /* paper version:
+         *   i_1 == i_2 ? (x_1 + x_2) / float_X(2.0) : ::max(i_1, i_2);
+         */
+        return i_1 == i_2 ? x_2 : ::max(i_1, i_2);
     }
 
     /** get normalized average in cell particle position

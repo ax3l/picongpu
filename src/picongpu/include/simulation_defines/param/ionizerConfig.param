@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Marco Garten
+ * Copyright 2014-2016 Marco Garten
  *
  * This file is part of PIConGPU.
  *
@@ -20,27 +20,42 @@
 
 #pragma once
 
-/** forward declarations for ionization algorithms
- * 
- * ionization model has a < Name >
- * so the algorithm is called "Algorithm< Name >"
- */
+#include "particles/ionization/byField/fieldIonizationCalc.def"
 
 namespace picongpu
 {
+    /** Effective Atomic Numbers
+     *
+     * Due to the shielding effect of inner electron shells in an atom / ion
+     * which makes the core charge seem smaller to valence electrons
+     * new, effective, atomic core charge numbers can be defined to make the
+     * crude barrier suppression ionization (BSI) model less inaccurate.
+     *
+     * @see https://en.wikipedia.org/wiki/Effective_nuclear_charge
+     * or refer directly to the calculations by Slater or Clementi and Raimondi
+     *
+     * IMPORTANT NOTE:
+     * You have to insert the values in REVERSE order since the lowest shell
+     * corresponds to the last ionization process!
+     */
 
-namespace particles
-{
+    /* For hydrogen Z_eff is obviously equal to Z */
+    PMACC_CONST_VECTOR(float_X,1,Z_EFFECTIVE_HYDROGEN,
+        /* 1s */
+        1.
+        );
 
-namespace ionization
-{
-
-    struct AlgorithmNone;
-
-    struct AlgorithmBSI;
-
-} // namespace ionization
-
-} // namespace particles
-
-} // namespace picongpu
+    /* Example: nitrogen */
+    PMACC_CONST_VECTOR(float_X,7,Z_EFFECTIVE_NITROGEN,
+        /* 2p */
+        3.834,
+        3.834,
+        3.834,
+        /* 2s */
+        3.874,
+        3.874,
+        /* 1s */
+        6.665,
+        6.665
+        );
+}

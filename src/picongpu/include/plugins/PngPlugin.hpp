@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 #include "dimensions/DataSpace.hpp"
@@ -30,12 +30,9 @@
 #include "simulation_classTypes.hpp"
 #include "plugins/ILightweightPlugin.hpp"
 #include "simulationControl/MovingWindow.hpp"
+
 #include <vector>
 #include <list>
-
-
-#include <cassert>
-
 #include <stdexcept>
 
 
@@ -54,9 +51,9 @@ namespace picongpu
         typedef VisClass VisType;
         typedef std::list<VisType*> VisPointerList;
 
-        PngPlugin(std::string name, std::string prefix) :
-        analyzerName(name),
-        analyzerPrefix(prefix),
+        PngPlugin() :
+        analyzerName("PngPlugin: create png's of a species and fields"),
+        analyzerPrefix(VisType::FrameType::getName() + "_" + VisClass::CreatorType::getName()),
         cellDescription(NULL)
         {
             Environment<>::get().PluginConnector().registerPlugin(this);
@@ -77,7 +74,7 @@ namespace picongpu
             desc.add_options()
                     ((analyzerPrefix + ".period").c_str(), po::value<std::vector<uint32_t> > (&notifyFrequencys)->multitoken(), "enable data output [for each n-th step]")
                     ((analyzerPrefix + ".axis").c_str(), po::value<std::vector<std::string > > (&axis)->multitoken(), "axis which are shown [valid values x,y,z] example: yz")
-                    ((analyzerPrefix + ".slicePoint").c_str(), po::value<std::vector<float> > (&slicePoints)->multitoken(), "value range: 0 <= x <= 1 , point of the slice")
+                    ((analyzerPrefix + ".slicePoint").c_str(), po::value<std::vector<float_32> > (&slicePoints)->multitoken(), "value range: 0 <= x <= 1 , point of the slice")
                     ((analyzerPrefix + ".folder").c_str(), po::value<std::vector<std::string> > (&folders)->multitoken(), "folder for output files");
         }
 
@@ -112,7 +109,7 @@ namespace picongpu
                                 {
                                     folders.push_back(std::string("."));
                                 }
-                                std::string filename(analyzerName + "_" + getValue(axis, i) + "_" + o_slicePoint.str());
+                                std::string filename(analyzerPrefix + "_" + getValue(axis, i) + "_" + o_slicePoint.str());
                                 typename VisType::CreatorType pngCreator(filename, getValue(folders, i));
                                 /** \todo rename me: transpose is the wrong name `swivel` is better
                                  *
@@ -184,7 +181,7 @@ namespace picongpu
         typename Vec::value_type getValue(Vec vec, size_t id)
         {
             if (vec.size() == 0)
-                throw std::runtime_error("[Livew View] getValue is used with a parameter set with no parameters (count is 0)");
+                throw std::runtime_error("[Png Plugin] getValue is used with a parameter set with no parameters (count is 0)");
             if (id >= vec.size())
             {
                 return vec[vec.size() - 1];
@@ -206,7 +203,7 @@ namespace picongpu
         std::string analyzerPrefix;
 
         std::vector<uint32_t> notifyFrequencys;
-        std::vector<float> slicePoints;
+        std::vector<float_32> slicePoints;
         std::vector<std::string> folders;
         std::vector<std::string> axis;
         VisPointerList visIO;

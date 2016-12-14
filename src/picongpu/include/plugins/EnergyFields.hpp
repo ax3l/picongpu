@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -24,7 +25,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 
@@ -33,7 +34,6 @@
 #include "fields/FieldB.hpp"
 #include "fields/FieldE.hpp"
 
-#include "basicOperations.hpp"
 #include "dimensions/DataSpaceOperations.hpp"
 #include "plugins/ISimulationPlugin.hpp"
 
@@ -99,17 +99,17 @@ private:
 
     nvidia::reduce::Reduce* localReduce;
 
-    typedef typename promoteType<float_64, FieldB::ValueType>::type EneVectorType;
+    typedef promoteType<float_64, FieldB::ValueType>::type EneVectorType;
 
 public:
 
-    EnergyFields(std::string name, std::string prefix) :
+    EnergyFields() :
     fieldE(NULL),
     fieldB(NULL),
     cellDescription(NULL),
-    analyzerName(name),
-    analyzerPrefix(prefix),
-    filename(name + ".dat"),
+    analyzerName("EnergyFields: calculate the energy of the fields"),
+    analyzerPrefix(std::string("fields_energy")),
+    filename(analyzerPrefix + ".dat"),
     notifyFrequency(0),
     writeToFile(false),
     localReduce(NULL)
@@ -216,8 +216,8 @@ private:
          * idx == 1 -> fieldE
          */
         EneVectorType globalFieldEnergy[2];
-        globalFieldEnergy[0]=EneVectorType(0.0);
-        globalFieldEnergy[1]=EneVectorType(0.0);
+        globalFieldEnergy[0]=EneVectorType::create(0.0);
+        globalFieldEnergy[1]=EneVectorType::create(0.0);
 
         EneVectorType localReducedFieldEnergy[2];
         localReducedFieldEnergy[0] = reduceField(fieldB);

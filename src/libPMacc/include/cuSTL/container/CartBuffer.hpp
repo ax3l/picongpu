@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,27 +20,34 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONTAINER_CARTBUFFER_HPP
-#define CONTAINER_CARTBUFFER_HPP
+#pragma once
 
-#include <stdint.h>
-#include "types.h"
-#include "math/vector/Size_t.hpp"
-#include "math/vector/UInt32.hpp"
+#include "cuSTL/container/allocator/EmptyAllocator.hpp"
 #include "cuSTL/cursor/BufferCursor.hpp"
 #include "cuSTL/cursor/navigator/CartNavigator.hpp"
 #include "cuSTL/cursor/accessor/PointerAccessor.hpp"
 #include "cuSTL/cursor/SafeCursor.hpp"
 #include "cuSTL/zone/SphericZone.hpp"
-#include "allocator/EmptyAllocator.hpp"
-#include <boost/mpl/void.hpp>
-#include <boost/move/move.hpp>
 #include "cuSTL/container/view/View.hpp"
+#include "math/vector/Size_t.hpp"
+#include "math/vector/UInt32.hpp"
+#include "pmacc_types.hpp"
+
+#include <boost/mpl/void.hpp>
+#include <boost/mpl/int.hpp>
+#include <boost/move/move.hpp>
+#include <boost/mpl/apply.hpp>
+#include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/vector.hpp>
+
+#include <stdint.h>
 
 namespace PMacc
 {
 namespace container
 {
+
+namespace bmpl = boost::mpl;
 
 /** Implementation of a box-shaped (cartesian) container type.
  * Holds a reference counter so one can have several containers sharing one buffer.
@@ -52,46 +59,52 @@ namespace container
  * \tparam Allocator allocates and releases memory
  * \tparam Copier copies one memory buffer to another
  * \tparam Assigner assigns a value to every datum of a memory buffer
+ *
+ * Assigner policy has to support `apply2`: Assigner<Dim, CartBuffer>
+ *
  */
 template<typename Type, int T_dim, typename Allocator = allocator::EmptyAllocator,
                                   typename Copier = mpl::void_,
-                                  typename Assigner = mpl::void_>
-class CartBuffer
+                                  typename Assigner = bmpl::vector<bmpl::_1, bmpl::_2> >
+class CartBuffer : public
+    /* "Curiously recurring template pattern" */
+    bmpl::apply<Assigner, bmpl::int_<T_dim>, CartBuffer<Type, T_dim, Allocator, Copier, Assigner> >::type
 {
 public:
     typedef Type type;
-    typedef CartBuffer<Type, T_dim, Allocator, Copier, Assigner> This;
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
     typedef cursor::BufferCursor<Type, T_dim> Cursor;
     typedef typename Allocator::tag memoryTag;
+    typedef math::Size_t<T_dim> SizeType;
+    typedef math::Size_t<T_dim-1> PitchType;
 public:
     Type* dataPointer;
     int* refCount;
-    math::Size_t<T_dim> _size;
-    math::Size_t<T_dim-1> pitch;
+    SizeType _size;
+    PitchType pitch;
     HDINLINE void init();
     HDINLINE void exit();
-    HDINLINE CartBuffer() {}
-private:
+    HDINLINE CartBuffer() : refCount(NULL) {}
+
     /* makes this class able to emulate a r-value reference */
-    BOOST_COPYABLE_AND_MOVABLE(This)
+    BOOST_COPYABLE_AND_MOVABLE(CartBuffer)
 public:
     HDINLINE CartBuffer(const math::Size_t<T_dim>& size);
     HDINLINE CartBuffer(size_t x);
     HDINLINE CartBuffer(size_t x, size_t y);
     HDINLINE CartBuffer(size_t x, size_t y, size_t z);
     /* the copy constructor just increments the reference counter but does not copy memory */
-    HDINLINE CartBuffer(const This& other);
-    /* the move constructor has currently the same behavior as the copy constructor */
-    HDINLINE CartBuffer(BOOST_RV_REF(This) other);
+    HDINLINE CartBuffer(const CartBuffer& other);
+    /* the move constructor */
+    HDINLINE CartBuffer(BOOST_RV_REF(CartBuffer) other);
     HDINLINE ~CartBuffer();
 
     /* copy another container into this one (hard data copy) */
-    HDINLINE This&
-    operator=(const This& rhs);
+    HDINLINE CartBuffer&
+    operator=(BOOST_COPY_ASSIGN_REF(CartBuffer) rhs);
     /* use the memory from another container and increment the reference counter */
-    HDINLINE This&
-    operator=(BOOST_RV_REF(This) rhs);
+    HDINLINE CartBuffer&
+    operator=(BOOST_RV_REF(CartBuffer) rhs);
 
     /* get a view. Views represent a clipped area of the container.
      * \param a Top left corner of the view, inside the view.
@@ -99,13 +112,9 @@ public:
      * \param b Bottom right corner of the view, outside the view.
      * Values are remapped, so that Int<2>(0,0) == Int<2>(width, height)
      */
-    HDINLINE View<This>
+    HDINLINE View<CartBuffer>
         view(math::Int<T_dim> a = math::Int<T_dim>(0),
              math::Int<T_dim> b = math::Int<T_dim>(0)) const;
-
-    /* assign value to each datum */
-    PMACC_NO_NVCC_HDWARNING
-    HDINLINE void assign(const Type& value);
 
     /* get a cursor at the container's origin cell */
     HDINLINE cursor::BufferCursor<Type, T_dim> origin() const;
@@ -123,11 +132,13 @@ public:
     HDINLINE Type* getDataPointer() const {return dataPointer;}
     HDINLINE math::Size_t<T_dim> size() const {return this->_size;}
     HDINLINE math::Size_t<T_dim-1> getPitch() const {return this->pitch;}
+    /** Returns whether the buffer has no additional pitches
+     * The expected pitches are: 2D: size.x, 3D: size.x/size.x*size.y
+     */
+    HDINLINE bool isContigousMemory() const;
 };
 
 } // container
 } // PMacc
 
 #include "CartBuffer.tpp"
-
-#endif // CONTAINER_CARTBUFFER_HPP

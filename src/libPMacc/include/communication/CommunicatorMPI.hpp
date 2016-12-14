@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Wolfgang Hoenig, Benjamin Worpitz, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,23 +21,54 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _COMMUNICATORMPI_HPP
-#define	_COMMUNICATORMPI_HPP
+#pragma once
+
+#include "communication/ICommunicator.hpp"
+#include "communication/manager_common.h"
+#include "dimensions/DataSpace.hpp"
+#include "memory/dataTypes/Mask.hpp"
+#include "pmacc_types.hpp"
 
 #include <mpi.h>
+
 #include <vector>
 #include <utility>
 #include <map>
 
-#include "types.h"
-#include "memory/dataTypes/Mask.hpp"
-#include "dimensions/DataSpace.hpp"
-
-#include "communication/ICommunicator.hpp"
-#include "communication/manager_common.h"
-
 namespace PMacc
 {
+
+namespace detail
+{
+    template <unsigned T_DIM>
+    struct LogRankCoords;
+
+    template <>
+    struct LogRankCoords<DIM1>
+    {
+        void operator()(int rank, const int (&coords)[DIM1]) const
+        {
+            log<ggLog::MPI>("Rank: %1% ; coords %2%") % rank % coords[0];
+        }
+    };
+    template <>
+    struct LogRankCoords<DIM2>
+    {
+        void operator()(int rank, const int (&coords)[DIM2]) const
+        {
+            log<ggLog::MPI>("Rank: %1% ; coords %2% %3%") % rank % coords[0] % coords[1];
+        }
+    };
+    template <>
+    struct LogRankCoords<DIM3>
+    {
+        void operator()(int rank, const int (&coords)[DIM3]) const
+        {
+            log<ggLog::MPI>("Rank: %1% ; coords %2% %3% %4%") % rank % coords[0] % coords[1] % coords[2];
+        }
+    };
+
+}
 
 /*! communication via MPI
  */
@@ -57,9 +89,7 @@ public:
      * calls MPI_Finalize
      */
     virtual ~CommunicatorMPI()
-    {
-        exit();
-    }
+    {}
 
     virtual int getRank()
     {
@@ -71,7 +101,6 @@ public:
         return mpiSize;
     }
 
-
     MPI_Comm getMPIComm() const
     {
         return topology;
@@ -82,6 +111,11 @@ public:
         return MPI_INFO_NULL;
     }
 
+    DataSpace<DIM3> getPeriodic() const
+    {
+        return this->periodic;
+    }
+
     /*! initializes all processes to build a 3D-grid
      *
      * @param nodes number of GPU nodes in each dimension
@@ -89,7 +123,7 @@ public:
      *
      * \warning throws invalid argument if cx*cy*cz != totalnodes
      */
-    void init(DataSpace<DIM3> numberProcesses, DataSpace<DIM3> periodic) throw (std::invalid_argument)
+    void init(DataSpace<DIM3> numberProcesses, DataSpace<DIM3> periodic)
     {
         this->periodic = periodic;
 
@@ -108,7 +142,6 @@ public:
 
         // 2. create topology
 
-        //int dims[3];
         dims[0] = numberProcesses.x();
         dims[1] = numberProcesses.y();
         dims[2] = numberProcesses.z();
@@ -121,12 +154,10 @@ public:
         MPI_CHECK(MPI_Cart_create(computing_comm, DIM, dims, periods, 0, &topology));
 
         // 3. update Host rank
-        hostRank = UpdateHostRank();
+        updateHostRank();
 
         //4. update Coordinates
         updateCoordinates();
-
-
     }
 
     /*! returns a rank number (0-n) for each host
@@ -164,7 +195,7 @@ public:
 
         MPI_CHECK(MPI_Isend(
                             (void*) send_data,
-                            send_data_count,
+                            static_cast<int>(send_data_count),
                             MPI_CHAR,
                             ExchangeTypeToRank(ex),
                             gridExchangeTag + tag,
@@ -183,7 +214,7 @@ public:
 
         MPI_CHECK(MPI_Irecv(
                             recv_data,
-                            recv_data_max,
+                            static_cast<int>(recv_data_max),
                             MPI_CHAR,
                             ExchangeTypeToRank(ex),
                             gridExchangeTag + tag,
@@ -197,23 +228,30 @@ public:
 
     bool slide()
     {
+        // we can only slide in y direction right now
+        if(DIM < DIM2)
+            return false;
+
         // MPI_Barrier(topology);
         yoffset--;
         if (yoffset == -dims[1])
             yoffset = 0;
 
         updateCoordinates();
-        if (DIM >= DIM2)
-        {
-            if (coordinates[1] == dims[1] - 1)
-                return true;
-        }
 
-        return false;
+        return coordinates[1] == dims[1] - 1;
     }
 
     bool setStateAfterSlides(size_t numSlides)
     {
+        // nothing happens
+        if(numSlides == 0)
+            return false;
+
+        // we can only slide in y direction right now
+        if(DIM < DIM2)
+            return false;
+
         bool result = false;
 
         // only need to apply (numSlides % num-gpus-y) slides
@@ -225,19 +263,9 @@ public:
 
 
 protected:
-
-    /*! calls MPI_Finalize
-     *
-     */
-    void exit()
-    {
-        // MPI_CHECK(MPI_Barrier(MPI_COMM_WORLD));
-     //   MPI_Finalize();
-    }
-
     /* Set the first found non charactor or number to 0 (NULL)
      * name like p1223(Pid=1233) is than p1223
-     * in some MPI implementation /mpich) the hostname is uniqu
+     * in some MPI implementation /mpich) the hostname is unique
      */
     void cleanHostname(char* name)
     {
@@ -263,11 +291,10 @@ protected:
      * from the master.
      *
      */
-    int UpdateHostRank()
+    void updateHostRank()
     {
         char hostname[MPI_MAX_PROCESSOR_NAME];
         int length;
-        int hostRank;
 
         MPI_CHECK(MPI_Get_processor_name(hostname, &length));
         cleanHostname(hostname);
@@ -304,8 +331,6 @@ protected:
             // if(hostRank!=0) hostRank--; //!\todo fix mpi hostrank start with 1
         }
 
-        return hostRank;
-
     }
 
     /*! update coordinates \see getCoordinates
@@ -319,18 +344,17 @@ protected:
         MPI_CHECK(MPI_Comm_rank(topology, &rank));
         MPI_CHECK(MPI_Cart_coords(topology, rank, DIM, coords));
 
-        if (dims[1] > 1)
-            coords[1] = (coords[1] + yoffset) % dims[1];
+        if (DIM >= DIM2)
+        {
+            if (dims[1] > 1)
+                coords[1] = (coords[1] + yoffset) % dims[1];
 
-        while (coords[1] < 0)
-            coords[1] += dims[1];
+            while (coords[1] < 0)
+                coords[1] += dims[1];
+        }
 
-        /* \todo: fix this create error in 2D
-        if(DIM==DIM3)
-            log<ggLog::MPI>("Rank: %1% ; coords %2% %3% %4%") % rank % coords[0] % coords[1] % coords[2];
-        else if(DIM==DIM2)
-            log<ggLog::MPI>("Rank: %1% ; coords %2% %3%") % rank % coords[0] % coords[1];
-         */
+        detail::LogRankCoords<DIM>()(rank, coords);
+
         for (uint32_t i = 0; i < DIM; ++i)
             this->coordinates[i] = coords[i];
 
@@ -349,11 +373,14 @@ protected:
                 mcoords[0]--;
             if (m.containsExchangeType(RIGHT))
                 mcoords[0]++;
-            if (m.containsExchangeType(TOP))
-                mcoords[1]--;
-            if (m.containsExchangeType(BOTTOM))
-                mcoords[1]++;
 
+            if (DIM >= DIM2)
+            {
+                if (m.containsExchangeType(TOP))
+                    mcoords[1]--;
+                if (m.containsExchangeType(BOTTOM))
+                    mcoords[1]++;
+            }
 
             if (DIM == DIM3)
             {
@@ -393,8 +420,6 @@ protected:
         return ranks[type];
     }
 
-
-
 private:
     //! coordinates in GPU-Grid [0:cx-1,0:cy-1,0:cz-1]
     DataSpace<DIM> coordinates;
@@ -402,7 +427,7 @@ private:
     DataSpace<DIM3> periodic;
     //! MPI communicator (currently MPI_COMM_WORLD)
     MPI_Comm topology;
-    //! array for exchangetype-to-rank conversen \see ExchangeTypeToRank
+    //! array for exchangetype-to-rank conversion \see ExchangeTypeToRank
     int ranks[27];
     //! size of PMacc [cx,cy,cz]
     int dims[3];
@@ -417,8 +442,4 @@ private:
     int mpiSize;
 };
 
-
 } //namespace PMacc
-
-#endif	/* _COMMUNICATORMPI_HPP */
-

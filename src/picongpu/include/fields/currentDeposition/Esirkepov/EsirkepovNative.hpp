@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -21,7 +21,7 @@
 #pragma once
 
 #include "simulation_defines.hpp"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "math/Vector.hpp"
 #include "cuSTL/cursor/Cursor.hpp"
@@ -48,17 +48,17 @@ template<typename T_ParticleShape>
 struct EsirkepovNative
 {
     typedef typename T_ParticleShape::ChargeAssignment ParticleAssign;
-    static const int supp = ParticleAssign::support;
+    static constexpr int supp = ParticleAssign::support;
 
-    static const int currentLowerMargin = supp / 2 + 1;
-    static const int currentUpperMargin = (supp + 1) / 2 + 1;
+    static constexpr int currentLowerMargin = supp / 2 + 1;
+    static constexpr int currentUpperMargin = (supp + 1) / 2 + 1;
     typedef PMacc::math::CT::Int<currentLowerMargin, currentLowerMargin, currentLowerMargin> LowerMargin;
     typedef PMacc::math::CT::Int<currentUpperMargin, currentUpperMargin, currentUpperMargin> UpperMargin;
 
 
     /* iterate over all grid points */
-    static const int begin = -currentLowerMargin;
-    static const int end = currentUpperMargin + 1;
+    static constexpr int begin = -currentLowerMargin;
+    static constexpr int end = currentUpperMargin + 1;
 
     float_X charge;
 
@@ -122,6 +122,8 @@ struct EsirkepovNative
                 for (int k = begin; k < end; ++k)
                 {
                     float_X W = DS(line, k, 3) * tmp;
+                    /* We multiply with `cellEdgeLength` due to the fact that the attribute for the
+                     * in-cell particle `position` (and it's change in DELTA_T) is normalize to [0,1) */
                     accumulated_J += -this->charge * (float_X(1.0) / float_X(CELL_VOLUME * DELTA_T)) * W * cellEdgeLength;
                     atomicAddWrapper(&((*cursorJ(i, j, k)).z()), accumulated_J);
                 }
@@ -138,7 +140,7 @@ struct EsirkepovNative
      */
     DINLINE float_X S0(const Line<float3_X>& line, const float_X gridPoint, const float_X d)
     {
-        return ParticleAssign()(gridPoint - line.pos0[d - 1]);
+        return ParticleAssign()(gridPoint - line.m_pos0[d - 1]);
     }
 
     /** calculate DS (see paper)
@@ -149,7 +151,14 @@ struct EsirkepovNative
      */
     DINLINE float_X DS(const Line<float3_X>& line, const float_X gridPoint, const float_X d)
     {
-        return ParticleAssign()(gridPoint - line.pos1[d - 1]) - ParticleAssign()(gridPoint - line.pos0[d - 1]);
+        return ParticleAssign()(gridPoint - line.m_pos1[d - 1]) - ParticleAssign()(gridPoint - line.m_pos0[d - 1]);
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "Esirkepov" );
+        propList["param"] = "native implementation";
+        return propList;
     }
 };
 

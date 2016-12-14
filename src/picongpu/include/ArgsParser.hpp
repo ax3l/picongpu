@@ -1,5 +1,6 @@
 /**
- * Copyright 2013 Axel Huebl, Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Rene Widera,
+ *                     Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -19,9 +20,7 @@
  */
 
 
-
-#ifndef ARGSPARSER_HPP
-#define	ARGSPARSER_HPP
+#pragma once
 
 #include <boost/program_options/options_description.hpp>
 
@@ -44,6 +43,7 @@ namespace picongpu
     {
     public:
 
+        enum ArgsErrorCode {SUCCESS=0,SUCCESS_EXIT=1,ERROR=42};
         /**
          * Returns an instance of ArgsParser
          *
@@ -63,7 +63,7 @@ namespace picongpu
          * @param argv command line arguments
          * @return true if the simulation should proceed, false otherwise
          */
-        bool parse(int argc, char **argv) throw (std::runtime_error);
+        ArgsErrorCode parse(int argc, char **argv);
 
 
 
@@ -79,6 +79,3 @@ namespace picongpu
     };
 
 }
-
-#endif	/* ARGSPARSER_HPP */
-

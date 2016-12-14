@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -24,37 +25,47 @@
 
 #include "particles/ParticlesBase.kernel"
 #include "fields/SimulationFieldHelper.hpp"
-#include "mappings/kernel/ExchangeMapping.hpp"
+#include "mappings/kernel/AreaMapping.hpp"
 
 #include "particles/memory/boxes/ParticlesBox.hpp"
 #include "particles/memory/buffers/ParticlesBuffer.hpp"
 
 #include "mappings/kernel/StrideMapping.hpp"
 #include "traits/NumberOfExchanges.hpp"
+#include "assert.hpp"
 
 
 namespace PMacc
 {
 
-template<typename T_ParticleDescription, class MappingDesc>
-class ParticlesBase : public SimulationFieldHelper<MappingDesc>
+/* Tag used for marking particle types */
+struct ParticlesTag;
+
+template<typename T_ParticleDescription, class T_MappingDesc>
+class ParticlesBase : public SimulationFieldHelper<T_MappingDesc>
 {
+    typedef T_ParticleDescription ParticleDescription;
+    typedef T_MappingDesc MappingDesc;
+
 public:
 
-    /* Type of used partciles buffer
+    /* Type of used particles buffer
      */
-    typedef ParticlesBuffer<T_ParticleDescription, typename MappingDesc::SuperCellSize, MappingDesc::Dim> BufferType;
+    typedef ParticlesBuffer<ParticleDescription, typename MappingDesc::SuperCellSize, MappingDesc::Dim> BufferType;
 
     /* Type of frame in particles buffer
      */
-    typedef typename BufferType::ParticleType FrameType;
-    /* Type of boder frame in a particle buffer
+    typedef typename BufferType::FrameType FrameType;
+    /* Type of border frame in a particle buffer
      */
-    typedef typename BufferType::ParticleTypeBorder FrameTypeBorder;
+    typedef typename BufferType::FrameTypeBorder FrameTypeBorder;
 
-    /* TYpe of the particle box which particle buffer create
+    /* Type of the particle box which particle buffer create
      */
     typedef ParticlesBox< FrameType, MappingDesc::Dim> ParticlesBoxType;
+
+    /* Policies for handling particles in guard cells */
+    typedef typename ParticleDescription::HandleGuardRegion HandleGuardRegion;
 
     enum
     {
@@ -62,6 +73,9 @@ public:
         Exchanges = traits::NumberOfExchanges<Dim>::value,
         TileSize = math::CT::volume<typename MappingDesc::SuperCellSize>::type::value
     };
+
+    /* Mark this simulation data as a particle type */
+    typedef ParticlesTag SimulationDataTag;
 
 protected:
 
@@ -71,26 +85,28 @@ protected:
     {
     }
 
+    virtual ~ParticlesBase(){}
+
     /* Shift all particle in a AREA
-     * @tparam AREA area whish is used (CORE,BORDER,GUARD or a combination)
+     * @tparam AREA area which is used (CORE,BORDER,GUARD or a combination)
      */
     template<uint32_t AREA>
     void shiftParticles()
     {
-        StrideMapping<AREA, DIM3, MappingDesc> mapper(this->cellDescription);
+        StrideMapping<AREA, 3, MappingDesc> mapper(this->cellDescription);
         ParticlesBoxType pBox = particlesBuffer->getDeviceParticleBox();
 
         __startTransaction(__getTransactionEvent());
         do
         {
-            __cudaKernel(kernelShiftParticles)
-                (mapper.getGridDim(), TileSize)
+            PMACC_KERNEL(KernelShiftParticles{})
+                (mapper.getGridDim(), (int)TileSize)
                 (pBox, mapper);
-            __cudaKernel(kernelFillGaps)
-                (mapper.getGridDim(), TileSize)
+            PMACC_KERNEL(KernelFillGaps{})
+                (mapper.getGridDim(), (int)TileSize)
                 (pBox, mapper);
-            __cudaKernel(kernelFillGapsLastFrame)
-                (mapper.getGridDim(), TileSize)
+            PMACC_KERNEL(KernelFillGapsLastFrame{})
+                (mapper.getGridDim(), (int)TileSize)
                 (pBox, mapper);
         }
         while (mapper.next());
@@ -100,19 +116,19 @@ protected:
     }
 
     /* fill gaps in a AREA
-     * @tparam AREA area whish is used (CORE,BORDER,GUARD or a combination)
+     * @tparam AREA area which is used (CORE,BORDER,GUARD or a combination)
      */
     template<uint32_t AREA>
     void fillGaps()
     {
         AreaMapping<AREA, MappingDesc> mapper(this->cellDescription);
 
-        __cudaKernel(kernelFillGaps)
-            (mapper.getGridDim(), TileSize)
+        PMACC_KERNEL(KernelFillGaps{})
+            (mapper.getGridDim(), (int)TileSize)
             (particlesBuffer->getDeviceParticleBox(), mapper);
 
-        __cudaKernel(kernelFillGapsLastFrame)
-            (mapper.getGridDim(), TileSize)
+        PMACC_KERNEL(KernelFillGapsLastFrame{})
+            (mapper.getGridDim(), (int)TileSize)
             (particlesBuffer->getDeviceParticleBox(), mapper);
     }
 
@@ -137,6 +153,10 @@ public:
      */
     void deleteGuardParticles(uint32_t exchangeType);
 
+    /* Delete all particle in an area*/
+    template<uint32_t T_area>
+    void deleteParticlesInArea();
+
     /* Bash particles in a direction.
      * Copy all particles from the guard of a direction to the device exchange buffer
      */
@@ -146,33 +166,29 @@ public:
      */
     void insertParticles(uint32_t exchangeType);
 
-    ParticlesBoxType getHostParticlesBox()
-    {
-        return particlesBuffer->getHostParticleBox();
-    }
-
     ParticlesBoxType getDeviceParticlesBox()
     {
         return particlesBuffer->getDeviceParticleBox();
+    }
+
+    ParticlesBoxType getHostParticlesBox(const int64_t memoryOffset)
+    {
+        return particlesBuffer->getHostParticleBox(memoryOffset);
     }
 
     /* Get the particles buffer which is used for the particles.
      */
     BufferType& getParticlesBuffer()
     {
-        assert(particlesBuffer != NULL);
+        PMACC_ASSERT(particlesBuffer != NULL);
         return *particlesBuffer;
     }
 
-    /* Communicate particles to neighbor devices.
-     * This method include bashing and insert of particles full
-     * asynchron.
-     */
-    EventTask asyncCommunication(EventTask event);
+    /* set all internal objects to initial state*/
+    virtual void reset(uint32_t currentStep);
+
 };
 
 } //namespace PMacc
 
 #include "particles/ParticlesBase.tpp"
-
-

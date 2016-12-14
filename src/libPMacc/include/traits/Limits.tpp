@@ -1,10 +1,10 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -24,6 +24,7 @@
 #pragma once
 
 #include "traits/Limits.hpp"
+
 #include <climits>
 
 namespace PMacc
@@ -36,19 +37,19 @@ namespace limits
 template<>
 struct Max<int>
 {
-    static const int value=INT_MAX;
+    static constexpr int value=INT_MAX;
 };
 
 template<>
 struct Max<uint32_t>
 {
-    static const uint32_t value=static_cast<uint32_t>(-1);
+    static constexpr uint32_t value=static_cast<uint32_t>(-1);
 };
 
 template<>
 struct Max<uint64_t>
 {
-    static const uint64_t value=static_cast<uint64_t>(-1);
+    static constexpr uint64_t value=static_cast<uint64_t>(-1);
 };
 
 } //namespace limits

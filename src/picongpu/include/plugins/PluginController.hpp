@@ -1,6 +1,7 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Benjamin Schneider, Felix Schmitt, 
- *                     Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Benjamin Schneider, Felix Schmitt,
+ *                     Heiko Burau, Rene Widera, Richard Pausch,
+ *                     Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -23,9 +24,10 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
+#include "assert.hpp"
 
 #include "plugins/CountParticles.hpp"
 #include "plugins/EnergyParticles.hpp"
@@ -33,7 +35,9 @@
 #include "plugins/SumCurrents.hpp"
 #include "plugins/PositionsParticles.hpp"
 #include "plugins/BinEnergyParticles.hpp"
+#include "plugins/ChargeConservation.hpp"
 #if(ENABLE_HDF5 == 1)
+#include "plugins/particleCalorimeter/ParticleCalorimeter.hpp"
 #include "plugins/PhaseSpace/PhaseSpaceMulti.hpp"
 #endif
 
@@ -65,20 +69,10 @@
 
 #if(SIMDIM==DIM3)
 #include "plugins/IntensityPlugin.hpp"
-
-#include "plugins/FieldEnergy.hpp"
-#if(PIC_ENABLE_PNG==1)
-#include "plugins/ParticleDensity.hpp"
 #endif
-#include "plugins/ParticleSpectrum.hpp"
-#include "plugins/TotalDivJ.hpp"
 #include "plugins/SliceFieldPrinterMulti.hpp"
-#endif
 
 #include "plugins/output/images/Visualisation.hpp"
-
-#include "plugins/output/images/DensityToBinary.hpp"
-#include "plugins/output/images/ParticleDensity.hpp"
 
 #include <list>
 
@@ -89,10 +83,12 @@
 #include "plugins/makroParticleCounter/PerSuperCell.hpp"
 #endif
 
-#if(SIMDIM==DIM3)
 #if (ENABLE_ADIOS == 1)
 #include "plugins/adios/ADIOSWriter.hpp"
 #endif
+
+#if (ENABLE_ISAAC == 1) && (SIMDIM==DIM3)
+#include "plugins/IsaacPlugin.hpp"
 #endif
 
 namespace picongpu
@@ -109,151 +105,114 @@ private:
 
     std::list<ISimulationPlugin*> plugins;
 
-#if (ENABLE_ELECTRONS == 1)
-#if(PIC_ENABLE_PNG==1)
-    typedef Visualisation<PIC_Electrons, PngCreator> ElectronsPngBuilder;
-    typedef PngPlugin<ElectronsPngBuilder > PngImageElectrons;
-#endif
-    typedef ParticleDensity<PIC_Electrons, DensityToBinary, float_X> ElectronsBinaryDensityBuilder;
+    template<typename T_Type>
+    struct PushBack
+    {
 
-#if(ENABLE_HDF5 == 1)
-    /* speciesParticleShape::ParticleShape::ChargeAssignment */
-    typedef PhaseSpaceMulti<particles::shapes::Counter::ChargeAssignment, PIC_Electrons> PhaseSpaceElectrons;
-#endif
+        template<typename T>
+        void operator()(T& list)
+        {
+            list.push_back(new T_Type());
+        }
+    };
+
+    /** apply the 1st vector component to the 2nd
+     *
+     * @tparam T_TupleVector vector of type PMacc::math::CT::vector<dataType,plugin>
+     *                       with two components
+     */
+    template<typename T_TupleVector>
+    struct ApplyDataToPlugin :
+    bmpl::apply1<typename PMacc::math::CT::At<T_TupleVector, bmpl::int_<1> >::type,
+    typename PMacc::math::CT::At<T_TupleVector, bmpl::int_<0> >::type >
+    {
+    };
+
+    /* define stand alone plugins*/
+    typedef bmpl::vector<
+        EnergyFields,
+        SumCurrents,
+        ChargeConservation
 #if(SIMDIM==DIM3)
-#if(PIC_ENABLE_PNG==1)
-    typedef heiko::ParticleDensity<PIC_Electrons> HeikoParticleDensity;
+      , IntensityPlugin
 #endif
-
-    typedef ParticleSpectrum<PIC_Electrons> ElectronSpectrum;
-    typedef SliceFieldPrinterMulti<FieldE> SliceFieldEPrinter;
-    typedef SliceFieldPrinterMulti<FieldB> SliceFieldBPrinter;
-    typedef SliceFieldPrinterMulti<FieldJ> SliceFieldJPrinter;
+#if (ENABLE_INSITU_VOLVIS == 1)
+      , InSituVolumeRenderer
 #endif
+#if (ENABLE_ADIOS == 1)
+      , adios::ADIOSWriter
+#endif
+#if (ENABLE_HDF5 == 1)
+      , hdf5::HDF5Writer
+#endif
+#if (ENABLE_ISAAC == 1) && (SIMDIM==DIM3)
+      , isaacP::IsaacPlugin
+#endif
+    > StandAlonePlugins;
 
-    typedef LiveViewPlugin<PIC_Electrons > LiveImageElectrons;
-    typedef PngPlugin<ElectronsBinaryDensityBuilder > BinDensityElectrons;
-    typedef CountParticles<PIC_Electrons> ElectronCounter;
-    typedef EnergyParticles<PIC_Electrons> EnergyElectrons;
-    typedef PositionsParticles<PIC_Electrons> PositionElectrons;
-    typedef BinEnergyParticles<PIC_Electrons> BinEnergyElectrons;
+
+    /* define field plugins */
+    typedef bmpl::vector<
+     SliceFieldPrinterMulti<bmpl::_1>
+    > UnspecializedFieldPlugins;
+
+    typedef bmpl::vector< FieldB, FieldE, FieldJ> AllFields;
+
+    typedef AllCombinations<
+      bmpl::vector<AllFields, UnspecializedFieldPlugins>
+    >::type CombinedUnspecializedFieldPlugins;
+
+    typedef bmpl::transform<
+    CombinedUnspecializedFieldPlugins,
+      ApplyDataToPlugin<bmpl::_1>
+    >::type FieldPlugins;
+
+
+    /* define species plugins */
+    typedef bmpl::vector <
+        CountParticles<bmpl::_1>,
+        EnergyParticles<bmpl::_1>,
+        BinEnergyParticles<bmpl::_1>,
+        LiveViewPlugin<bmpl::_1>,
+        PositionsParticles<bmpl::_1>
 #if(ENABLE_RADIATION == 1)
-    typedef Radiation<PIC_Electrons> RadiationElectrons;
+      , Radiation<bmpl::_1>
 #endif
-#endif
-
-#if (ENABLE_IONS == 1)
 #if(PIC_ENABLE_PNG==1)
-    typedef Visualisation<PIC_Ions, PngCreator> IonsPngBuilder;
-    typedef PngPlugin<IonsPngBuilder > PngImageIons;
+     , PngPlugin< Visualisation<bmpl::_1, PngCreator> >
 #endif
 #if(ENABLE_HDF5 == 1)
-    /* speciesParticleShape::ParticleShape::ChargeAssignment */
-    typedef PhaseSpaceMulti<particles::shapes::Counter::ChargeAssignment, PIC_Ions> PhaseSpaceIons;
+      , ParticleCalorimeter<bmpl::_1>
+      , PerSuperCell<bmpl::_1>
+      , PhaseSpaceMulti<particles::shapes::Counter::ChargeAssignment, bmpl::_1>
 #endif
-    typedef ParticleDensity<PIC_Ions, DensityToBinary, float_X> IonsBinaryDensityBuilder;
-    typedef PngPlugin<IonsBinaryDensityBuilder > BinDensityIons;
-    typedef LiveViewPlugin<PIC_Ions > LiveImageIons;
-    typedef CountParticles<PIC_Ions> IonCounter;
-    typedef EnergyParticles<PIC_Ions> EnergyIons;
-    typedef BinEnergyParticles<PIC_Ions> BinEnergyIons;
-#endif
+    > UnspecializedSpeciesPlugins;
 
-#if (ENABLE_HDF5 == 1)
-#if (ENABLE_ELECTRONS == 1)
-    typedef PerSuperCell<PIC_Electrons> ElectronMakroParticleCounterPerSuperCell;
-#endif
-#if (ENABLE_IONS == 1)
-    typedef PerSuperCell<PIC_Ions> IonMakroParticleCounterPerSuperCell;
-#endif
-#endif
+    typedef AllCombinations<
+        bmpl::vector<VectorAllSpecies, UnspecializedSpeciesPlugins>
+    >::type CombinedUnspecializedSpeciesPlugins;
+
+    typedef bmpl::transform<
+        CombinedUnspecializedSpeciesPlugins,
+        ApplyDataToPlugin<bmpl::_1>
+    >::type SpeciesPlugins;
+
+
+    /* create sequence with all plugins*/
+    typedef MakeSeq<
+        StandAlonePlugins,
+        FieldPlugins,
+        SpeciesPlugins
+    >::type AllPlugins;
 
     /**
      * Initialises the controller by adding all user plugins to its internal list.
      */
     virtual void init()
     {
-#if (ENABLE_HDF5 == 1)
-        plugins.push_back(new hdf5::HDF5Writer());
-#endif
-
-#if(SIMDIM==DIM3)
-#if (ENABLE_ADIOS == 1)
-        plugins.push_back(new adios::ADIOSWriter());
-#endif
-#endif
-
-        plugins.push_back(new EnergyFields("EnergyFields", "energy_fields"));
-        plugins.push_back(new SumCurrents());
-
-#if(SIMDIM==DIM3)
-        plugins.push_back(new FieldEnergy("FieldEnergy [keV/m^3]", "field_energy"));
-#if(PIC_ENABLE_PNG==1)
-        plugins.push_back(new HeikoParticleDensity("HeikoParticleDensity", "heiko_pd"));
-#endif
-        plugins.push_back(new ElectronSpectrum("Electron Spectrum", "spectrum"));
-        plugins.push_back(new TotalDivJ("change of total charge per timestep (single gpu)", "totalDivJ"));
-        plugins.push_back(new SliceFieldEPrinter("FieldE: prints a slice of the E-field", "FieldE"));
-        plugins.push_back(new SliceFieldBPrinter("FieldB: prints a slice of the B-field", "FieldB"));
-        plugins.push_back(new SliceFieldJPrinter("FieldJ: prints a slice of the current-field", "FieldJ"));
-
-        plugins.push_back(new IntensityPlugin("Intensity", "intensity"));
-#endif
-
-#if (ENABLE_ELECTRONS == 1)
-#if(ENABLE_HDF5 == 1)
-        plugins.push_back(new PhaseSpaceElectrons("PhaseSpace Electrons", "ps_e"));
-#endif
-        plugins.push_back(new LiveImageElectrons("LiveImageElectrons", "live_e"));
-#if(PIC_ENABLE_PNG==1)
-        plugins.push_back(new PngImageElectrons("PngImageElectrons", "png_e"));
-#endif
-        plugins.push_back(new BinDensityElectrons("BinDensityElectrons", "binDensity_e"));
-        plugins.push_back(new BinEnergyElectrons("BinEnergyElectrons", "bin_e"));
-        plugins.push_back(new ElectronCounter("ElectronsCount", "elec_cnt"));
-        plugins.push_back(new EnergyElectrons("EnergyElectrons", "energy_e"));
-        plugins.push_back(new PositionElectrons("PositionsElectrons", "pos_e"));
-#endif
-
-#if (ENABLE_IONS == 1)
-#if(ENABLE_HDF5 == 1)
-        plugins.push_back(new PhaseSpaceIons("PhaseSpace Ions", "ps_i"));
-#endif
-        plugins.push_back(new LiveImageIons("LiveImageIons", "live_i"));
-#if(PIC_ENABLE_PNG==1)
-        plugins.push_back(new PngImageIons("PngImageIons", "png_i"));
-#endif
-        plugins.push_back(new BinDensityIons("BinDensityIons", "binDensity_i"));
-        plugins.push_back(new BinEnergyIons("BinEnergyIons", "bin_i"));
-        plugins.push_back(new IonCounter("IonsCount", "ions_cnt"));
-        plugins.push_back(new EnergyIons("EnergyIons", "energy_i"));
-#endif
-
-#if(ENABLE_RADIATION == 1)
-        plugins.push_back(new RadiationElectrons("RadiationElectrons", "radiation_e"));
-#endif
-
-#if (ENABLE_INSITU_VOLVIS == 1)
-        plugins.push_back(new InSituVolumeRenderer("InSituVolumeRenderer", "insituvolvis"));
-#endif
-#if (ENABLE_HDF5 == 1)
-#if (ENABLE_ELECTRONS == 1)
-        plugins.push_back(new ElectronMakroParticleCounterPerSuperCell("ElectronsMakroParticleCounterPerSuperCell","countPerSuperCell_e"));
-#endif
-#if (ENABLE_IONS == 1)
-        plugins.push_back(new IonMakroParticleCounterPerSuperCell("IonsMakroParticleCounterPerSuperCell","countPerSuperCell_i"));
-#endif
-#endif
-
-        /**
-         * Add your plugin here, guard with pragmas if it depends on compile-time switches.
-         * Plugins must be heap-allocated (use 'new').
-         * Plugins are free'd automatically.
-         * Plugins should use a short but descriptive prefix for all command line parameters, e.g.
-         * 'my_plugin.period', or 'my_plugin.parameter'.
-         */
+        ForEach<AllPlugins, PushBack<bmpl::_1> > pushBack;
+        pushBack(forward(plugins));
     }
-
 
 public:
 
@@ -269,7 +228,7 @@ public:
 
     void setMappingDescription(MappingDesc *cellDescription)
     {
-        assert(cellDescription != NULL);
+        PMACC_ASSERT(cellDescription != NULL);
 
         for (std::list<ISimulationPlugin*>::iterator iter = plugins.begin();
              iter != plugins.end();

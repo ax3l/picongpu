@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,10 +20,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EXCHANGEMAPPING_H
-#define	EXCHANGEMAPPING_H
 
-#include "types.h"
+#pragma once
+
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "mappings/kernel/ExchangeMappingMethods.hpp"
 
@@ -34,7 +34,7 @@ namespace PMacc
     class ExchangeMapping;
 
     /**
-     * Allows mapping CUDA thread/block indizes to a specific region in a DataSpace
+     * Allows mapping thread/block indices to a specific region in a DataSpace
      * defined by a valid ExchangeType combination.
      *
      * @tparam areaType are to map to
@@ -82,35 +82,29 @@ namespace PMacc
         }
 
         /**
-         * Generates cuda gridDim information for kernel call.
+         * Generate grid dimension information for kernel calls
          *
-         * @return DataSpace with gridDim information
+         * @return size of the grid
          */
-        HINLINE DataSpace<DIM> getGridDim()
+        HINLINE DataSpace<DIM> getGridDim() const
         {
-            return this->reduce(ExchangeMappingMethods<areaType, DIM>::getGridDim(*this, exchangeType));
+            return ExchangeMappingMethods<areaType, DIM>::getGridDim(*this, exchangeType);
         }
 
         /**
-         * Returns index of current logical block, depending on current cuda block id.
+         * Returns index of current logical block
          *
-         * @param _blockIdx current cuda block id (blockIdx)
-         * @return current logical block index
+         * @param realSuperCellIdx current SuperCell index (block index)
+         * @return mapped SuperCell index
          */
-        DINLINE DataSpace<DIM> getSuperCellIndex(const DataSpace<DIM>& realSuperCellIdx)
+        HDINLINE DataSpace<DIM> getSuperCellIndex(const DataSpace<DIM>& realSuperCellIdx) const
         {
             return ExchangeMappingMethods<areaType, DIM>::getBlockIndex(
                                                                         *this,
-                                                                        extend(realSuperCellIdx),
+                                                                        realSuperCellIdx,
                                                                         exchangeType);
         }
 
     };
 
-
 } // namespace PMacc
-
-
-
-#endif	/* EXCHANGEMAPPING_H */
-

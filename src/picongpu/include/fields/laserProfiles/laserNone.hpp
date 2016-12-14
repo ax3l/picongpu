@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,12 +18,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef LASERNONE_HPP
-#define	LASERNONE_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 namespace picongpu
@@ -39,7 +36,7 @@ namespace picongpu
          */
         HINLINE float3_X laserLongitudinal( uint32_t, float_X& phase )
         {
-            float3_X elong = float3_X(float_X(0.0), float_X(0.0), float_X(0.0));
+            const float3_X elong(float3_X::create(0.0));
 
             phase = float_X(0.0);
 
@@ -61,8 +58,4 @@ namespace picongpu
 
     }
 }
-
-#endif	/* LASERNONE_HPP */
-
-
 

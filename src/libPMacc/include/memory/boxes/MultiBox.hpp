@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "memory/boxes/DataBox.hpp"
 #include "memory/boxes/PitchedBox.hpp"
@@ -57,8 +57,8 @@ public:
     }
 
 private:
-    const PMACC_ALIGN(ptr, char*);
     const PMACC_ALIGN(offset, size_t);
+    const PMACC_ALIGN(ptr, char*);
 };
 
 }//namespace MutiBoxAccass
@@ -119,6 +119,10 @@ public:
         return RefValueType(fixedPointer, attributePitch);
     }
 
+    HDINLINE Type const * getPointer() const
+    {
+        return fixedPointer;
+    }
     HDINLINE Type* getPointer()
     {
         return fixedPointer;
@@ -127,8 +131,8 @@ public:
 
 protected:
 
-    PMACC_ALIGN(fixedPointer, Type*);
     PMACC_ALIGN(attributePitch, size_t);
+    PMACC_ALIGN(fixedPointer, Type*);
 };
 
 template<typename Type>
@@ -151,9 +155,9 @@ public:
         return DataBoxType(PitchedBox<Type, DIM2 > ((Type*) ((char*) fixedPointer + attributePitch * nameId), pitch));
     }
 
-    HDINLINE MultiBox(Type* pointer, const DataSpace<DIM2> &offset, const DataSpace<DIM2> &size, const size_t pitch) :
+    HDINLINE MultiBox(Type* pointer, const DataSpace<DIM2> &offset, const DataSpace<DIM2> &memSize, const size_t pitch) :
     pitch(pitch),
-    attributePitch(pitch*size.y()),
+    attributePitch(pitch*memSize.y()),
     fixedPointer((Type*) ((char*) pointer + offset[1] * pitch) + offset[0])
     {
     }
@@ -188,6 +192,10 @@ public:
         return RefValueType(fixedPointer, attributePitch);
     }
 
+    HDINLINE Type const * getPointer() const
+    {
+        return fixedPointer;
+    }
     HDINLINE Type* getPointer()
     {
         return fixedPointer;
@@ -195,9 +203,9 @@ public:
 
 protected:
 
-    PMACC_ALIGN(fixedPointer, Type*);
     PMACC_ALIGN(pitch, size_t);
     PMACC_ALIGN(attributePitch, size_t);
+    PMACC_ALIGN(fixedPointer, Type*);
 };
 
 template<typename Type>
@@ -230,9 +238,16 @@ public:
         return ReducedType((Type*) ((char*) (this->fixedPointer) + idx * pitch2D), pitch, attributePitch);
     }
 
-    HDINLINE MultiBox(Type* pointer, const DataSpace<DIM3> &offset, const DataSpace<DIM3> &size, const size_t pitch) :
-    pitch(pitch), pitch2D(size.y() * pitch), attributePitch(pitch2D*size.z()),
-    fixedPointer((Type*) ((char*) pointer + offset[2] * pitch2D + offset[1] * pitch) + offset[0])
+    /** constructor
+     *
+     * @param pointer pointer to the origin of the physical memory
+     * @param offset offset (in elements)
+     * @param memSize size of the physical memory (in elements)
+     * @param pitch number of bytes in one line (first dimension)
+     */
+    HDINLINE MultiBox(Type* pointer, const DataSpace<DIM3> &offset, const DataSpace<DIM3> &memSize, const size_t pitch) :
+    pitch(pitch), pitch2D(memSize.y() * pitch), attributePitch((memSize.y() * pitch) * size.z()),
+    fixedPointer((Type*) ((char*) pointer + offset[2] * (memSize.y() * pitch) + offset[1] * pitch) + offset[0])
     {
     }
 
@@ -249,16 +264,20 @@ public:
         return RefValueType(fixedPointer, attributePitch);
     }
 
+    HDINLINE Type const * getPointer() const
+    {
+        return fixedPointer;
+    }
     HDINLINE Type* getPointer()
     {
         return fixedPointer;
     }
 
 
-    PMACC_ALIGN(fixedPointer, Type*);
     PMACC_ALIGN(pitch, size_t);
     PMACC_ALIGN(pitch2D, size_t);
     PMACC_ALIGN(attributePitch, size_t);
+    PMACC_ALIGN(fixedPointer, Type*);
 
 };
 

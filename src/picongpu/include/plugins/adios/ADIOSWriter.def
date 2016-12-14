@@ -1,5 +1,5 @@
 /**
- * Copyright 2014-2015 Felix Schmitt, Axel Huebl
+ * Copyright 2014-2016 Felix Schmitt, Axel Huebl
  *
  * This file is part of PIConGPU.
  *
@@ -21,13 +21,21 @@
 #pragma once
 
 #include <adios.h>
-#include <list>
+#include <adios_read.h>
 
-#include "types.h"
+#include <list>
+#include <limits>
+#include <sstream>
+#include <string>
+#include <iostream>  // std::cerr
+#include <stdexcept> // throw std::runtime_error
+
+#include "pmacc_types.hpp"
 #include "math/Vector.hpp"
 #include "simulation_types.hpp"
 #include "particles/frame_types.hpp"
 #include "simulationControl/MovingWindow.hpp"
+#include "traits/PICToAdios.hpp"
 
 namespace picongpu
 {
@@ -51,26 +59,44 @@ namespace po = boost::program_options;
 #define ADIOS_SIZE_GLOBAL    "totalSize_"
 #define ADIOS_OFFSET_GLOBAL  "offset_"
 
-#define ADIOS_CMD(_cmd)                                                        \
-{                                                                              \
-    int _err_code = _cmd;                                                      \
-    if (_err_code != ADIOS_SUCCESS)                                            \
-        log<picLog::INPUT_OUTPUT > ("ADIOS: error at cmd '%1%': '%2%'") %      \
-            #_cmd % _err_code;                                                 \
+#define ADIOS_CMD(_cmd)                                                       \
+{                                                                             \
+    int _err_code = _cmd;                                                     \
+    if (_err_code != ADIOS_SUCCESS)                                           \
+    {                                                                         \
+        std::string errMsg( adios_errmsg() );                                 \
+        if( errMsg.empty() ) errMsg = '\n';                                   \
+        std::stringstream s;                                                  \
+        s << "ADIOS: error at cmd '" << #_cmd                                 \
+          << "' (" << _err_code << ", " << adios_errno << ") in "             \
+          << __FILE__ << ":" << __LINE__ << " " << errMsg;                    \
+        throw std::runtime_error(s.str());                                    \
+    }                                                                         \
 }
 
-#define ADIOS_CMD_EXPECT_NONZERO(_cmd)                                         \
-{                                                                              \
-    int _err_code = _cmd;                                                      \
-    if (_err_code == 0)                                                        \
-        log<picLog::INPUT_OUTPUT > ("ADIOS: error at cmd '%1%': '%2%'") %      \
-            #_cmd % _err_code;                                                 \
+#define ADIOS_CMD_EXPECT_NONNULL(_cmd)                                        \
+{                                                                             \
+    if (!(_cmd))                                                              \
+    {                                                                         \
+        std::string errMsg( adios_errmsg() );                                 \
+        if( errMsg.empty() ) errMsg = '\n';                                   \
+        std::stringstream s;                                                  \
+        s << "ADIOS: error at cmd '" << #_cmd                                 \
+          << "' (" << adios_errno << ") in "                                  \
+          << __FILE__ << ":" << __LINE__ << " " << errMsg;                    \
+        throw std::runtime_error(s.str());                                    \
+    }                                                                         \
 }
 
 struct ThreadParams
 {
     uint32_t currentStep;                   /** current simulation step */
-    std::string fullFilename;
+    std::string adiosFilename;              /* e.g., simData */
+    std::string fullFilename;               /* e.g., simData_1000.bp */
+
+    /** current dump is a checkpoint */
+    bool isCheckpoint;
+    ADIOS_FILE* fp;                          /* file pointer for checkpoint file */
 
     MPI_Comm adiosComm;                     /* MPI communicator for adios lib */
     bool adiosBufferInitialized;            /* set if ADIOS buffer has been allocated */
@@ -79,6 +105,8 @@ struct ThreadParams
     uint64_t adiosGroupSize;                /* size of ADIOS group in bytes */
     uint32_t adiosAggregators;              /* number of ADIOS aggregators for MPI_AGGREGATE */
     uint32_t adiosOST;                      /* number of ADIOS OST for MPI_AGGREGATE */
+    bool adiosDisableMeta;                  /* disable online gather and write of a meta file */
+    std::string adiosTransportParams;       /* additional transport params */
     std::string adiosBasePath;              /* base path for the current step */
     std::string adiosCompression;           /* ADIOS data transform compression method */
 
@@ -89,12 +117,11 @@ struct ThreadParams
     std::list<int64_t> adiosFieldVarIds;        /* var IDs for fields in order of appearance */
     std::list<int64_t> adiosParticleAttrVarIds; /* var IDs for particle attributes in order of appearance */
     std::list<int64_t> adiosSpeciesIndexVarIds; /* var IDs for species index tables in order of appearance */
-    std::list<int64_t> adiosMetaAttrVarIds;     /* var IDs for scalar meta attributes */
 
     GridLayout<simDim> gridLayout;
     MappingDesc *cellDescription;
 
-    float *fieldBfr;                                /* temp. buffer for fields */
+    float_X *fieldBfr;                              /* temp. buffer for fields */
 
     Window window;                                  /* window describing the volume to be dumped */
 
@@ -107,6 +134,11 @@ struct ThreadParams
  */
 
 class ADIOSWriter;
+
+/** Default ADIOS types we will use */
+typedef PICToAdios<uint32_t> AdiosUInt32Type;
+typedef PICToAdios<float_X> AdiosFloatXType;
+typedef PICToAdios<double> AdiosDoubleType;
 
 /**
  * Wrapper for adios_define_var that sets data transform method
@@ -137,4 +169,3 @@ int64_t defineAdiosVar(int64_t group_id,
 
 } //namespace adios
 } //namespace picongpu
-

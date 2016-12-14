@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -52,3 +52,22 @@
  * @return false if no arguments are given, else true
  */
 #define PMACC_HAS_ARGS(...)  ((sizeof((int[]){0, ##__VA_ARGS__}))==sizeof(int)?false:true)
+
+/** round up to next higher pow 2 value
+ *
+ * - if value is pow2, value is returned
+ * - maximal pow 2 value is 128
+ * - negative values are not supported
+ *
+ * @param value integral number between [1,Inf]
+ * @return next higher pow 2 value
+ */
+#define PMACC_ROUND_UP_NEXT_POW2(value) \
+        ((value)==1?1:                  \
+        ((value)<=2?2:                  \
+        ((value)<=4?4:                  \
+        ((value)<=8?8:                  \
+        ((value)<=16?16:                \
+        ((value)<=32?32:                \
+        ((value)<=64?64:128             \
+        )))))))

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LISTSORTER_HPP
-#define	LISTSORTER_HPP
+#pragma once
 
 #include "dataManagement/IDataSorter.hpp"
 
@@ -81,6 +80,3 @@ namespace PMacc
         typename std::list<ID_TYPE>::iterator iter;
     };
 }
-
-#endif	/* LISTSORTER_HPP */
-

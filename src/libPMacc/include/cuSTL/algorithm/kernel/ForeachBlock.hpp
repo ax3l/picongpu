@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,10 +20,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALGORITHM_KERNEL_FOREACHBLOCK_HPP
-#define ALGORITHM_KERNEL_FOREACHBLOCK_HPP
+#pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "math/vector/Size_t.hpp"
 #include "math/vector/Int.hpp"
 #include "lambda/make_Functor.hpp"
@@ -60,15 +59,19 @@ namespace detail
                         /* typename C0, typename C1, ... */                                                 \
 template<typename Mapper, BOOST_PP_ENUM_PARAMS(N, typename C), typename Functor>                            \
                                                 /* C0 c0, C1 c1, ... */                                     \
-__global__ void kernelForeachBlock(Mapper mapper, BOOST_PP_ENUM_BINARY_PARAMS(N, C, c), Functor functor)    \
+DINLINE void operator()(Mapper mapper, BOOST_PP_ENUM_BINARY_PARAMS(N, C, c), Functor functor) const         \
 {                                                                                                           \
     math::Int<Mapper::dim> cellIndex(mapper(blockIdx));                                                     \
          /* c0[cellIndex], c1[cellIndex], ... */                                                            \
     functor(BOOST_PP_ENUM(N, SHIFTACCESS_CURSOR, _));                                                       \
 }
 
+struct KernelForeachBlock
+{
+
 BOOST_PP_REPEAT_FROM_TO(1, BOOST_PP_INC(FOREACH_KERNEL_MAX_PARAMS), KERNEL_FOREACH, _)
 
+};
 #undef KERNEL_FOREACH
 #undef SHIFTACCESS_CURSOR
 
@@ -88,10 +91,10 @@ BOOST_PP_REPEAT_FROM_TO(1, BOOST_PP_INC(FOREACH_KERNEL_MAX_PARAMS), KERNEL_FOREA
         /* ... */                                                                                           \
         BOOST_PP_REPEAT(N, SHIFT_CURSOR_ZONE, _)                                                            \
                                                                                                             \
-        dim3 blockDim(ThreadBlock::toRT().toDim3());                                                        \
+        auto blockDim = ThreadBlock::toRT();                                                                \
         detail::SphericMapper<Zone::dim, BlockDim> mapper;                                                  \
         using namespace PMacc;                                                                              \
-        __cudaKernel(detail::kernelForeachBlock)(mapper.cudaGridDim(p_zone.size), blockDim)                  \
+        PMACC_KERNEL(detail::KernelForeachBlock{})(mapper.cudaGridDim(p_zone.size), blockDim)               \
                     /* c0_shifted, c1_shifted, ... */                                                       \
             (mapper, BOOST_PP_ENUM(N, SHIFTED_CURSOR, _), lambda::make_Functor(functor));                   \
     }
@@ -128,4 +131,3 @@ struct ForeachBlock
 } // algorithm
 } // PMacc
 
-#endif // ALGORITHM_KERNEL_FOREACHBLOCK_HPP

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "mappings/simulation/Selection.hpp"
 
 namespace picongpu

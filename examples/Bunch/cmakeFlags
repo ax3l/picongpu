@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Copyright 2013 Axel Huebl, Rene Widera
+# Copyright 2013-2016 Axel Huebl, Rene Widera
 #
 # This file is part of PIConGPU. 
 # 
@@ -30,7 +30,9 @@
 #   - increase by 1, no gaps
 
 flags[0]="-DCUDA_ARCH=sm_35"
-
+flags[1]="-DCUDA_ARCH=sm_35 -DPARAM_OVERWRITES:LIST=-DPARAM_INCLUDE_FIELDBACKGROUND=true"
+flags[2]="-DCUDA_ARCH=sm_35 -DPARAM_OVERWRITES:LIST=-DPARAM_INCLUDE_FIELDBACKGROUND=true;-DPARAM_DIMENSION=DIM2"
+flags[3]="-DCUDA_ARCH=sm_35 -DPARAM_OVERWRITES:LIST=-DENABLE_SYNCHROTRON_PHOTONS=1"
 
 ################################################################################
 # execution

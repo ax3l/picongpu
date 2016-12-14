@@ -1,10 +1,10 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "traits/Resolve.hpp"
 
 namespace PMacc
@@ -46,7 +46,8 @@ struct SetAttributeToDefault
     void operator()(T_Particle& particle)
     {
         typedef typename PMacc::traits::Resolve<Attribute>::type ResolvedAttr;
-        particle[Attribute()] = ResolvedAttr::getDefaultValue();
+        /* set attribute to it's user defined default value */
+        particle[Attribute()] = ResolvedAttr::getValue();
     }
 };
 

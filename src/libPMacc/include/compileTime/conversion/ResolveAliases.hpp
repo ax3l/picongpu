@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,42 +22,42 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
+#include "compileTime/GetKeyFromAlias.hpp"
+#include "compileTime/errorHandlerPolicies/ThrowValueNotFound.hpp"
 
 #include <boost/mpl/vector.hpp>
-#include <boost/mpl/copy.hpp>
-#include <boost/mpl/size.hpp>
 #include <boost/mpl/transform.hpp>
 #include <boost/mpl/placeholders.hpp>
 #include <boost/mpl/insert.hpp>
 
-#include <boost/type_traits.hpp>
-
 namespace PMacc
 {
 
-/* translate all pmacc alias types to full specialized types
+/** Translate all PMacc alias types to full specialized types
  *
- * use lookup sequense to translate types
- * if type from T_MPLSeq is not in T_MPLSeqLookup a compile time error is triggered
+ * Use lookup sequence to translate types
+ * The policy is used if the type from T_MPLSeq is not in T_MPLSeqLookup a compile time error is triggered
  *
  * @tparam T_MPLSeq source sequence with types to translate
  * @tparam T_MPLSeqLookup lookup sequence to translate aliases
  */
 template<
-typename T_MPLSeq,
-typename T_MPLSeqLookup
+    typename T_MPLSeq,
+    typename T_MPLSeqLookup,
+    typename T_AliasNotFoundPolicy = errorHandlerPolicies::ThrowValueNotFound
 >
 struct ResolveAliases
 {
     typedef T_MPLSeq MPLSeq;
     typedef T_MPLSeqLookup MPLSeqLookup;
+    typedef T_AliasNotFoundPolicy AliasNotFoundPolicy;
     typedef bmpl::back_inserter< bmpl::vector<> > Inserter;
 
     template<typename T_Identifier>
     struct GetKeyFromAliasAccessor
     {
-        typedef typename GetKeyFromAlias_assert<MPLSeqLookup, T_Identifier>::type type;
+        typedef typename GetKeyFromAlias<MPLSeqLookup, T_Identifier, AliasNotFoundPolicy>::type type;
     };
 
     typedef typename bmpl::transform<

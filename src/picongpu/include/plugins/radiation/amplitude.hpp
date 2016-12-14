@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Richard Pausch, Alexander Debus
  *
  * This file is part of PIConGPU.
  *
@@ -20,36 +20,38 @@
 
 #pragma once
 
-#include "complex.hpp"
+#include "math/Complex.hpp"
 #include "parameters.hpp"
 #include "mpi/GetMPI_StructAsArray.hpp"
+
+typedef PMacc::math::Complex<picongpu::float_64> complex_64;
 
 /** class to store 3 complex numbers for the radiated amplitude
  */
 class Amplitude
 {
 public:
-  // number of scalars of type numtype2 in Amplitude = 3 (3D) * 2 (complex) = 6
-  static const uint numComponents = 3 * sizeof(Complex) / sizeof(numtype2);
+  /* number of scalar components in Amplitude = 3 (3D) * 2 (complex) = 6 */
+  static constexpr uint32_t numComponents = uint32_t(3) * uint32_t(sizeof(complex_64) / sizeof(typename complex_64::type));
 
-  /** constructor 
-   * 
+  /** constructor
+   *
    * Arguments:
-   * - vec2: real 3D vector 
+   * - vector_64: real 3D vector
    * - float: complex phase */
-  DINLINE Amplitude(vec2 vec, picongpu::float_X phase)
+  DINLINE Amplitude(vector_64 vec, picongpu::float_X phase)
   {
       picongpu::float_X cosValue;
       picongpu::float_X sinValue;
       picongpu::math::sincos(phase, sinValue, cosValue);
-      amp_x.euler(vec.x(), sinValue, cosValue);
-      amp_y.euler(vec.y(), sinValue, cosValue);
-      amp_z.euler(vec.z(), sinValue, cosValue);
+      amp_x=picongpu::math::euler(vec.x(), picongpu::precisionCast<picongpu::float_64>(sinValue), picongpu::precisionCast<picongpu::float_64>(cosValue) );
+      amp_y=picongpu::math::euler(vec.y(), picongpu::precisionCast<picongpu::float_64>(sinValue), picongpu::precisionCast<picongpu::float_64>(cosValue) );
+      amp_z=picongpu::math::euler(vec.z(), picongpu::precisionCast<picongpu::float_64>(sinValue), picongpu::precisionCast<picongpu::float_64>(cosValue) );
   }
 
 
-  /** default constructor 
-   * 
+  /** default constructor
+   *
    * \warning does not initialize values! */
   HDINLINE Amplitude(void)
   {
@@ -57,13 +59,13 @@ public:
   }
 
 
-  /** constructor 
-   * 
+  /** constructor
+   *
    * Arguments:
    * - 6x float: Re(x), Im(x), Re(y), Im(y), Re(z), Im(z) */
-  HDINLINE Amplitude(const numtype2 x_re, const numtype2 x_im, 
-                     const numtype2 y_re, const numtype2 y_im, 
-                     const numtype2 z_re, const numtype2 z_im)
+  HDINLINE Amplitude(const picongpu::float_64 x_re, const picongpu::float_64 x_im,
+                     const picongpu::float_64 y_re, const picongpu::float_64 y_im,
+                     const picongpu::float_64 z_re, const picongpu::float_64 z_im)
       : amp_x(x_re, x_im), amp_y(y_re, y_im), amp_z(z_re, z_im)
   {
 
@@ -76,9 +78,9 @@ public:
   HDINLINE static Amplitude zero(void)
   {
       Amplitude result;
-      result.amp_x = Complex::zero();
-      result.amp_y = Complex::zero();
-      result.amp_z = Complex::zero();
+      result.amp_x = complex_64::zero();
+      result.amp_y = complex_64::zero();
+      result.amp_z = complex_64::zero();
       return result;
   }
 
@@ -105,29 +107,29 @@ public:
   /** calculate radiation from *this amplitude
    *
    * Returns: \frac{d^2 I}{d \Omega d \omega} = const*Amplitude^2 */
-  HDINLINE numtype2 calc_radiation(void)
+  HDINLINE picongpu::float_64 calc_radiation(void)
   {
       // const SI factor radiation
-      const numtype2 factor = 1.0 /
-        (16. * util::cube(M_PI) * picongpu::EPS0 * picongpu::SPEED_OF_LIGHT); 
+      const picongpu::float_64 factor = 1.0 /
+        (16. * util::cube(M_PI) * picongpu::EPS0 * picongpu::SPEED_OF_LIGHT);
 
-      return factor * (amp_x.abs_square() + amp_y.abs_square() + amp_z.abs_square());
+      return factor * (picongpu::math::abs2(amp_x) + picongpu::math::abs2(amp_y) + picongpu::math::abs2(amp_z));
   }
 
 
   /** debugging method
-   * 
+   *
    * Returns: real-x-value */
-  HDINLINE numtype2 debug(void)
+  HDINLINE picongpu::float_64 debug(void)
   {
       return amp_x.get_real();
   }
 
 
 private:
-  Complex amp_x; // complex amplitude x-component
-  Complex amp_y; // complex amplitude y-component
-  Complex amp_z; // complex amplitude z-component
+  complex_64 amp_x; // complex amplitude x-component
+  complex_64 amp_y; // complex amplitude y-component
+  complex_64 amp_z; // complex amplitude z-component
 
 };
 
@@ -141,7 +143,7 @@ namespace mpi
   template<>
   MPI_StructAsArray getMPI_StructAsArray< ::Amplitude >()
   {
-      MPI_StructAsArray result = getMPI_StructAsArray< ::Complex::Type > ();
+      MPI_StructAsArray result = getMPI_StructAsArray< complex_64::type > ();
       result.sizeMultiplier *= Amplitude::numComponents;
       return result;
   };

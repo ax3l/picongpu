@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,16 +18,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef MESSAGEHEADER_HPP
-#define	MESSAGEHEADER_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "dimensions/DataSpace.hpp"
-#include "iostream"
-#include "stdlib.h"
 
 #include "plugins/output/header/DataHeader.hpp"
 #include "plugins/output/header/NodeHeader.hpp"
@@ -36,6 +31,9 @@
 #include "plugins/output/header/WindowHeader.hpp"
 
 #include "simulationControl/Window.hpp"
+
+#include <iostream>
+#include <cstdlib>
 
 
 typedef PMacc::DataSpace<DIM2> Size2D;
@@ -54,7 +52,7 @@ struct MessageHeader
                 picongpu::Window vWindow,
                 Size2D transpose,
                 uint32_t currentStep,
-                float* cellSizeArr = NULL,
+                picongpu::float_32* cellSizeArr = NULL,
                 const PMacc::DataSpace<CellDesc::Dim> gpus = PMacc::DataSpace<CellDesc::Dim > ())
     {
         using namespace PMacc;
@@ -85,13 +83,13 @@ struct MessageHeader
 
         if (cellSizeArr != NULL)
         {
-            float scale[2];
+            picongpu::float_32 scale[2];
             scale[0] = cellSizeArr[transpose.x()];
             scale[1] = cellSizeArr[transpose.y()];
             sim.cellSizeArr[0] = cellSizeArr[transpose.x()];
             sim.cellSizeArr[1] = cellSizeArr[transpose.y()];
 
-            const float scale0to1 = scale[0] / scale[1];
+            const picongpu::float_32 scale0to1 = scale[0] / scale[1];
 
             if (scale0to1 > 1.0f)
             {
@@ -173,6 +171,4 @@ private:
     MessageHeader();
 
 };
-
-#endif	/* MESSAGEHEADER_HPP */
 

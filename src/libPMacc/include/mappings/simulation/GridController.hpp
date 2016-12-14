@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Axel Huebl, Felix Schmitt, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Rene Widera,
+ *                     Wolfgang Hoenig, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,10 +21,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#ifndef _GRIDCONTROLLER_HPP
-#define	_GRIDCONTROLLER_HPP
-
+#pragma once
 
 #include "dimensions/DataSpace.hpp"
 #include "dimensions/DataSpaceOperations.hpp"
@@ -175,7 +173,7 @@ namespace PMacc
 
                bool result = comm.slide();
 
-               updateLocalDomainOffset();
+               updateDomainOffset();
 
                return result;
             }
@@ -190,13 +188,19 @@ namespace PMacc
              *          the simulation does not use a moving window,
              *          else static load balancing will break in y-direction
              *
-             * @param[in] numSlides number of slides
+             * @param[in] numSlides number of slides to slide
              * @return true if the position of gpu is switched to the end, else false
              */
             bool setStateAfterSlides(size_t numSlides)
             {
+                // nothing to do, nothing to change
+                // note: prevents destroying static load balancing in y for
+                //       non-moving window simulations
+                if( numSlides == 0 )
+                    return false;
+
                 bool result = comm.setStateAfterSlides(numSlides);
-                updateLocalDomainOffset();
+                updateDomainOffset(numSlides);
                 return result;
             }
 
@@ -240,14 +244,16 @@ namespace PMacc
             }
 
             /**
-             * Sets localDomain.offset (formerly named globalOffset) using the current position.
+             * Sets globalDomain.offset & localDomain.offset using the current position.
              *
              * (This function is idempotent)
+             *
+             * @param[in] numSlides number of slides to slide
              *
              * \warning the implementation of this method is not compatible with
              *          static load balancing in y-direction
              */
-            void updateLocalDomainOffset()
+            void updateDomainOffset(size_t numSlides = 1)
             {
                 /* if we slide we must change our localDomain.offset of the simulation
                  * (only change slide direction Y)
@@ -255,12 +261,15 @@ namespace PMacc
                 int gpuOffset_y = this->getPosition().y();
                 const SubGrid<DIM>& subGrid = Environment<DIM>::get().SubGrid();
                 DataSpace<DIM> localDomainOffset(subGrid.getLocalDomain().offset);
+                DataSpace<DIM> globalDomainOffset(subGrid.getGlobalDomain().offset);
                 /* this is allowed in the case that we use sliding window
                  * because size in Y direction is the same for all gpus domains
                  */
                 localDomainOffset.y() = gpuOffset_y * subGrid.getLocalDomain().size.y();
+                globalDomainOffset.y() += numSlides * subGrid.getLocalDomain().size.y();
 
                 Environment<DIM>::get().SubGrid().setLocalDomainOffset(localDomainOffset);
+                Environment<DIM>::get().SubGrid().setGlobalDomainOffset(globalDomainOffset);
             }
 
             /**
@@ -291,8 +300,3 @@ namespace PMacc
         CommunicatorMPI<DIM> GridController<DIM>::comm;
 
 } //namespace PMacc
-
-
-
-#endif	/* _GRIDCONTROLLER_HPP */
-

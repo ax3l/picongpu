@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,10 +20,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALGORITHM_KERNEL_FOREACH_HPP
-#define ALGORITHM_KERNEL_FOREACH_HPP
+#pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "math/vector/Size_t.hpp"
 #include "math/vector/Int.hpp"
 #include "lambda/make_Functor.hpp"
@@ -64,10 +63,10 @@ namespace kernel
         /* ... */                                                                                           \
         BOOST_PP_REPEAT(N, SHIFT_CURSOR_ZONE, _)                                                            \
                                                                                                             \
-        dim3 blockDim(BlockDim::toRT().toDim3());                                                           \
+        auto blockDim = BlockDim::toRT();                                                                   \
         detail::SphericMapper<Zone::dim, BlockDim> mapper;                                                  \
         using namespace PMacc;                                                                              \
-        __cudaKernel(detail::kernelForeach)(mapper.cudaGridDim(p_zone.size), blockDim)                       \
+        PMACC_KERNEL(detail::KernelForeach{})(mapper.cudaGridDim(p_zone.size), blockDim)                    \
                   /* c0_shifted, c1_shifted, ... */                                                         \
             (mapper, BOOST_PP_ENUM(N, SHIFTED_CURSOR, _), lambda::make_Functor(functor));                   \
     }
@@ -103,4 +102,3 @@ struct Foreach
 } // algorithm
 } // PMacc
 
-#endif // ALGORITHM_KERNEL_FOREACH_HPP

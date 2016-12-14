@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Felix Schmitt, Heiko Burau, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Felix Schmitt, Heiko Burau, Rene Widera, Wolfgang Hoenig,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,7 +23,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 
 #include "dimensions/DataSpace.hpp"
 #include "traits/NumberOfExchanges.hpp"
@@ -224,8 +225,31 @@ namespace PMacc
             return (ExchangeType) tmp;
         }
 
+        /** translate direction to relative offset
+         *
+         * direction (combination of `ExchangeType`'s) e.g. TOP, TOP+LEFT, ... @see types.h
+         * are translated to a relative offsets were every dimension is set to one of -1,0,1
+         *                      X      Y         Z
+         *  - `-1` if contains LEFT,  TOP    or FRONT
+         *  - `+1` if contains RIGHT, BOTTOM or BACK
+         *  - `0`  else
+         *
+         * @param direction combination which describe a direction (only one direction)
+         * @return DataSpace with relative offsets
+         */
         template<unsigned DIM>
-        static HDINLINE DataSpace<DIM> getRelativeDirections(const uint32_t ex) ;
+        static HDINLINE DataSpace<DIM> getRelativeDirections( uint32_t direction)
+        {
+            DataSpace<DIM> tmp;
+
+            for( uint32_t d = 0; d < DIM; ++d )
+            {
+                const int dim_direction(direction % 3);
+                tmp[d] = (dim_direction == 2 ? -1 : dim_direction);
+                direction /= 3;
+            }
+            return tmp;
+        }
 
     protected:
 
@@ -236,83 +260,14 @@ namespace PMacc
 
     };
 
+    /** special implementation for `DIM1`
+     *
+     * optimization: no modulo is used
+     */
     template<>
-    HDINLINE DataSpace<DIM1> Mask::getRelativeDirections(const uint32_t ex)
+    HDINLINE DataSpace<DIM1> Mask::getRelativeDirections( uint32_t direction)
     {
-        switch (ex)
-        {
-        case RIGHT:
-            return DataSpace<DIM1 > (1);
-        case LEFT:
-            return DataSpace<DIM1 > (-1);
-        default:
-            return DataSpace<DIM1 > (0);
-        }
-    }
-
-    template<>
-    HDINLINE DataSpace<DIM2> Mask::getRelativeDirections(const uint32_t ex)
-    {
-        DataSpace<DIM2> tmp;
-
-        switch (ex % 3)
-        {
-        case RIGHT:
-            tmp.x() = 1;
-            break;
-        case LEFT:
-            tmp.x() = -1;
-            break;
-        }
-
-        switch (ex / 3)
-        {
-        case 1: /*BOTTOM*/
-            tmp.y() = 1;
-            break;
-        case 2: /*TOP*/
-            tmp.y() = -1;
-            break;
-        }
-        return tmp;
-    }
-
-    template<>
-    HDINLINE DataSpace<DIM3> Mask::getRelativeDirections(const uint32_t ex)
-    {
-        DataSpace<DIM3> tmp;
-
-        switch (ex % 3)
-        {
-        case RIGHT:
-            tmp.x() = 1;
-            break;
-        case LEFT:
-            tmp.x() = -1;
-            break;
-        }
-
-        switch (ex / 3 % 3)
-        {
-        case 1: /*BOTTOM*/
-            tmp.y() = 1;
-            break;
-        case 2: /*TOP*/
-            tmp.y() = -1;
-            break;
-        }
-
-        switch (ex / 3 / 3)
-        {
-        case 1: /*BACK*/
-            tmp.z() = 1;
-            break;
-        case 2: /*FRONT*/
-            tmp.z() = -1;
-            break;
-        }
-
-        return tmp;
+        return (direction == 2 ? DataSpace<DIM1 > (-1) : DataSpace<DIM1 > (direction));
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -22,11 +22,11 @@
 
 #pragma once
 
+#include "verify.hpp"
 #include <vector>   // std::vector
 #include <string>   // std::string
 #include <utility>  // std::pair
 #include <iterator> // std::distance
-#include <cassert>
 
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
@@ -48,7 +48,7 @@ public:
     uint32_t
     getOffset( const int gpuPos, const uint32_t maxCells ) const
     {
-        typename value_type::const_iterator iter = parsedInput.begin();
+        value_type::const_iterator iter = parsedInput.begin();
         // go to last gpu of this block b{n}
         int i = iter->second - 1;
         int sum = 0;
@@ -71,7 +71,7 @@ public:
         for( iter = parsedInput.begin(); iter != parsedInput.end(); ++iter )
             sumTotal += iter->first * iter->second;
 
-        assert( sumTotal == maxCells );
+        PMACC_VERIFY( sumTotal == maxCells );
 
         return sum;
     }
@@ -84,7 +84,7 @@ public:
     uint32_t
     getLocalSize( const int gpuPos ) const
     {
-        typename value_type::const_iterator iter = parsedInput.begin();
+        value_type::const_iterator iter = parsedInput.begin();
         // go to last gpu of this block b{n}
         int i = iter->second - 1;
 

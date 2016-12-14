@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +21,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SIMULATIONFIELDHELPER_HPP
-#define	SIMULATIONFIELDHELPER_HPP
+#pragma once
 
 #include "dimensions/GridLayout.hpp"
 #include "eventSystem/EventSystem.hpp"
@@ -39,8 +39,10 @@ public:
 
     SimulationFieldHelper(CellDescription description) :
     cellDescription(description)
-    {
-    }
+    {}
+
+    virtual ~SimulationFieldHelper(){}
+
     /**
      * Reset is as well used for init.
      */
@@ -51,18 +53,8 @@ public:
      */
     virtual void syncToDevice() = 0;
 
-    /**
-     * Start an asynchronous communication.
-     *
-     * @param serialEvent an EventTask the method has to wait on
-     * @return an EventTask which can be used to wait on completion
-     */
-    virtual EventTask asyncCommunication(EventTask serialEvent)=0;
 protected:
     CellDescription cellDescription;
 };
 
 } //namespace PMacc
-
-#endif	/* SIMULATIONFIELDHELPER_HPP */
-

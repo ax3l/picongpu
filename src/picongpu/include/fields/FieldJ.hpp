@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch,
+ *                     Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -22,9 +23,10 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 /*pic default*/
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_classTypes.hpp"
 
@@ -59,8 +61,8 @@ class FieldJ : public SimulationFieldHelper<MappingDesc>, public ISimulationData
 public:
 
     typedef float3_X ValueType;
-    typedef typename promoteType<float_64, ValueType>::type UnitValueType;
-    static const int numComponents = ValueType::dim;
+    typedef promoteType<float_64, ValueType>::type UnitValueType;
+    static constexpr int numComponents = ValueType::dim;
 
     typedef DataBox<PitchedBox<ValueType, simDim> > DataBoxType;
 
@@ -70,25 +72,43 @@ public:
 
     virtual EventTask asyncCommunication(EventTask serialEvent);
 
-    void init(FieldE &fieldE);
+    void init(FieldE &fieldE, FieldB &fieldB);
 
     GridLayout<simDim> getGridLayout();
 
     void reset(uint32_t currentStep);
 
-    void clear();
+    /** Assign a value to all cells
+     *
+     * Example usage:
+     * ```C++
+     *   FieldJ::ValueType zeroJ( FieldJ::ValueType::create(0.) );
+     *   fieldJ->assign( zeroJ );
+     * ```
+     *
+     * \param value date to fill all cells with
+     */
+    void assign(ValueType value);
 
     HDINLINE static UnitValueType getUnit();
+
+    /** powers of the 7 base measures
+     *
+     * characterizing the record's unit in SI
+     * (length L, mass M, time T, electric current I,
+     *  thermodynamic temperature theta, amount of substance N,
+     *  luminous intensity J) */
+    HINLINE static std::vector<float_64> getUnitDimension();
 
     static std::string getName();
 
     static uint32_t getCommTag();
 
     template<uint32_t AREA, class ParticlesClass>
-    void computeCurrent(ParticlesClass &parClass, uint32_t currentStep) throw (std::invalid_argument);
+    void computeCurrent(ParticlesClass &parClass, uint32_t currentStep);
 
-    template<uint32_t AREA>
-    void addCurrentToE();
+    template<uint32_t AREA, class T_CurrentInterpolation>
+    void addCurrentToEMF( T_CurrentInterpolation& myCurrentInterpolation );
 
     SimulationDataId getUniqueId();
 
@@ -124,8 +144,10 @@ public:
 private:
 
     GridBuffer<ValueType, simDim> fieldJ;
+    GridBuffer<ValueType, simDim>* fieldJrecv;
 
     FieldE *fieldE;
+    FieldB *fieldB;
 };
 
 template<typename T_SpeciesName, typename T_Area>
@@ -146,5 +168,3 @@ struct ComputeCurrent
 };
 
 } // namespace picongpu
-
-#include "fields/FieldJ.tpp"

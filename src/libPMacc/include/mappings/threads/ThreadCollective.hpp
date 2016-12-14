@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,22 +23,22 @@
 
 #pragma once
 
-#include "types.h"
-#include "dimensions/DataSpace.hpp"
-#include "dimensions/DataSpaceOperations.hpp"
 #include "dimensions/SuperCellDescription.hpp"
+#include "dimensions/DataSpaceOperations.hpp"
+#include "dimensions/DataSpace.hpp"
+#include "pmacc_types.hpp"
 
 namespace PMacc
 {
 
-template<class BlockArea_, int MaxThreads_ =  math::CT::volume<typename BlockArea_::SuperCellSize>::type::value >
+template<class BlockArea_, int MaxThreads_ = math::CT::volume<typename BlockArea_::SuperCellSize>::type::value >
 class ThreadCollective
 {
 private:
     typedef typename BlockArea_::SuperCellSize SuperCellSize;
     typedef typename BlockArea_::FullSuperCellSize FullSuperCellSize;
     typedef typename BlockArea_::OffsetOrigin OffsetOrigin;
-    static const int maxThreads=MaxThreads_;
+    static constexpr int maxThreads = MaxThreads_;
 
     enum
     {

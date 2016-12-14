@@ -1,6 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
- *                     Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
+ *                     Richard Pausch, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -45,7 +45,10 @@
 #include <list>
 
 #include "particles/traits/GetInterpolation.hpp"
+#include "particles/traits/FilterByFlag.hpp"
 #include "traits/GetMargin.hpp"
+#include "traits/SIBaseUnits.hpp"
+#include "particles/traits/GetMarginPusher.hpp"
 #include <boost/mpl/accumulate.hpp>
 #include "fields/LaserPhysics.hpp"
 
@@ -58,27 +61,53 @@ SimulationFieldHelper<MappingDesc>( cellDescription ),
 fieldB( NULL )
 {
     fieldE = new GridBuffer<ValueType, simDim > ( cellDescription.getGridLayout( ) );
-
-    typedef typename bmpl::accumulate<
+    typedef typename PMacc::particles::traits::FilterByFlag
+    <
         VectorAllSpecies,
+        interpolation<>
+    >::type VectorSpeciesWithInterpolation;
+
+    typedef bmpl::accumulate<
+        VectorSpeciesWithInterpolation,
         typename PMacc::math::CT::make_Int<simDim, 0>::type,
         PMacc::math::CT::max<bmpl::_1, GetLowerMargin< GetInterpolation<bmpl::_2> > >
         >::type LowerMarginInterpolation;
 
-    typedef typename bmpl::accumulate<
-        VectorAllSpecies,
+    typedef bmpl::accumulate<
+        VectorSpeciesWithInterpolation,
         typename PMacc::math::CT::make_Int<simDim, 0>::type,
         PMacc::math::CT::max<bmpl::_1, GetUpperMargin< GetInterpolation<bmpl::_2> > >
         >::type UpperMarginInterpolation;
-    
+
     /* Calculate the maximum Neighbors we need from MAX(ParticleShape, FieldSolver) */
-    typedef typename PMacc::math::CT::max<
+    typedef PMacc::math::CT::max<
         LowerMarginInterpolation,
         GetMargin<fieldSolver::FieldSolver, FIELD_E>::LowerMargin
-        >::type LowerMargin;
-    typedef typename PMacc::math::CT::max<
+        >::type LowerMarginInterpolationAndSolver;
+    typedef PMacc::math::CT::max<
         UpperMarginInterpolation,
         GetMargin<fieldSolver::FieldSolver, FIELD_E>::UpperMargin
+        >::type UpperMarginInterpolationAndSolver;
+
+    /* Calculate upper and lower margin for pusher
+       (currently all pusher use the interpolation of the species)
+       and find maximum margin
+    */
+    typedef typename PMacc::particles::traits::FilterByFlag
+    <
+        VectorSpeciesWithInterpolation,
+        particlePusher<>
+    >::type VectorSpeciesWithPusherAndInterpolation;
+    typedef bmpl::accumulate<
+        VectorSpeciesWithPusherAndInterpolation,
+        LowerMarginInterpolationAndSolver,
+        PMacc::math::CT::max<bmpl::_1, GetLowerMarginPusher<bmpl::_2> >
+        >::type LowerMargin;
+
+    typedef bmpl::accumulate<
+        VectorSpeciesWithPusherAndInterpolation,
+        UpperMarginInterpolationAndSolver,
+        PMacc::math::CT::max<bmpl::_1, GetUpperMarginPusher<bmpl::_2> >
         >::type UpperMargin;
 
     const DataSpace<simDim> originGuard( LowerMargin( ).toRT( ) );
@@ -172,7 +201,7 @@ void FieldE::laserManipulation( uint32_t currentStep )
     gridBlocks.y()=fieldE->getGridLayout( ).getDataSpaceWithoutGuarding( ).z( ) / SuperCellSize::z::value;
     blockSize.y()=SuperCellSize::z::value;
 #endif
-    __cudaKernel( kernelLaserE )
+    PMACC_KERNEL( KernelLaserE{} )
         ( gridBlocks,
           blockSize )
         ( this->getDeviceDataBox( ), laser->getLaserManipulator( currentStep ) );
@@ -185,17 +214,35 @@ void FieldE::reset( uint32_t )
 }
 
 
-HDINLINE 
-typename FieldE::UnitValueType
+HDINLINE
+FieldE::UnitValueType
 FieldE::getUnit( )
 {
     return UnitValueType( UNIT_EFIELD, UNIT_EFIELD, UNIT_EFIELD );
 }
 
+HINLINE
+std::vector<float_64>
+FieldE::getUnitDimension( )
+{
+    /* L, M, T, I, theta, N, J
+     *
+     * E is in volts per meters: V / m = kg * m / (A * s^3)
+     *   -> L * M * T^-3 * I^-1
+     */
+    std::vector<float_64> unitDimension( 7, 0.0 );
+    unitDimension.at(SIBaseUnits::length) =  1.0;
+    unitDimension.at(SIBaseUnits::mass)   =  1.0;
+    unitDimension.at(SIBaseUnits::time)   = -3.0;
+    unitDimension.at(SIBaseUnits::electricCurrent) = -1.0;
+
+    return unitDimension;
+}
+
 std::string
 FieldE::getName( )
 {
-    return "FieldE";
+    return "E";
 }
 
 uint32_t

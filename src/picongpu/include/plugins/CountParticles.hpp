@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2015 Axel Huebl, Felix Schmitt, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 
@@ -71,10 +71,10 @@ private:
     mpi::MPIReduce reduce;
 public:
 
-    CountParticles(std::string name, std::string prefix) :
-    analyzerName(name),
-    analyzerPrefix(prefix),
-    filename(name + ".dat"),
+    CountParticles() :
+    analyzerName("CountParticles: count macro particles of a species"),
+    analyzerPrefix(ParticlesType::FrameType::getName() + std::string("_macroParticlesCount")),
+    filename(analyzerPrefix + ".dat"),
     particles(NULL),
     cellDescription(NULL),
     notifyPeriod(0),
@@ -213,7 +213,7 @@ private:
                 log<picLog::CRITICAL > ("maximum number of  particles on a GPU : %d\n") % reducedValueMax;
             }
 
-            outFile << currentStep << " " << reducedValue << " " << std::scientific << (double) reducedValue << std::endl;
+            outFile << currentStep << " " << reducedValue << " " << std::scientific << (float_64) reducedValue << std::endl;
         }
     }
 

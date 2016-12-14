@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,13 +21,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef TRANSACTION_HPP
-#define    TRANSACTION_HPP
-
-#include "eventSystem/EventSystem.hpp"
-
-
+#include "eventSystem/events/EventTask.hpp"
 
 namespace PMacc
 {
@@ -45,7 +42,7 @@ public:
      *
      * @param event initial EventTask for base event
      */
-    Transaction(EventTask event, bool isAtomic = false);
+    Transaction(EventTask event);
 
     /**
      * Adds event to the base event of this transaction.
@@ -65,11 +62,11 @@ public:
     /**
      * Performs an operation on the transaction which leads to synchronization.
      *
-     * @param operation type of operation to perform, defines resulting sychronization.
+     * @param operation type of operation to perform, defines resulting synchronization.
      */
     void operation(ITask::TaskType operation);
 
-    /* Get a EventStream which inlcude all dependencies
+    /* Get a EventStream which include all dependencies
      * @param operation type of operation to perform
      * @return EventStream with solved dependencies
      */
@@ -77,13 +74,7 @@ public:
 
 private:
     EventTask baseEvent;
-    EventStream *eventStream;
-    bool isAtomic;
-
 };
 
 }
-
-
-#endif    /* TRANSACTION_HPP */
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -18,10 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef ONEPARTICLESIMULATION_HPP
-#define	ONEPARTICLESIMULATION_HPP
+#pragma once
 
 #include "simulation_defines.hpp"
 #include "Environment.hpp"
@@ -46,10 +43,11 @@
 #include "nvidia/memory/MemoryInfo.hpp"
 #include "mappings/kernel/MappingDescription.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 #include "plugins/PluginController.hpp"
 #include "particles/ParticlesInitOneParticle.hpp"
+#include "communication/AsyncCommunication.hpp"
 
 
 namespace picongpu
@@ -66,14 +64,14 @@ public:
     {
     }
 
-    virtual uint32_t init()
+    virtual void init()
     {
 
         MySimulation::init();
 
         if (Environment<simDim>::get().GridController().getGlobalRank() == 0)
         {
-            std::cout << "max weighting " << NUM_EL_PER_PARTICLE << std::endl;
+            std::cout << "max weighting " << particles::TYPICAL_NUM_PARTICLES_PER_MACROPARTICLE << std::endl;
             std::cout << "courant=min(deltaCellSize)/dt/c > 1.77 ? " << std::min(CELL_WIDTH, std::min(CELL_DEPTH, CELL_HEIGHT)) / SPEED_OF_LIGHT / DELTA_T << std::endl;
             std::cout << "y-cells per wavelength: " << laserProfile::WAVE_LENGTH / CELL_HEIGHT << std::endl;
 
@@ -84,6 +82,11 @@ public:
 
         //diabled because we have a transaction bug
         //StreamController::getInstance().addStreams(6);
+    }
+
+    virtual uint32_t fillSimulation()
+    {
+        MySimulation::fillSimulation();
 
         //add one particle in simulation
         //
@@ -125,7 +128,6 @@ public:
         __setTransactionEvent(eRfieldB);
 
         return 0;
-
     }
 
     /**
@@ -135,21 +137,18 @@ public:
      */
     virtual void runOneStep(uint32_t currentStep)
     {
-        fieldJ->clear();
+        FieldJ::ValueType zeroJ( FieldJ::ValueType::create(0.) );
+        fieldJ->assign( zeroJ );
 
-#if (ENABLE_ELECTRONS == 1)
         __startTransaction(__getTransactionEvent());
-        //std::cout << "Begin update Electrons" << std::endl;
-        particleStorage[TypeAsIdentifier<PIC_Electrons>()]->update(currentStep);
-        //std::cout << "End update Electrons" << std::endl;
-        EventTask eRecvElectrons = particleStorage[TypeAsIdentifier<PIC_Electrons>()]->asyncCommunication(__getTransactionEvent());
-        EventTask eElectrons = __endTransaction();
-#endif
+        EventTask initEvent = __getTransactionEvent();
+        EventTask updateEvent;
+        EventTask commEvent;
 
-#if (ENABLE_ELECTRONS == 1)
-        __setTransactionEvent(eRecvElectrons + eElectrons);
-
-#endif
+        /* push all species */
+        particles::PushAllSpecies pushAllSpecies;
+        pushAllSpecies(particleStorage, currentStep, initEvent, updateEvent, commEvent);
+        __setTransactionEvent(updateEvent + commEvent);
 
         this->myFieldSolver->update_beforeCurrent(currentStep);
         this->myFieldSolver->update_afterCurrent(currentStep);
@@ -192,6 +191,4 @@ public:
 };
 
 } // namespace picongpu
-
-#endif	/* ONEPARTICLESIMULATION_HPP */
 

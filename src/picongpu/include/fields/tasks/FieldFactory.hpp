@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,10 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef _FIELDFACTORY_HPP
-#define	_FIELDFACTORY_HPP
+#pragma once
 
 #include "memory/buffers/Exchange.hpp"
 
@@ -89,6 +86,4 @@ namespace PMacc
 } //namespace PMacc
 
 #include "fields/tasks/FieldFactory.tpp"
-
-#endif	/* _PARTICLEFACTORY_HPP */
 

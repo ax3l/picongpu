@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,10 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef ONEPARTICLESIMULATION_HPP
-#define	ONEPARTICLESIMULATION_HPP
+#pragma once
 
 #include "simulation_defines.hpp"
 #include "Environment.hpp"
@@ -46,7 +43,7 @@
 #include "nvidia/memory/MemoryInfo.hpp"
 #include "mappings/kernel/MappingDescription.hpp"
 
-#include <assert.h>
+#include <cassert>
 
 #include "plugins/PluginController.hpp"
 
@@ -67,14 +64,14 @@ public:
     {
     }
 
-    virtual uint32_t init()
+    virtual void init()
     {
 
         MySimulation::init();
 
         if (Environment<simDim>::get().GridController().getGlobalRank() == 0)
         {
-            std::cout << "max weighting " << NUM_EL_PER_PARTICLE << std::endl;
+            std::cout << "max weighting " << particles::TYPICAL_NUM_PARTICLES_PER_MACROPARTICLE << std::endl;
             std::cout << "courant=min(deltaCellSize)/dt/c > 1.77 ? " << std::min(CELL_WIDTH, std::min(CELL_DEPTH, CELL_HEIGHT)) / SPEED_OF_LIGHT / DELTA_T << std::endl;
 
 #if (LASER_TYPE==1)
@@ -83,11 +80,15 @@ public:
 #endif
 
         }
+    }
+
+    virtual uint32_t fillSimulation()
+    {
+        MySimulation::fillSimulation();
 
         const SubGrid<simDim>& subGrid = Environment<simDim>::get().SubGrid();
 
         const DataSpace<simDim> halfSimSize(subGrid.getGlobalDomain().size / 2);
-
 
         GridLayout<simDim> layout(subGrid.getLocalDomain().size, MappingDesc::SuperCellSize::toRT());
         MappingDesc cellDescription = MappingDesc(layout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
@@ -115,7 +116,6 @@ public:
 
 
         return 0;
-
     }
 
     /**
@@ -125,7 +125,8 @@ public:
      */
     virtual void runOneStep(uint32_t currentStep)
     {
-        fieldJ->clear();
+        FieldJ::ValueType zeroJ( FieldJ::ValueType::create(0.) );
+        fieldJ->assign( zeroJ );
 
         fieldJ->computeCurrent < CORE + BORDER, PIC_Electrons > (*particleStorage[TypeAsIdentifier<PIC_Electrons>()], currentStep);
 
@@ -166,6 +167,4 @@ public:
 };
 
 } // namespace picongpu
-
-#endif	/* ONEPARTICLESIMULATION_HPP */
 

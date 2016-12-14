@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,15 +22,15 @@
 
 #pragma once
 
-#include <sstream>
-#include <boost/format.hpp>
-#include <iostream>
-
-#include "types.h"
-#include <string>
-
 #include "debug/VerboseLogMakros.hpp"
+#include "pmacc_types.hpp"
 
+#include <boost/format.hpp>
+
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <stdint.h>
 
 namespace PMacc
 {
@@ -55,13 +55,13 @@ namespace verboseLog_detail
 template<typename X, typename Y>
 struct IsSameClassType
 {
-    static const bool result = false;
+    static constexpr bool result = false;
 };
 
 template<typename X>
 struct IsSameClassType<X, X>
 {
-    static const bool result = true;
+    static constexpr bool result = true;
 };
 
 } //namespace verboseLog_detail
@@ -70,7 +70,7 @@ template<uint64_t lvl_, class membership_>
 struct LogLvl
 {
     typedef membership_ Parent;
-    static const uint64_t lvl = lvl_;
+    static constexpr uint64_t lvl = lvl_;
 
     /* This operation is only allowed for LogLvl with the same Parent type.
      * Create a LogLvl that contains two levels. At least one lvl has to be true
@@ -91,7 +91,7 @@ class VerboseLog
 {
 private:
     typedef typename LogLevel::Parent LogParent;
-    static const uint64_t logLvl = LogLevel::lvl;
+    static constexpr uint64_t logLvl = LogLevel::lvl;
 public:
 
     VerboseLog(const char* msg) : fmt(msg)

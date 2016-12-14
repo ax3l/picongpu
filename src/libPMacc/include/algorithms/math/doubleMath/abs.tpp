@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Richard Pausch
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,7 +23,8 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
+#include <cmath>
 
 
 namespace PMacc
@@ -40,7 +41,14 @@ struct Abs<double>
 
     HDINLINE double operator( )(double value)
     {
-        return ::abs( value );
+#ifdef __CUDA_ARCH__
+      return ::fabs( value );
+#else
+      /* \bug on cpu `::abs(double)` always return zero -> maybe this is the
+	* integer version of `abs()`
+	*/
+      return std::abs( value );
+#endif
     }
 };
 

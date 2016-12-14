@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -27,12 +27,12 @@
 
 
 #include "particles/pusher/particlePusherBoris.hpp"
-#include "particles/pusher/particlePusherNone.hpp"
 #include "particles/pusher/particlePusherVay.hpp"
 #include "particles/pusher/particlePusherFree.hpp"
-#include "particles/pusher/particlePusherPhot.hpp"
+#include "particles/pusher/particlePusherPhoton.hpp"
+#include "particles/pusher/particlePusherReducedLandauLifshitz.hpp"
 #if(SIMDIM==DIM3)
-#include "particles/pusher/particlePusherAxl.hpp"
+#include "particles/pusher/particlePusherAxel.hpp"
 #endif
 
 namespace picongpu
@@ -43,37 +43,37 @@ namespace particles
 namespace pusher
 {
 
-struct None
-{
-    typedef particlePusherNone::Push type;
-};
-
 #if(SIMDIM==DIM3)
 
-struct Axel
+struct Axel :
+public particlePusherAxel::Push<Velocity, Gamma<> >
 {
-    typedef particlePusherAxl::Push<Velocity, Gamma<> > type;
 };
 #endif
 
-struct Boris
+struct Boris :
+public particlePusherBoris::Push<Velocity, Gamma<> >
 {
-    typedef particlePusherBoris::Push<Velocity, Gamma<> > type;
 };
 
-struct Vay
+struct Vay :
+public particlePusherVay::Push<Velocity, Gamma<> >
 {
-    typedef particlePusherVay::Push<Velocity, Gamma<> > type;
 };
 
-struct Free
+struct Free :
+public particlePusherFree::Push<Velocity, Gamma<> >
 {
-    typedef particlePusherFree::Push<Velocity, Gamma<> > type;
 };
 
-struct Photon
+struct Photon :
+public particlePusherPhoton::Push<Velocity, Gamma<> >
 {
-    typedef particlePusherPhot::Push<Velocity, Gamma<> > type;
+};
+
+struct ReducedLandauLifshitz :
+public particlePusherReducedLandauLifshitz::Push<Velocity, Gamma<> >
+{
 };
 
 } //namespace pusher

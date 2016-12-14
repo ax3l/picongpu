@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "types.h"
+#include "pmacc_types.hpp"
 #include <simulation_types.hpp>
 #include "pmacc_renamings.hpp"
 

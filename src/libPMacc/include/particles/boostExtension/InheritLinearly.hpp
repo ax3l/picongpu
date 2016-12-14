@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -24,6 +24,7 @@
 #pragma once
 
 
+#include "compileTime/accessors/Identity.hpp"
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/inherit.hpp>
 #include <boost/mpl/inherit_linearly.hpp>
@@ -31,28 +32,43 @@
 
 namespace PMacc
 {
-
-
 namespace detail
 {
 
-template<typename T_Base>
-struct InheritLinearly : public T_Base
-{
-};
+    /** get combined type which inherit from a boost mpl sequence
+     *
+     * @tparam T_Sequence boost mpl sequence with classes
+     * @tparam T_Accessor unary operator to transform each element of the sequence
+     */
+    template<
+        typename T_Sequence,
+        template< typename > class T_Accessor = compileTime::accessors::Identity
+    >
+    using InheritLinearly =
+        typename bmpl::inherit_linearly<
+            T_Sequence,
+            bmpl::inherit<
+                bmpl::_1,
+                T_Accessor< bmpl::_2 >
+            >
+        >::type;
 
 } //namespace detail
 
-template<typename T_Sequence>
-struct InheritLinearly :
-public detail::InheritLinearly<
-typename
-bmpl::inherit_linearly<T_Sequence, bmpl::inherit< bmpl::_1, bmpl::_2 > >::type
->
-{
-};
-
+    /** type which inherits from multiple classes
+     *
+     * @tparam T_Sequence boost mpl sequence with classes
+     * @tparam T_Accessor unary operator to transform each element of the sequence
+     */
+    template<
+        typename T_Sequence,
+        template< typename > class T_Accessor = compileTime::accessors::Identity
+    >
+    struct InheritLinearly : detail::InheritLinearly<
+        T_Sequence,
+        T_Accessor
+    >
+    {
+    };
 
 } //namespace PMacc
-
-

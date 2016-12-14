@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz, Alexander Debus
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 
 #include "algorithms/math/defines/abs.hpp"
 #include "algorithms/math/defines/sqrt.hpp"
@@ -34,21 +34,28 @@
 #include "algorithms/math/defines/comparison.hpp"
 #include "algorithms/math/defines/floatingPoint.hpp"
 #include "algorithms/math/defines/pow.hpp"
+#include "algorithms/math/defines/modf.hpp"
+#include "algorithms/math/defines/fmod.hpp"
 
 #include "algorithms/math/floatMath/abs.tpp"
 #include "algorithms/math/floatMath/sqrt.tpp"
 #include "algorithms/math/floatMath/exp.tpp"
 #include "algorithms/math/floatMath/erf.tpp"
 #include "algorithms/math/floatMath/trigo.tpp"
+#include "algorithms/math/floatMath/comparison.tpp"
 #include "algorithms/math/floatMath/floatingPoint.tpp"
 #include "algorithms/math/floatMath/pow.tpp"
+#include "algorithms/math/floatMath/modf.tpp"
+#include "algorithms/math/floatMath/fmod.tpp"
 
 #include "algorithms/math/doubleMath/abs.tpp"
 #include "algorithms/math/doubleMath/sqrt.tpp"
 #include "algorithms/math/doubleMath/exp.tpp"
 #include "algorithms/math/doubleMath/erf.tpp"
 #include "algorithms/math/doubleMath/trigo.tpp"
+#include "algorithms/math/doubleMath/comparison.tpp"
 #include "algorithms/math/doubleMath/floatingPoint.tpp"
 #include "algorithms/math/doubleMath/pow.tpp"
-
+#include "algorithms/math/doubleMath/modf.tpp"
+#include "algorithms/math/doubleMath/fmod.tpp"
 

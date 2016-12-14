@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -35,13 +35,13 @@ namespace PMacc
     template< typename T1, typename T2 >
     struct IsSameType
     {
-        static const bool result = false;
+        static constexpr bool result = false;
     };
 
     template< typename T1 >
     struct IsSameType< T1, T1 >
     {
-        static const bool result = true;
+        static constexpr bool result = true;
     };
 
 } // namespace PMacc

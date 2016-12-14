@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,20 +22,10 @@
 
 #pragma once
 
+#include "eventSystem/Manager.hpp"
+#include "eventSystem/tasks/StreamTask.hpp"
+#include "eventSystem/transactions/Transaction.hpp"
+#include "eventSystem/transactions/TransactionManager.hpp"
 #include "eventSystem/events/EventTask.hpp"
 #include "eventSystem/events/EventNotify.hpp"
-#include "eventSystem/tasks/StreamTask.hpp"
-#include "eventSystem/tasks/MPITask.hpp"
-#include "eventSystem/transactions/TransactionManager.hpp"
-#include "eventSystem/transactions/Transaction.hpp"
-#include "eventSystem/Manager.hpp"
 #include "eventSystem/tasks/Factory.hpp"
-
-
-#include "eventSystem/Manager.tpp"
-#include "eventSystem/tasks/StreamTask.tpp"
-#include "eventSystem/transactions/Transaction.tpp"
-#include "eventSystem/transactions/TransactionManager.tpp"
-#include "eventSystem/events/EventTask.tpp"
-#include "eventSystem/events/EventNotify.tpp"
-#include "eventSystem/tasks/Factory.tpp"

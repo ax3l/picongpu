@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Erik Zenker
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,12 +22,17 @@
 
 #pragma once
 
-#include "types.h"
+
+#include "pmacc_types.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "mappings/kernel/AreaMapping.hpp"
+#include "particles/memory/dataTypes/FramePointer.hpp"
 
 #include "particles/particleFilter/FilterFactory.hpp"
 #include "particles/particleFilter/PositionFilter.hpp"
+#include "nvidia/atomic.hpp"
+
+
 
 namespace PMacc
 {
@@ -35,62 +40,65 @@ namespace PMacc
 /* count particles in an area
  * is not optimized, it checks any partcile position if its realy a particle
  */
-template<class PBox, class Filter, class Mapping>
-__global__ void kernelCountParticles(PBox pb,
-                                     uint64_cu* gCounter,
-                                     Filter filter,
-                                     Mapping mapper)
+struct KernelCountParticles
 {
-
-    typedef typename PBox::FrameType FRAME;
-    const uint32_t Dim = Mapping::Dim;
-
-    __shared__ FRAME *frame;
-    __shared__ bool isValid;
-    __shared__ int counter;
-    __shared__ lcellId_t particlesInSuperCell;
-
-
-    __syncthreads(); /*wait that all shared memory is initialised*/
-
-    typedef typename Mapping::SuperCellSize SuperCellSize;
-
-    const DataSpace<Dim > threadIndex(threadIdx);
-    const int linearThreadIdx = DataSpaceOperations<Dim>::template map<SuperCellSize > (threadIndex);
-    const DataSpace<Dim> superCellIdx(mapper.getSuperCellIndex(DataSpace<Dim > (blockIdx)));
-
-    if (linearThreadIdx == 0)
+    template<class PBox, class Filter, class Mapping>
+    DINLINE void operator()(
+        PBox pb,
+        uint64_cu* gCounter,
+        Filter filter,
+        Mapping mapper
+    ) const
     {
-        frame = &(pb.getLastFrame(superCellIdx, isValid));
-        particlesInSuperCell = pb.getSuperCell(superCellIdx).getSizeLastFrame();
-        counter = 0;
-    }
-    __syncthreads();
-    if (!isValid)
-        return; //end kernel if we have no frames
-    filter.setSuperCellPosition((superCellIdx - mapper.getGuardingSuperCells()) * mapper.getSuperCellSize());
-    while (isValid)
-    {
-        if (linearThreadIdx < particlesInSuperCell)
+
+        typedef typename PBox::FrameType FRAME;
+        typedef typename PBox::FramePtr FramePtr;
+        const uint32_t Dim = Mapping::Dim;
+
+        __shared__ typename PMacc::traits::GetEmptyDefaultConstructibleType<FramePtr>::type frame;
+        __shared__ int counter;
+        __shared__ lcellId_t particlesInSuperCell;
+
+
+        typedef typename Mapping::SuperCellSize SuperCellSize;
+
+        const DataSpace<Dim > threadIndex(threadIdx);
+        const int linearThreadIdx = DataSpaceOperations<Dim>::template map<SuperCellSize > (threadIndex);
+        const DataSpace<Dim> superCellIdx(mapper.getSuperCellIndex(DataSpace<Dim > (blockIdx)));
+
+        if (linearThreadIdx == 0)
         {
-            if (filter(*frame, linearThreadIdx))
-                atomicAdd(&counter, 1);
+            frame = pb.getLastFrame(superCellIdx);
+            particlesInSuperCell = pb.getSuperCell(superCellIdx).getSizeLastFrame();
+            counter = 0;
         }
+        __syncthreads();
+        if (!frame.isValid())
+            return; //end kernel if we have no frames
+        filter.setSuperCellPosition((superCellIdx - mapper.getGuardingSuperCells()) * mapper.getSuperCellSize());
+        while (frame.isValid())
+        {
+            if (linearThreadIdx < particlesInSuperCell)
+            {
+                if (filter(*frame, linearThreadIdx))
+                    nvidia::atomicAllInc(&counter);
+            }
+            __syncthreads();
+            if (linearThreadIdx == 0)
+            {
+                frame = pb.getPreviousFrame(frame);
+                particlesInSuperCell = math::CT::volume<SuperCellSize>::type::value;
+            }
+            __syncthreads();
+        }
+
         __syncthreads();
         if (linearThreadIdx == 0)
         {
-            frame = &(pb.getPreviousFrame(*frame, isValid));
-            particlesInSuperCell = math::CT::volume<SuperCellSize>::type::value;
+            atomicAdd(gCounter, (uint64_cu) counter);
         }
-        __syncthreads();
     }
-
-    __syncthreads();
-    if (linearThreadIdx == 0)
-    {
-        atomicAdd(gCounter, (uint64_cu) counter);
-    }
-}
+};
 
 struct CountParticles
 {
@@ -109,11 +117,11 @@ struct CountParticles
     {
         GridBuffer<uint64_cu, DIM1> counter(DataSpace<DIM1>(1));
 
-        dim3 block(CellDesc::SuperCellSize::toRT().toDim3());
+        auto block = CellDesc::SuperCellSize::toRT();
 
         AreaMapping<AREA, CellDesc> mapper(cellDescription);
 
-        __cudaKernel(kernelCountParticles)
+        PMACC_KERNEL(KernelCountParticles{})
             (mapper.getGridDim(), block)
             (buffer.getDeviceParticlesBox(),
              counter.getDeviceBuffer().getBasePointer(),

@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CURSOR_BUFFERNAVIGATOR_HPP
-#define CURSOR_BUFFERNAVIGATOR_HPP
+#pragma once
 
 #include "math/Vector.hpp"
 #include "tag.h"
@@ -39,7 +38,7 @@ class BufferNavigator
 {
 public:
     typedef tag::BufferNavigator tag;
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
 private:
     math::Size_t<dim-1> pitch;
 public:
@@ -66,7 +65,7 @@ class BufferNavigator<1>
 {
 public:
     typedef tag::BufferNavigator tag;
-    static const int dim = 1;
+    static constexpr int dim = 1;
 
 public:
     HDINLINE
@@ -88,7 +87,7 @@ namespace traits
 template<int T_dim>
 struct dim<BufferNavigator<T_dim> >
 {
-    static const int value = T_dim;
+    static constexpr int value = T_dim;
 };
 
 } // traits
@@ -96,4 +95,3 @@ struct dim<BufferNavigator<T_dim> >
 } //cursor
 } // PMacc
 
-#endif // CURSOR_BUFFERNAVIGATOR_HPP

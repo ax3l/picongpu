@@ -1,5 +1,5 @@
 #
-# Copyright 2013 Axel Huebl, Rene Widera, Felix Schmitt
+# Copyright 2013-2016 Axel Huebl, Rene Widera, Felix Schmitt
 #
 # This file is part of mpiInfo.
 #
@@ -22,7 +22,7 @@
 # Required cmake version
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.12.2)
 
 
 ################################################################################
@@ -36,7 +36,13 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT) 
 
 # set helper pathes to find libraries and packages
-set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/" "$ENV{MPI_ROOT}" "$ENV{BOOST_ROOT}")
+# Add specific hints
+list(APPEND CMAKE_PREFIX_PATH "$ENV{MPI_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{BOOST_ROOT}")
+# Add from environment after specific env vars
+list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
+# Last add generic system path to the end (as last fallback)
+list(APPEND "/usr/lib/x86_64-linux-gnu/")
 
 
 ################################################################################

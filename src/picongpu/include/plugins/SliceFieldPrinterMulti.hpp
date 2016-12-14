@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Felix Schmitt,
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Felix Schmitt,
  *                     Richard Pausch
  *
  * This file is part of PIConGPU.
@@ -53,7 +53,7 @@ private:
     void pluginUnload();
 
 public:
-    SliceFieldPrinterMulti(std::string name, std::string prefix);
+    SliceFieldPrinterMulti();
     virtual ~SliceFieldPrinterMulti() {}
 
     void notify(uint32_t) {}

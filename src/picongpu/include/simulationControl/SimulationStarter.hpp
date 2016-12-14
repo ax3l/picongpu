@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,16 +18,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef SIMULATIONSTARTER_HPP
-#define	SIMULATIONSTARTER_HPP
-
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 #include <boost/program_options/options_description.hpp>
-#include <cassert>
 #include <iostream>
 
 #include "simulation_defines.hpp"
@@ -94,7 +90,7 @@ namespace picongpu
         {
         }
 
-        bool parseConfigs(int argc, char **argv)
+        ArgsParser::ArgsErrorCode parseConfigs(int argc, char **argv)
         {
             ArgsParser& ap = ArgsParser::getInstance();
             PluginConnector& pluginConnector = Environment<>::get().PluginConnector();
@@ -154,6 +150,4 @@ namespace picongpu
         }
     };
 }
-
-#endif	/* SIMULATIONSTARTER_HPP */
 

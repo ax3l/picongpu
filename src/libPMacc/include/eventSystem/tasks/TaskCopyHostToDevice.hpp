@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Wolfgang Hoenig,
+ *                     Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,14 +21,13 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _TASKCOPYHOSTTODEVICE_HPP
-#define	_TASKCOPYHOSTTODEVICE_HPP
-
-#include <cuda_runtime_api.h>
+#pragma once
 
 #include "eventSystem/EventSystem.hpp"
 #include "eventSystem/streams/EventStream.hpp"
 #include "eventSystem/tasks/StreamTask.hpp"
+
+#include <cuda_runtime_api.h>
 
 namespace PMacc
 {
@@ -52,7 +52,6 @@ namespace PMacc
         virtual ~TaskCopyHostToDeviceBase()
         {
             notify(this->myId, COPYHOST2DEVICE, NULL);
-            //std::cout<<"destructor TaskH2D"<<std::endl;
         }
 
         bool executeIntern()
@@ -66,16 +65,20 @@ namespace PMacc
 
         virtual void init()
         {
-         //   __startAtomicTransaction(__getTransactionEvent());
             size_t current_size = host->getCurrentSize();
             DataSpace<DIM> hostCurrentSize = host->getCurrentDataSpace(current_size);
+            /* IMPORTENT: `setCurrentSize()` must be called before the native cuda memcopy
+             * is called else `setCurrentSize()` is not handled as part of this task.
+             * The reason for that is that the native memcopy calls `this->getCudaStream()`
+             * but not register an task before this `init()` is finished.
+             */
+            device->setCurrentSize(current_size);
             if (host->is1D() && device->is1D())
                 fastCopy(host->getPointer(), device->getPointer(), hostCurrentSize.productOfComponents());
             else
                 copy(hostCurrentSize);
-            device->setCurrentSize(current_size);
+
             this->activate();
-         //   __setTransactionEvent(__endTransaction());
         }
 
         std::string toString()
@@ -95,7 +98,6 @@ namespace PMacc
                                        size * sizeof (TYPE),
                                        cudaMemcpyHostToDevice,
                                        this->getCudaStream()));
-            // std::cout<<"-----------fast H2D"<<std::endl;;
         }
 
 
@@ -193,7 +195,3 @@ namespace PMacc
 
 
 } //namespace PMacc
-
-
-#endif	/* _TASKCOPYHOSTTODEVICE_HPP */
-

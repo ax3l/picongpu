@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt
  *
  * This file is part of PIConGPU.
  *
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 
 #include "Environment.hpp"
@@ -33,6 +33,7 @@
 #include "initialization/SimStartInitialiser.hpp"
 
 #include "initialization/IInitPlugin.hpp"
+#include "assert.hpp"
 
 #include <boost/mpl/find.hpp>
 
@@ -64,7 +65,7 @@ public:
         // start simulation using default values
         log<picLog::SIMULATION_STATE > ("Starting simulation from timestep 0");
 
-        SimStartInitialiser<PIC_Electrons, PIC_Ions> simStartInitialiser;
+        SimStartInitialiser simStartInitialiser;
         Environment<>::get().DataConnector().initialise(simStartInitialiser, 0);
         __getTransactionEvent().waitForFinished();
 
@@ -84,8 +85,38 @@ public:
         Environment<>::get().PluginConnector().restartPlugins(restartStep, restartDirectory);
         __getTransactionEvent().waitForFinished();
 
+        CUDA_CHECK(cudaDeviceSynchronize());
+        CUDA_CHECK(cudaGetLastError());
+
+        GridController<simDim> &gc = Environment<simDim>::get().GridController();
+
+        /* avoid deadlock between not finished PMacc tasks and MPI_Barrier */
+        __getTransactionEvent().waitForFinished();
+        /* can be spared for better scalings, but guarantees the user
+         * that the restart was successful */
+        MPI_CHECK(MPI_Barrier(gc.getCommunicator().getMPIComm()));
+
         log<picLog::SIMULATION_STATE > ("Loading from persistent data finished");
     }
+
+    /** log omega_p for each species
+     *
+     * calculate omega_p for each given species and create a `picLog::PHYSICS`
+     * log message
+     */
+    template<typename T_Species = bmpl::_1>
+    struct LogOmegaP
+    {
+        void operator()()
+        {
+            typedef typename T_Species::FrameType FrameType;
+            const float_32 charge = frame::getCharge<FrameType>();
+            const float_32 mass = frame::getMass<FrameType>();
+            log<picLog::PHYSICS >("species %2%: omega_p * dt <= 0.1 ? %1%") %
+                                 (sqrt(GAS_DENSITY *  charge / mass * charge / EPS0) * DELTA_T) %
+                                  FrameType::getName();
+        }
+    };
 
     /**
      * Print interesting initialization information
@@ -94,25 +125,21 @@ public:
     {
         if (Environment<simDim>::get().GridController().getGlobalRank() == 0)
         {
-            log<picLog::PHYSICS >("max weighting %1%") % NUM_EL_PER_PARTICLE;
-
             log<picLog::PHYSICS >("Courant c*dt <= %1% ? %2%") %
                                  (1./math::sqrt(INV_CELL2_SUM)) %
                                  (SPEED_OF_LIGHT * DELTA_T);
 
-            if (gasProfile::GAS_ENABLED)
-                log<picLog::PHYSICS >("omega_pe * dt <= 0.1 ? %1%") %
-                                     (sqrt(GAS_DENSITY * Q_EL / M_EL * Q_EL / EPS0) * DELTA_T);
+            ForEach<VectorAllSpecies, LogOmegaP<> > logOmegaP;
+            logOmegaP();
+
             if (laserProfile::INIT_TIME > float_X(0.0))
                 log<picLog::PHYSICS >("y-cells per wavelength: %1%") %
                                      (laserProfile::WAVE_LENGTH / CELL_HEIGHT);
             const int localNrOfCells = cellDescription->getGridLayout().getDataSpaceWithoutGuarding().productOfComponents();
             log<picLog::PHYSICS >("macro particles per gpu: %1%") %
-                                 (localNrOfCells * particleInit::NUM_PARTICLES_PER_CELL * (1 + 1 * ENABLE_IONS));
-            log<picLog::PHYSICS >("typical macro particle weighting: %1%") % (NUM_EL_PER_PARTICLE);
+                                 (localNrOfCells * particles::TYPICAL_PARTICLES_PER_CELL * (bmpl::size<VectorAllSpecies>::type::value));
+            log<picLog::PHYSICS >("typical macro particle weighting: %1%") % (particles::TYPICAL_NUM_PARTICLES_PER_MACROPARTICLE);
 
-            //const float_X y_R = M_PI * laserProfile::W0 * laserProfile::W0 / laserProfile::WAVE_LENGTH; //rayleigh length (in y-direction)
-            //std::cout << "focus/y_Rayleigh: " << laserProfile::FOCUS_POS / y_R << std::endl;
 
             log<picLog::PHYSICS >("UNIT_SPEED %1%") % UNIT_SPEED;
             log<picLog::PHYSICS >("UNIT_TIME %1%") % UNIT_TIME;
@@ -142,13 +169,13 @@ public:
 
     virtual void setMappingDescription(MappingDesc *cellDescription)
     {
-        assert(cellDescription != NULL);
+        PMACC_ASSERT(cellDescription != NULL);
         this->cellDescription = cellDescription;
     }
 
     virtual void slide(uint32_t currentStep)
     {
-        SimStartInitialiser<PIC_Electrons, PIC_Ions> simStartInitialiser;
+        SimStartInitialiser simStartInitialiser;
         Environment<>::get().DataConnector().initialise(simStartInitialiser, currentStep);
         __getTransactionEvent().waitForFinished();
     }

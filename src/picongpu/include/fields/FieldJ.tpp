@@ -1,6 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
- *                     Richard Pausch
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
+ *                     Richard Pausch, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -44,6 +44,7 @@
 #include "particles/traits/GetCurrentSolver.hpp"
 #include "traits/GetMargin.hpp"
 #include "traits/Resolve.hpp"
+#include "traits/SIBaseUnits.hpp"
 
 
 namespace picongpu
@@ -53,21 +54,35 @@ using namespace PMacc;
 
 FieldJ::FieldJ( MappingDesc cellDescription ) :
 SimulationFieldHelper<MappingDesc>( cellDescription ),
-fieldJ( cellDescription.getGridLayout( ) ), fieldE( NULL )
+fieldJ( cellDescription.getGridLayout( ) ), fieldE( NULL ), fieldB( NULL ), fieldJrecv( NULL )
 {
     const DataSpace<simDim> coreBorderSize = cellDescription.getGridLayout( ).getDataSpaceWithoutGuarding( );
 
-
-    typedef typename bmpl::accumulate<
+    /* cell margins the current might spread to due to particle shapes */
+    typedef bmpl::accumulate<
         VectorAllSpecies,
         typename PMacc::math::CT::make_Int<simDim, 0>::type,
         PMacc::math::CT::max<bmpl::_1, GetLowerMargin< GetCurrentSolver<bmpl::_2> > >
-        >::type LowerMargin;
+        >::type LowerMarginShapes;
 
-    typedef typename bmpl::accumulate<
+    typedef bmpl::accumulate<
         VectorAllSpecies,
         typename PMacc::math::CT::make_Int<simDim, 0>::type,
         PMacc::math::CT::max<bmpl::_1, GetUpperMargin< GetCurrentSolver<bmpl::_2> > >
+        >::type UpperMarginShapes;
+
+    /* margins are always positive, also for lower margins
+     * additional current interpolations and current filters on FieldJ might
+     * spread the dependencies on neighboring cells
+     *   -> use max(shape,filter) */
+    typedef PMacc::math::CT::max<
+        LowerMarginShapes,
+        GetMargin<fieldSolver::CurrentInterpolation>::LowerMargin
+        >::type LowerMargin;
+
+    typedef PMacc::math::CT::max<
+        UpperMarginShapes,
+        GetMargin<fieldSolver::CurrentInterpolation>::UpperMargin
         >::type UpperMargin;
 
     const DataSpace<simDim> originGuard( LowerMargin( ).toRT( ) );
@@ -101,10 +116,34 @@ fieldJ( cellDescription.getGridLayout( ) ), fieldE( NULL )
         // std::cout << "ex " << i << " x=" << guardingCells[0] << " y=" << guardingCells[1] << " z=" << guardingCells[2] << std::endl;
         fieldJ.addExchangeBuffer( i, guardingCells, FIELD_J );
     }
+
+    /* Receive border values in own guard for "receive" communication pattern - necessary for current interpolation/filter */
+    const DataSpace<simDim> originRecvGuard( GetMargin<fieldSolver::CurrentInterpolation>::LowerMargin( ).toRT( ) );
+    const DataSpace<simDim> endRecvGuard( GetMargin<fieldSolver::CurrentInterpolation>::UpperMargin( ).toRT( ) );
+    if( originRecvGuard != DataSpace<simDim>::create(0) ||
+        endRecvGuard != DataSpace<simDim>::create(0) )
+    {
+        fieldJrecv = new GridBuffer<ValueType, simDim > ( fieldJ.getDeviceBuffer(), cellDescription.getGridLayout( ) );
+
+        /*go over all directions*/
+        for ( uint32_t i = 1; i < NumberOfExchanges<simDim>::value; ++i )
+        {
+            DataSpace<simDim> relativMask = Mask::getRelativeDirections<simDim > ( i );
+            /* guarding cells depend on direction
+             * for negative direction use originGuard else endGuard (relative direction ZERO is ignored)
+             * don't switch end and origin because this is a read buffer and no send buffer
+             */
+            DataSpace<simDim> guardingCells;
+            for ( uint32_t d = 0; d < simDim; ++d )
+                guardingCells[d] = ( relativMask[d] == -1 ? originRecvGuard[d] : endRecvGuard[d] );
+            fieldJrecv->addExchange( GUARD, i, guardingCells, FIELD_JRECV );
+        }
+    }
 }
 
 FieldJ::~FieldJ( )
 {
+    __delete(fieldJrecv);
 }
 
 SimulationDataId FieldJ::getUniqueId( )
@@ -132,17 +171,24 @@ EventTask FieldJ::asyncCommunication( EventTask serialEvent )
     __startTransaction( serialEvent );
     FieldFactory::getInstance( ).createTaskFieldSend( *this );
     ret += __endTransaction( );
-    return ret;
+
+    if( fieldJrecv != NULL )
+    {
+        EventTask eJ = fieldJrecv->asyncCommunication( ret );
+        return eJ;
+    }
+    else
+        return ret;
 }
 
 void FieldJ::bashField( uint32_t exchangeType )
 {
     ExchangeMapping<GUARD, MappingDesc> mapper( this->cellDescription, exchangeType );
 
-    dim3 grid = mapper.getGridDim( );
+    auto grid = mapper.getGridDim( );
 
     const DataSpace<simDim> direction = Mask::getRelativeDirections<simDim > ( mapper.getExchangeType( ) );
-    __cudaKernel( kernelBashCurrent )
+    PMACC_KERNEL( KernelBashCurrent{} )
         ( grid, mapper.getSuperCellSize( ) )
         ( fieldJ.getDeviceBuffer( ).getDataBox( ),
           fieldJ.getSendExchange( exchangeType ).getDeviceBuffer( ).getDataBox( ),
@@ -155,10 +201,10 @@ void FieldJ::insertField( uint32_t exchangeType )
 {
     ExchangeMapping<GUARD, MappingDesc> mapper( this->cellDescription, exchangeType );
 
-    dim3 grid = mapper.getGridDim( );
+    auto grid = mapper.getGridDim( );
 
     const DataSpace<simDim> direction = Mask::getRelativeDirections<simDim > ( mapper.getExchangeType( ) );
-    __cudaKernel( kernelInsertCurrent )
+    PMACC_KERNEL( KernelInsertCurrent{} )
         ( grid, mapper.getSuperCellSize( ) )
         ( fieldJ.getDeviceBuffer( ).getDataBox( ),
           fieldJ.getReceiveExchange( exchangeType ).getDeviceBuffer( ).getDataBox( ),
@@ -166,9 +212,10 @@ void FieldJ::insertField( uint32_t exchangeType )
           direction, mapper );
 }
 
-void FieldJ::init( FieldE &fieldE )
+void FieldJ::init( FieldE &fieldE, FieldB &fieldB )
 {
     this->fieldE = &fieldE;
+    this->fieldB = &fieldB;
 
     Environment<>::get( ).DataConnector( ).registerData( *this );
 }
@@ -182,25 +229,40 @@ void FieldJ::reset( uint32_t )
 {
 }
 
-void FieldJ::clear( )
+void FieldJ::assign( ValueType value )
 {
-    ValueType tmp = float3_X( 0. );
-    fieldJ.getDeviceBuffer( ).setValue( tmp );
+    fieldJ.getDeviceBuffer( ).setValue( value );
     //fieldJ.reset(false);
 }
 
 HDINLINE
-typename FieldJ::UnitValueType
+FieldJ::UnitValueType
 FieldJ::getUnit( )
 {
-    const double UNIT_CURRENT = UNIT_CHARGE / UNIT_TIME / ( UNIT_LENGTH * UNIT_LENGTH );
+    const float_64 UNIT_CURRENT = UNIT_CHARGE / UNIT_TIME / ( UNIT_LENGTH * UNIT_LENGTH );
     return UnitValueType( UNIT_CURRENT, UNIT_CURRENT, UNIT_CURRENT );
+}
+
+HINLINE
+std::vector<float_64>
+FieldJ::getUnitDimension( )
+{
+    /* L, M, T, I, theta, N, J
+     *
+     * J is in A/m^2
+     *   -> L^-2 * I
+     */
+    std::vector<float_64> unitDimension( 7, 0.0 );
+    unitDimension.at(SIBaseUnits::length) = -2.0;
+    unitDimension.at(SIBaseUnits::electricCurrent) =  1.0;
+
+    return unitDimension;
 }
 
 std::string
 FieldJ::getName( )
 {
-    return "FieldJ";
+    return "J";
 }
 
 uint32_t
@@ -210,7 +272,7 @@ FieldJ::getCommTag( )
 }
 
 template<uint32_t AREA, class ParticlesClass>
-void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t ) throw (std::invalid_argument )
+void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t )
 {
     /** tune paramter to use more threads than cells in a supercell
      *  valid domain: 1 <= workerMultiplier
@@ -230,7 +292,7 @@ void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t ) throw (std::in
         typename GetMargin<ParticleCurrentSolver>::UpperMargin
         > BlockArea;
 
-    StrideMapping<AREA, simDim, MappingDesc> mapper( cellDescription );
+    StrideMapping<AREA, 3, MappingDesc> mapper( cellDescription );
     typename ParticlesClass::ParticlesBoxType pBox = parClass.getDeviceParticlesBox( );
     FieldJ::DataBoxType jBox = this->fieldJ.getDeviceBuffer( ).getDataBox( );
     FrameSolver solver( DELTA_T );
@@ -238,27 +300,29 @@ void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t ) throw (std::in
     DataSpace<simDim> blockSize( mapper.getSuperCellSize( ) );
     blockSize[simDim - 1] *= workerMultiplier;
 
-    __startAtomicTransaction( __getTransactionEvent( ) );
     do
     {
-        __cudaKernel( ( kernelComputeCurrent<workerMultiplier, BlockArea, AREA> ) )
+        PMACC_KERNEL( KernelComputeCurrent<workerMultiplier, BlockArea, AREA>{} )
             ( mapper.getGridDim( ), blockSize )
             ( jBox,
               pBox, solver, mapper );
     }
     while ( mapper.next( ) );
-    __setTransactionEvent( __endTransaction( ) );
+
 }
 
-template<uint32_t AREA>
-void FieldJ::addCurrentToE( )
+template<uint32_t AREA, class T_CurrentInterpolation>
+void FieldJ::addCurrentToEMF( T_CurrentInterpolation& myCurrentInterpolation )
 {
-    __picKernelArea( ( kernelAddCurrentToE ),
-                     cellDescription,
-                     AREA )
-        ( MappingDesc::SuperCellSize::toRT( ).toDim3( ) )
+    AreaMapping<AREA, MappingDesc> mapper(cellDescription);
+    PMACC_KERNEL( KernelAddCurrentToEMF{} )
+        ( mapper.getGridDim(), MappingDesc::SuperCellSize::toRT( ) )
         ( this->fieldE->getDeviceDataBox( ),
-          this->fieldJ.getDeviceBuffer( ).getDataBox( ) );
+          this->fieldB->getDeviceDataBox( ),
+          this->fieldJ.getDeviceBuffer( ).getDataBox( ),
+          myCurrentInterpolation,
+          mapper
+        );
 }
 
 }

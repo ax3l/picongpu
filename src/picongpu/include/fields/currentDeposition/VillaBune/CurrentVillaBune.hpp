@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "basicOperations.hpp"
@@ -61,6 +61,12 @@ struct VillaBune
         const PosType oldPos = (PosType) (precisionCast<float_X > (pos) - deltaPos);
 
         addCurrentSplitX(oldPos, pos, charge, boxJ_par, deltaTime);
+    }
+
+    static PMacc::traits::StringProperty getStringProperties()
+    {
+        PMacc::traits::StringProperty propList( "name", "VillaBune" );
+        return propList;
     }
 
 private:

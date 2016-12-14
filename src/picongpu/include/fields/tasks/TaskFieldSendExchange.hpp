@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,11 +18,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef  _TASKFIELDSENDEXCHANGE_HPP
-#define	_TASKFIELDSENDEXCHANGE_HPP
-
+#pragma once
 
 #include "eventSystem/EventSystem.hpp"
 #include "fields/tasks/FieldFactory.hpp"
@@ -41,44 +37,45 @@ namespace PMacc
     public:
 
         TaskFieldSendExchange(Field &buffer, uint32_t exchange) :
-        buffer(buffer),
-        exchange(exchange),
-        state(Constructor),
-        initDependency(__getTransactionEvent())
+        m_buffer(buffer),
+        m_exchange(exchange),
+        m_state(Constructor),
+        m_initDependency(__getTransactionEvent())
         {
         }
 
         virtual void init()
         {
-            state = Init;
-            __startTransaction(initDependency);
-            buffer.bashField(exchange);
-            initDependency = __endTransaction();
-            state = WaitForBash;
+            m_state = Init;
+            __startTransaction(m_initDependency);
+            m_buffer.bashField(m_exchange);
+            m_initDependency = __endTransaction();
+            m_state = WaitForBash;
         }
 
         bool executeIntern()
         {
-            switch (state)
+            switch (m_state)
             {
             case Init:
                 break;
             case WaitForBash:
 
-                if (NULL == Environment<>::get().Manager().getITaskIfNotFinished(initDependency.getTaskId()) )
+                if (NULL == Environment<>::get().Manager().getITaskIfNotFinished(m_initDependency.getTaskId()) )
                 {
-                    state = InitSend;
-                    sendEvent = buffer.getGridBuffer().asyncSend(EventTask(), exchange, initDependency);
-                    state = WaitForSendEnd;
+                    m_state = InitSend;
+                    m_sendEvent = m_buffer.getGridBuffer().asyncSend(EventTask(), m_exchange);
+                    m_initDependency = m_sendEvent;
+                    m_state = WaitForSendEnd;
                 }
 
                 break;
             case InitSend:
                 break;
             case WaitForSendEnd:
-                if (NULL == Environment<>::get().Manager().getITaskIfNotFinished(sendEvent.getTaskId()))
+                if (NULL == Environment<>::get().Manager().getITaskIfNotFinished(m_sendEvent.getTaskId()))
                 {
-                    state = Finished;
+                    m_state = Finished;
                     return true;
                 }
                 break;
@@ -119,15 +116,12 @@ namespace PMacc
         };
 
 
-        Field& buffer;
-        state_t state;
-        EventTask sendEvent;
-        EventTask initDependency;
-        uint32_t exchange;
+        Field& m_buffer;
+        state_t m_state;
+        EventTask m_sendEvent;
+        EventTask m_initDependency;
+        uint32_t m_exchange;
     };
 
 } //namespace PMacc
-
-
-#endif	/* _TASKFIELDSENDEXCHANGE_HPP */
 

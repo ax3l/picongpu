@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,6 +20,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 namespace PMacc
 {
 namespace allocator
@@ -30,10 +32,11 @@ cursor::BufferCursor<Type, T_dim>
 HostMemAllocator<Type, T_dim>::allocate(const math::Size_t<T_dim>& size)
 {
 #ifndef __CUDA_ARCH__
-    Type* dataPointer;
+    Type* dataPointer = NULL;
     math::Size_t<T_dim-1> pitch;
 
-    CUDA_CHECK_NO_EXCEP(cudaMallocHost((void**)&dataPointer, sizeof(Type) * size.productOfComponents()));
+    if(size.productOfComponents())
+        CUDA_CHECK(cudaMallocHost((void**)&dataPointer, sizeof(Type) * size.productOfComponents()));
     if(dim == 2u)
     {
         pitch[0] = size[0] * sizeof(Type);
@@ -59,10 +62,11 @@ cursor::BufferCursor<Type, 1>
 HostMemAllocator<Type, 1>::allocate(const math::Size_t<1>& size)
 {
 #ifndef __CUDA_ARCH__
-    Type* dataPointer;
+    Type* dataPointer = NULL;
     math::Size_t<0> pitch;
 
-    CUDA_CHECK_NO_EXCEP(cudaMallocHost((void**)&dataPointer, sizeof(Type) * size.productOfComponents()));
+    if(size.productOfComponents())
+        CUDA_CHECK(cudaMallocHost((void**)&dataPointer, sizeof(Type) * size.productOfComponents()));
 
     return cursor::BufferCursor<Type, 1>(dataPointer, pitch);
 #endif
@@ -79,7 +83,7 @@ template<typename TCursor>
 void HostMemAllocator<Type, T_dim>::deallocate(const TCursor& cursor)
 {
 #ifndef __CUDA_ARCH__
-    CUDA_CHECK_NO_EXCEP(cudaFreeHost(cursor.getMarker()));
+    CUDA_CHECK(cudaFreeHost(cursor.getMarker()));
 #endif
 }
 
@@ -88,7 +92,7 @@ template<typename TCursor>
 void HostMemAllocator<Type, 1>::deallocate(const TCursor& cursor)
 {
 #ifndef __CUDA_ARCH__
-    CUDA_CHECK_NO_EXCEP(cudaFreeHost(cursor.getMarker()));
+    CUDA_CHECK(cudaFreeHost(cursor.getMarker()));
 #endif
 }
 

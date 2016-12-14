@@ -1,6 +1,4 @@
-#!/usr/bin/gnuplot -persist
-# 
-# Copyright 2013-2014 Axel Huebl, Richard Pausch
+# Copyright 2013-2016 Axel Huebl, Richard Pausch
 #
 # This file is part of PIConGPU.
 #
@@ -23,7 +21,7 @@ if(OUTPUT2FILE == 1){
   set terminal postscript eps color "Helvetica" 20
   set grid
   set out 'OUTPUT_FILE.eps'
-  } 
+  }
 
 
 set xlabel "E_n in MeV"

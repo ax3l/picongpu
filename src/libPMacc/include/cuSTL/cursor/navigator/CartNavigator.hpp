@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CURSOR_CARTNAVIGATOR_HPP
-#define CURSOR_CARTNAVIGATOR_HPP
+#pragma once
 
 #include <math/vector/Int.hpp>
 #include "tag.h"
@@ -37,7 +36,7 @@ class CartNavigator
 {
 public:
     typedef tag::CartNavigator tag;
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
 private:
     math::Int<dim> factor;
 public:
@@ -49,7 +48,9 @@ public:
     Data operator()(const Data& data, const math::Int<dim>& jump) const
     {
         char* result = (char*)data;
-        result += dot(jump, this->factor);
+        result += algorithms::math::dot(
+            static_cast<typename math::Int<dim>::BaseType>(jump),
+            static_cast<typename math::Int<dim>::BaseType>(this->factor));
         return (Data)result;
     }
 
@@ -63,7 +64,7 @@ namespace traits
 template<int T_dim>
 struct dim<CartNavigator<T_dim> >
 {
-    static const int value = T_dim;
+    static constexpr int value = T_dim;
 };
 
 } // traits
@@ -71,4 +72,3 @@ struct dim<CartNavigator<T_dim> >
 } // cursor
 } // PMacc
 
-#endif // CURSOR_CARTNAVIGATOR_HPP

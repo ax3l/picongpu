@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "dimensions/DataSpace.hpp"
 #include <cuSTL/cursor/BufferCursor.hpp>
 
@@ -84,6 +84,10 @@ public:
         return *(fixedPointer);
     }
 
+    HDINLINE TYPE const * getPointer() const
+    {
+        return fixedPointer;
+    }
     HDINLINE TYPE* getPointer()
     {
         return fixedPointer;
@@ -149,6 +153,10 @@ public:
         return *((TYPE*) fixedPointer);
     }
 
+    HDINLINE TYPE const * getPointer() const
+    {
+        return fixedPointer;
+    }
     HDINLINE TYPE* getPointer()
     {
         return fixedPointer;
@@ -156,8 +164,8 @@ public:
 
 protected:
 
-    PMACC_ALIGN(fixedPointer, TYPE*);
     PMACC_ALIGN(pitch, size_t);
+    PMACC_ALIGN(fixedPointer, TYPE*);
 
 };
 
@@ -184,9 +192,16 @@ public:
         return ReducedType((TYPE*) ((char*) (this->fixedPointer) + idx * pitch2D), pitch);
     }
 
-    HDINLINE PitchedBox(TYPE* pointer, const DataSpace<DIM3> &offset, const DataSpace<DIM3> &size, const size_t pitch) :
-    pitch(pitch), pitch2D(size[1] * pitch),
-    fixedPointer((TYPE*) ((char*) pointer + offset[2] * pitch2D + offset[1] * pitch) + offset[0])
+    /** constructor
+     *
+     * @param pointer pointer to the origin of the physical memory
+     * @param offset offset (in elements)
+     * @param memSize size of the physical memory (in elements)
+     * @param pitch number of bytes in one line (first dimension)
+     */
+    HDINLINE PitchedBox(TYPE* pointer, const DataSpace<DIM3> &offset, const DataSpace<DIM3> &memSize, const size_t pitch) :
+    pitch(pitch), pitch2D(memSize[1] * pitch),
+    fixedPointer((TYPE*) ((char*) pointer + offset[2] * (memSize[1] * pitch) + offset[1] * pitch) + offset[0])
     {
     }
 
@@ -209,11 +224,15 @@ public:
         return *(fixedPointer);
     }
 
+    HDINLINE TYPE const * getPointer() const
+    {
+        return fixedPointer;
+    }
     HDINLINE TYPE* getPointer()
     {
         return fixedPointer;
     }
-    
+
     HDINLINE PMacc::cursor::BufferCursor<TYPE, DIM3>
     toCursor() const
     {
@@ -232,9 +251,9 @@ protected:
     }
 
 
-    PMACC_ALIGN(fixedPointer, TYPE*);
     PMACC_ALIGN(pitch, size_t);
     PMACC_ALIGN(pitch2D, size_t);
+    PMACC_ALIGN(fixedPointer, TYPE*);
 
 };
 

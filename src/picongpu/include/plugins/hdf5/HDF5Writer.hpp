@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Alexander Grund
  *
  * This file is part of PIConGPU.
  *
@@ -22,19 +23,19 @@
 #pragma once
 
 #include <pthread.h>
-#include <cassert>
 #include <sstream>
+#include <string>
 #include <list>
 #include <vector>
 
-#include "types.h"
-#include "simulation_types.hpp"
 #include "simulation_defines.hpp"
+
 #include "plugins/hdf5/HDF5Writer.def"
+#include "traits/SplashToPIC.hpp"
+#include "traits/PICToSplash.hpp"
+#include "plugins/common/stringHelpers.hpp"
 
 #include "particles/frame_types.hpp"
-
-#include <splash/splash.h>
 
 #include "fields/FieldB.hpp"
 #include "fields/FieldE.hpp"
@@ -43,6 +44,7 @@
 #include "particles/particleFilter/FilterFactory.hpp"
 #include "particles/particleFilter/PositionFilter.hpp"
 #include "particles/operations/CountParticles.hpp"
+#include "particles/IdProvider.def"
 
 #include "dataManagement/DataConnector.hpp"
 #include "mappings/simulation/GridController.hpp"
@@ -63,10 +65,12 @@
 
 #include <boost/type_traits.hpp>
 
+#include "plugins/hdf5/WriteMeta.hpp"
 #include "plugins/hdf5/WriteFields.hpp"
 #include "plugins/hdf5/WriteSpecies.hpp"
 #include "plugins/hdf5/restart/LoadSpecies.hpp"
 #include "plugins/hdf5/restart/RestartFieldLoader.hpp"
+#include "plugins/hdf5/NDScalars.hpp"
 #include "memory/boxes/DataBoxDim1Access.hpp"
 
 namespace picongpu
@@ -91,8 +95,9 @@ class HDF5Writer : public ISimulationPlugin
 public:
 
     HDF5Writer() :
-    filename("h5_data"),
-    checkpointFilename("h5_checkpoint"),
+    filename("simData"),
+    outputDirectory("h5"),
+    checkpointFilename("checkpoint"),
     restartFilename(""), /* set to checkpointFilename by default */
     notifyPeriod(0)
     {
@@ -143,13 +148,20 @@ public:
 
     void checkpoint(uint32_t currentStep, const std::string checkpointDirectory)
     {
+#if(ENABLE_ADIOS == 1)
+        log<picLog::INPUT_OUTPUT > ("HDF5: Checkpoint skipped since ADIOS is enabled.");
+#else
         this->checkpointDirectory = checkpointDirectory;
 
         notificationReceived(currentStep, true);
+#endif
     }
 
     void restart(uint32_t restartStep, const std::string restartDirectory)
     {
+#if(ENABLE_ADIOS == 1)
+        log<picLog::INPUT_OUTPUT > ("HDF5: Restart skipped since ADIOS is enabled.");
+#else
         const uint32_t maxOpenFilesPerNode = 4;
         GridController<simDim> &gc = Environment<simDim>::get().GridController();
         mThreadParams.dataCollector = new ParallelDomainCollector(
@@ -178,10 +190,10 @@ public:
             log<picLog::INPUT_OUTPUT > ("HDF5 open DataCollector with file: %1%") % restartFilename;
             mThreadParams.dataCollector->open(restartFilename.c_str(), attr);
         }
-        catch (DCException e)
+        catch (const DCException& e)
         {
             std::cerr << e.what() << std::endl;
-            throw std::runtime_error("Failed to open datacollector");
+            throw std::runtime_error("HDF5 failed to open DataCollector");
         }
 
         /* load number of slides to initialize MovingWindow */
@@ -189,12 +201,16 @@ public:
         mThreadParams.dataCollector->readAttribute(restartStep, NULL, "sim_slides", &slides);
 
         /* apply slides to set gpus to last/written configuration */
-        log<picLog::INPUT_OUTPUT > ("Setting slide count for moving window to %1%") % slides;
+        log<picLog::INPUT_OUTPUT > ("HDF5 setting slide count for moving window to %1%") % slides;
         MovingWindow::getInstance().setSlideCounter(slides, restartStep);
 
-        /* re-distribute the local offsets in y-direction */
-        if( MovingWindow::getInstance().isSlidingWindowActive() )
-            gc.setStateAfterSlides(slides);
+        /* re-distribute the local offsets in y-direction
+         * this will work for restarts with moving window still enabled
+         * and restarts that disable the moving window
+         * \warning enabling the moving window from a checkpoint that
+         *          had no moving window will not work
+         */
+        gc.setStateAfterSlides(slides);
 
         /* set window for restart, complete global domain */
         mThreadParams.window = MovingWindow::getInstance().getDomainAsWindow(restartStep);
@@ -213,6 +229,15 @@ public:
         ForEach<FileCheckpointParticles, LoadSpecies<bmpl::_1> > forEachLoadSpecies;
         forEachLoadSpecies(params, restartChunkSize);
 
+        IdProvider<simDim>::State idProvState;
+        ReadNDScalars<uint64_t, uint64_t>()(mThreadParams,
+                "picongpu/idProvider/startId", &idProvState.startId,
+                "maxNumProc", &idProvState.maxNumProc);
+        ReadNDScalars<uint64_t>()(mThreadParams,
+                "picongpu/idProvider/nextId", &idProvState.nextId);
+        log<picLog::INPUT_OUTPUT > ("Setting next free id on current rank: %1%") % idProvState.nextId;
+        IdProvider<simDim>::setState(idProvState);
+
         /* close datacollector */
         log<picLog::INPUT_OUTPUT > ("HDF5 close DataCollector with file: %1%") % restartFilename;
         mThreadParams.dataCollector->close();
@@ -221,6 +246,7 @@ public:
             mThreadParams.dataCollector->finalize();
 
         __delete(mThreadParams.dataCollector);
+#endif
     }
 
 private:
@@ -259,12 +285,11 @@ private:
             log<picLog::INPUT_OUTPUT > ("HDF5 open DataCollector with file: %1%") % h5Filename;
             mThreadParams.dataCollector->open(h5Filename.c_str(), attr);
         }
-        catch (DCException e)
+        catch (const DCException& e)
         {
             std::cerr << e.what() << std::endl;
-            throw std::runtime_error("Failed to open datacollector");
+            throw std::runtime_error("HDF5 failed to open DataCollector");
         }
-
     }
 
     /**
@@ -282,25 +307,25 @@ private:
 
         __getTransactionEvent().waitForFinished();
 
-        std::string fname = filename;
-        if (isCheckpoint)
+        std::string h5Filename( filename );
+        std::string h5Filedir( outputDirectory );
+        if( isCheckpoint )
         {
-            /* if checkpointFilename is relative, prepend with checkpointDirectory */
-            if (!boost::filesystem::path(checkpointFilename).has_root_path())
-            {
-                fname = checkpointDirectory + std::string("/") + checkpointFilename;
-            }
-            else
-            {
-                fname = checkpointFilename;
-            }
+            h5Filename = checkpointFilename;
+            h5Filedir = checkpointDirectory;
+        }
 
-            mThreadParams.window = MovingWindow::getInstance().getDomainAsWindow(currentStep);
-        }
+        /* if file name is relative, prepend with common directory */
+        if( boost::filesystem::path(h5Filename).has_root_path() )
+            mThreadParams.h5Filename = h5Filename;
         else
-        {
+            mThreadParams.h5Filename = h5Filedir + "/" + h5Filename;
+
+        /* window selection */
+        if( isCheckpoint )
+            mThreadParams.window = MovingWindow::getInstance().getDomainAsWindow(currentStep);
+        else
             mThreadParams.window = MovingWindow::getInstance().getWindow(currentStep);
-        }
 
         for (uint32_t i = 0; i < simDim; ++i)
         {
@@ -313,7 +338,7 @@ private:
             }
         }
 
-        openH5File(fname);
+        openH5File(mThreadParams.h5Filename);
 
         writeHDF5((void*) &mThreadParams);
 
@@ -345,6 +370,9 @@ private:
         if (notifyPeriod > 0)
         {
             Environment<>::get().PluginConnector().setNotificationPeriod(this, notifyPeriod);
+
+            /** create notify directory */
+            Environment<simDim>::get().Filesystem().createDirectoryWithPermissions(outputDirectory);
         }
 
         if (restartFilename == "")
@@ -363,57 +391,15 @@ private:
         __delete(mThreadParams.dataCollector);
     }
 
-    typedef PICToSplash<float_X>::type SplashFloatXType;
-
-    static void writeMetaAttributes(ThreadParams *threadParams)
-    {
-        ColTypeUInt32 ctUInt32;
-        ColTypeDouble ctDouble;
-        SplashFloatXType splashFloatXType;
-
-        ParallelDomainCollector *dc = threadParams->dataCollector;
-        uint32_t currentStep = threadParams->currentStep;
-
-        /* write number of slides */
-        const uint32_t slides = MovingWindow::getInstance().getSlideCounter(threadParams->currentStep);
-
-        dc->writeAttribute(threadParams->currentStep,
-                           ctUInt32, NULL, "sim_slides", &slides);
-
-        /* write normed grid parameters */
-        dc->writeAttribute(currentStep, splashFloatXType, NULL, "delta_t", &DELTA_T);
-        dc->writeAttribute(currentStep, splashFloatXType, NULL, "cell_width", &CELL_WIDTH);
-        dc->writeAttribute(currentStep, splashFloatXType, NULL, "cell_height", &CELL_HEIGHT);
-        if (simDim == DIM3)
-        {
-            dc->writeAttribute(currentStep, splashFloatXType, NULL, "cell_depth", &CELL_DEPTH);
-        }
-
-        /* write base units */
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_energy", &UNIT_ENERGY);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_length", &UNIT_LENGTH);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_speed", &UNIT_SPEED);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_time", &UNIT_TIME);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_mass", &UNIT_MASS);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_charge", &UNIT_CHARGE);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_efield", &UNIT_EFIELD);
-        dc->writeAttribute(currentStep, ctDouble, NULL, "unit_bfield", &UNIT_BFIELD);
-
-        /* write physical constants */
-        dc->writeAttribute(currentStep, splashFloatXType, NULL, "mue0", &MUE0);
-        dc->writeAttribute(currentStep, splashFloatXType, NULL, "eps0", &EPS0);
-    }
-
     static void *writeHDF5(void *p_args)
     {
         ThreadParams *threadParams = (ThreadParams*) (p_args);
-        const PMacc::Selection<simDim>& localDomain = Environment<simDim>::get().SubGrid().getLocalDomain();
 
-        writeMetaAttributes(threadParams);
-
-        /* y direction can be negative for first gpu*/
-        DataSpace<simDim> particleOffset(localDomain.offset);
-        particleOffset.y() -= threadParams->window.globalDimensions.offset.y();
+        const SubGrid<simDim>& subGrid = Environment<simDim>::get().SubGrid();
+        DataSpace<simDim> domainOffset(
+            subGrid.getGlobalDomain().offset +
+            subGrid.getLocalDomain().offset
+        );
 
         /* write all fields */
         log<picLog::INPUT_OUTPUT > ("HDF5: (begin) writing fields.");
@@ -434,14 +420,27 @@ private:
         if (threadParams->isCheckpoint)
         {
             ForEach<FileCheckpointParticles, WriteSpecies<bmpl::_1> > writeSpecies;
-            writeSpecies(threadParams, std::string(), particleOffset);
+            writeSpecies(threadParams, domainOffset);
         }
         else
         {
             ForEach<FileOutputParticles, WriteSpecies<bmpl::_1> > writeSpecies;
-            writeSpecies(threadParams, std::string(), particleOffset);
+            writeSpecies(threadParams, domainOffset);
         }
         log<picLog::INPUT_OUTPUT > ("HDF5: ( end ) writing particle species.");
+
+        PMACC_AUTO(idProviderState, IdProvider<simDim>::getState());
+        log<picLog::INPUT_OUTPUT>("HDF5: Writing IdProvider state (StartId: %1%, NextId: %2%, maxNumProc: %3%)")
+                % idProviderState.startId % idProviderState.nextId % idProviderState.maxNumProc;
+        WriteNDScalars<uint64_t, uint64_t>()(*threadParams,
+                "picongpu/idProvider/startId", idProviderState.startId,
+                "maxNumProc", idProviderState.maxNumProc);
+        WriteNDScalars<uint64_t>()(*threadParams,
+                "picongpu/idProvider/nextId", idProviderState.nextId);
+
+        // write global meta attributes
+        WriteMeta writeMetaAttributes;
+        writeMetaAttributes(threadParams);
 
         return NULL;
     }
@@ -455,6 +454,7 @@ private:
     std::string filename;
     std::string checkpointFilename;
     std::string restartFilename;
+    std::string outputDirectory;
     std::string checkpointDirectory;
 
     uint32_t restartChunkSize;

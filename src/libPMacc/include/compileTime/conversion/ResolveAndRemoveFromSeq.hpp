@@ -1,10 +1,10 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,18 +22,19 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 
 #include "compileTime/conversion/RemoveFromSeq.hpp"
 #include "compileTime/conversion/ResolveAliases.hpp"
+#include "compileTime/errorHandlerPolicies/ReturnValue.hpp"
 
 namespace PMacc
 {
 
-/* resolve and remove types from a sequence
+/** Resolve and remove types from a sequence
  *
  * @tparam T_MPLSeqSrc source sequence from were we delete types
- * @tparam T_MPLSeqObjectsToRemove sequence with types which shuld be deleted (pmacc aliases are allowed)
+ * @tparam T_MPLSeqObjectsToRemove sequence with types which should be deleted (PMacc aliases are allowed)
  */
 template<
 typename T_MPLSeqSrc,
@@ -43,7 +44,7 @@ struct ResolveAndRemoveFromSeq
 {
     typedef T_MPLSeqSrc MPLSeqSrc;
     typedef T_MPLSeqObjectsToRemove MPLSeqObjectsToRemove;
-    typedef typename ResolveAliases<MPLSeqObjectsToRemove, MPLSeqSrc>::type ResolvedSeqWithObjectsToRemove;
+    typedef typename ResolveAliases<MPLSeqObjectsToRemove, MPLSeqSrc, errorHandlerPolicies::ReturnValue>::type ResolvedSeqWithObjectsToRemove;
     typedef typename RemoveFromSeq<MPLSeqSrc, ResolvedSeqWithObjectsToRemove>::type type;
 };
 

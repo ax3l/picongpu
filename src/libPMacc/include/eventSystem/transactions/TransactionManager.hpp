@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,9 +22,10 @@
 
 #pragma once
 
-#include <stack>
 #include "eventSystem/EventSystem.hpp"
 #include "eventSystem/transactions/Transaction.hpp"
+
+#include <stack>
 
 namespace PMacc
 {
@@ -44,7 +45,7 @@ public:
     /**
      * Destructor.
      */
-    virtual ~TransactionManager() throw(std::runtime_error);
+    virtual ~TransactionManager() /*noexcept(false)*/;
 
     /**
      * Adds a new transaction to the stack.
@@ -52,13 +53,6 @@ public:
      * @param serialEvent initial base event for new transaction
      */
     void startTransaction(EventTask serialEvent = EventTask());
-
-    /**
-     * Adds a new atomic transaction to the stack.
-     *
-     * @param serialEvent initial base event for new transaction
-     */
-    void startAtomicTransaction(EventTask serialEvent = EventTask());
 
     /**
      * Removes the top-most transaction from the stack.

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -18,21 +18,21 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
+#include "mappings/simulation/GridController.hpp"
+#include "memory/boxes/PitchedBox.hpp"
+#include "header/MessageHeader.hpp"
 
-#ifndef GATHERSLICE_HPP
-#define	GATHERSLICE_HPP
-
-#include "types.h"
 #include "simulation_defines.hpp"
 
-#include <mpi.h>
-#include "mappings/simulation/GridController.hpp"
+#include "pmacc_types.hpp"
 
-//c includes
-#include "sys/stat.h"
-#include "header/MessageHeader.hpp"
-#include "memory/boxes/PitchedBox.hpp"
+#include <mpi.h>
+
+#include <vector>
+
+#include <sys/stat.h>
 
 namespace picongpu
 {
@@ -41,7 +41,14 @@ using namespace PMacc;
 struct GatherSlice
 {
 
-    GatherSlice() : mpiRank(-1), numRanks(0), filteredData(NULL), comm(MPI_COMM_NULL), fullData(NULL), isMPICommInitialized(false)
+    GatherSlice() :
+        mpiRank(-1),
+        numRanks(0),
+        filteredData(NULL),
+        comm(MPI_COMM_NULL),
+        fullData(NULL),
+        masterRank(0),
+        isMPICommInitialized(false)
     {
     }
 
@@ -55,20 +62,22 @@ struct GatherSlice
      */
     bool init(bool isActive)
     {
-        /*free old communicator of init is called again*/
+        static int masterRankOffset = 0;
+
+        /* free old communicator if `init()` is called again */
         if (isMPICommInitialized)
         {
             reset();
         }
 
         int countRanks = Environment<simDim>::get().GridController().getGpuNodes().productOfComponents();
-        int gatherRanks[countRanks];
-        int groupRanks[countRanks];
+        std::vector<int> gatherRanks(countRanks);
+        std::vector<int> groupRanks(countRanks);
         mpiRank = Environment<simDim>::get().GridController().getGlobalRank();
         if (!isActive)
             mpiRank = -1;
 
-        MPI_CHECK(MPI_Allgather(&mpiRank, 1, MPI_INT, gatherRanks, 1, MPI_INT, MPI_COMM_WORLD));
+        MPI_CHECK(MPI_Allgather(&mpiRank, 1, MPI_INT, &gatherRanks[0], 1, MPI_INT, MPI_COMM_WORLD));
 
         for (int i = 0; i < countRanks; ++i)
         {
@@ -82,7 +91,7 @@ struct GatherSlice
         MPI_Group group = MPI_GROUP_NULL;
         MPI_Group newgroup = MPI_GROUP_NULL;
         MPI_CHECK(MPI_Comm_group(MPI_COMM_WORLD, &group));
-        MPI_CHECK(MPI_Group_incl(group, numRanks, groupRanks, &newgroup));
+        MPI_CHECK(MPI_Group_incl(group, numRanks, &groupRanks[0], &newgroup));
 
         MPI_CHECK(MPI_Comm_create(MPI_COMM_WORLD, newgroup, &comm));
 
@@ -94,7 +103,13 @@ struct GatherSlice
         MPI_CHECK(MPI_Group_free(&group));
         MPI_CHECK(MPI_Group_free(&newgroup));
 
-        return mpiRank == 0;
+        masterRankOffset++;
+        /* avoid that only rank zero is the master
+         * this reduces the load of rank zero
+         */
+        masterRank = (masterRankOffset % numRanks);
+
+        return mpiRank == masterRank;
     }
 
     template<class Box >
@@ -114,15 +129,15 @@ struct GatherSlice
 
         char* recvHeader = new char[ MessageHeader::bytes * numRanks];
 
-        if (fullData == NULL && mpiRank == 0)
+        if (fullData == NULL && mpiRank == masterRank)
             fullData = (char*) new ValueType[header.sim.size.productOfComponents()];
 
 
         MPI_CHECK(MPI_Gather(fakeHeader, MessageHeader::bytes, MPI_CHAR, recvHeader, MessageHeader::bytes,
-                             MPI_CHAR, 0, comm));
+                             MPI_CHAR, masterRank, comm));
 
-        int counts[numRanks];
-        int displs[numRanks];
+        std::vector<int> counts(numRanks);
+        std::vector<int> displs(numRanks);
         int offset = 0;
         for (int i = 0; i < numRanks; ++i)
         {
@@ -136,12 +151,12 @@ struct GatherSlice
 
         MPI_CHECK(MPI_Gatherv(
                               (char*) (data.getPointer()), elementsCount, MPI_CHAR,
-                              fullData, counts, displs, MPI_CHAR,
-                              0, comm));
+                              fullData, &counts[0], &displs[0], MPI_CHAR,
+                              masterRank, comm));
 
 
 
-        if (mpiRank == 0)
+        if (mpiRank == masterRank)
         {
             log<picLog::DOMAINS > ("Master create image");
             if (filteredData == NULL)
@@ -173,6 +188,7 @@ struct GatherSlice
                 insertData(dstBox, srcBox, head->node.offset, head->node.maxSize);
             }
 
+            __deleteArray(fullData);
         }
 
         delete[] recvHeader;
@@ -216,10 +232,8 @@ private:
     MPI_Comm comm;
     int mpiRank;
     int numRanks;
+    int masterRank;
     bool isMPICommInitialized;
 };
 
 }//namespace
-
-#endif	/* GATHERSLICE_HPP */
-

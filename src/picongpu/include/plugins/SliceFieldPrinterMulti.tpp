@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Heiko Burau, Rene Widera, Felix Schmitt,
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Felix Schmitt,
  *                     Richard Pausch
  *
  * This file is part of PIConGPU.
@@ -19,7 +19,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#pragma once
 
 #include "math/vector/Int.hpp"
 #include "math/vector/Float.hpp"
@@ -36,15 +36,15 @@
 #include "cuSTL/algorithm/host/Foreach.hpp"
 #include "lambda/Expression.hpp"
 #include "SliceFieldPrinterMulti.hpp"
-#include <math/vector/tools/twistVectorAxes.hpp>
 #include <sstream>
 
 namespace picongpu
 {
 
 template<typename Field>
-SliceFieldPrinterMulti<Field>::SliceFieldPrinterMulti(std::string name, std::string prefix)
-    : name(name), prefix(prefix)
+SliceFieldPrinterMulti<Field>::SliceFieldPrinterMulti()
+    : name("SliceFieldPrinter: prints a slice of a field"),
+      prefix(Field::getName() + std::string("_slice"))
 {
     Environment<>::get().PluginConnector().registerPlugin(this);
 }

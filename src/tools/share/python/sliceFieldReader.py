@@ -1,4 +1,4 @@
-# Copyright 2014 Richard Pausch
+# Copyright 2014-2016 Richard Pausch
 #
 # This file is part of PIConGPU.
 #
@@ -53,7 +53,7 @@ def readFieldSlices(File):
     for line in theFile:
         # count number of vectors in line
         N_x_local = line.count('{')
-    
+
         # check whether number of vectors stays constant
         if N_x is not None:
             # none avoid initial line with no entry number yet
@@ -62,7 +62,7 @@ def readFieldSlices(File):
 
         # add number of lines with valid entries
         if N_x_local > 0:
-            N_y += 1 
+            N_y += 1
             # set N_x if line was valid
             N_x = N_x_local
 
@@ -78,8 +78,7 @@ def readFieldSlices(File):
         # go through all valid field vectors
         for x in range(N_x):
             fieldValue = line[x]
-            data[y,x,:] = _numpy.genfromtxt(_StringIO.StringIO(fieldValue[1:-1]), delimiter=",")
-            
+            data[y,x,:] = map(float,fieldValue[1:-1].split(','))
     return data
 
 
@@ -90,7 +89,7 @@ if __name__ == '__main__':
 
     # set up command line argument parser
     parser = argparse.ArgumentParser(
-        description='''This is just the test case for the python module to load 
+        description='''This is just the test case for the python module to load
                        data from PIConGPUs SliceFieldPrinter plug-in into python''',
         epilog="For further questions, ask Richard Pausch.")
 
@@ -102,7 +101,7 @@ if __name__ == '__main__':
 
     # load data from file using this module
     data = readFieldSlices(args.file)
-    
+
     # show data (field_x only)
     plt.imshow(data[:,:,0])
     plt.colorbar()

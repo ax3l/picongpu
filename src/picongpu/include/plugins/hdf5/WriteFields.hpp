@@ -1,5 +1,6 @@
 /**
- * Copyright 2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera
+ * Copyright 2014-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -20,10 +21,12 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_types.hpp"
 #include "plugins/hdf5/HDF5Writer.def"
 #include "plugins/hdf5/writer/Field.hpp"
+
+#include <vector>
 
 namespace picongpu
 {
@@ -35,16 +38,16 @@ using namespace PMacc;
 using namespace splash;
 
 /**
- * Helper class to create a unit vector of type double
+ * Helper class to create a unit vector of type float_64
  */
 class CreateUnit
 {
 public:
     template<typename UnitType>
-    static std::vector<double> createUnit(UnitType unit, uint32_t numComponents)
+    static std::vector<float_64> createUnit(UnitType unit, uint32_t numComponents)
     {
-        std::vector<double> tmp(numComponents);
-        for (uint i = 0; i < numComponents; ++i)
+        std::vector<float_64> tmp(numComponents);
+        for (uint32_t i = 0; i < numComponents; ++i)
             tmp[i] = unit[i];
         return tmp;
     }
@@ -62,7 +65,7 @@ class WriteFields
 private:
     typedef typename T::ValueType ValueType;
 
-    static std::vector<double> getUnit()
+    static std::vector<float_64> getUnit()
     {
         typedef typename T::UnitValueType UnitType;
         UnitType unit = T::getUnit();
@@ -79,9 +82,28 @@ public:
         T* field = &(dc.getData<T > (T::getName()));
         params->gridLayout = field->getGridLayout();
 
+        // convert in a std::vector of std::vector format for writeField API
+        const fieldSolver::numericalCellType::traits::FieldPosition<T> fieldPos;
+
+        std::vector<std::vector<float_X> > inCellPosition;
+        for( uint32_t n = 0; n < T::numComponents; ++n )
+        {
+            std::vector<float_X> inCellPositonComponent;
+            for( uint32_t d = 0; d < simDim; ++d )
+                inCellPositonComponent.push_back( fieldPos()[n][d] );
+            inCellPosition.push_back( inCellPositonComponent );
+        }
+
+        /** \todo check if always correct at this point, depends on solver
+         *        implementation */
+        const float_X timeOffset = 0.0;
+
         Field::writeField(params,
                           T::getName(),
                           getUnit(),
+                          T::getUnitDimension(),
+                          inCellPosition,
+                          timeOffset,
                           field->getHostDataBox(),
                           ValueType());
 
@@ -126,14 +148,14 @@ private:
     static std::string getName()
     {
         std::stringstream str;
-        str << Solver().getName();
-        str << "_";
         str << Species::FrameType::getName();
+        str << "_";
+        str << Solver().getName();
         return str.str();
     }
 
     /** Get the unit for the result from the solver*/
-    static std::vector<double> getUnit()
+    static std::vector<float_64> getUnit()
     {
         typedef typename FieldTmp::UnitValueType UnitType;
         UnitType unit = FieldTmp::getUnit<Solver>();
@@ -152,7 +174,7 @@ private:
         /*load particle without copy particle data to host*/
         Species* speciesTmp = &(dc.getData<Species >(Species::FrameType::getName(), true));
 
-        fieldTmp->getGridBuffer().getDeviceBuffer().setValue(ValueType(0.0));
+        fieldTmp->getGridBuffer().getDeviceBuffer().setValue(ValueType::create(0.0));
         /*run algorithm*/
         fieldTmp->computeValue < CORE + BORDER, Solver > (*speciesTmp, params->currentStep);
 
@@ -163,12 +185,28 @@ private:
         dc.releaseData(Species::FrameType::getName());
         /*## finish update field ##*/
 
+        /*wrap in a one-component vector for writeField API*/
+        const fieldSolver::numericalCellType::traits::FieldPosition<FieldTmp>
+            fieldPos;
+
+        std::vector<std::vector<float_X> > inCellPosition;
+        std::vector<float_X> inCellPositonComponent;
+        for( uint32_t d = 0; d < simDim; ++d )
+            inCellPositonComponent.push_back( fieldPos()[0][d] );
+        inCellPosition.push_back( inCellPositonComponent );
+
+        /** \todo check if always correct at this point, depends on solver
+         *        implementation */
+        const float_X timeOffset = 0.0;
 
         params->gridLayout = fieldTmp->getGridLayout();
         /*write data to HDF5 file*/
         Field::writeField(params,
                           getName(),
                           getUnit(),
+                          FieldTmp::getUnitDimension<Solver>(),
+                          inCellPosition,
+                          timeOffset,
                           fieldTmp->getHostDataBox(),
                           ValueType());
 

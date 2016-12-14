@@ -1,5 +1,5 @@
-#
-# Copyright 2013-2014 Axel Huebl, Benjamin Schneider, Felix Schmitt, Heiko Burau, Rene Widera
+# Copyright 2013-2016 Axel Huebl, Benjamin Schneider, Felix Schmitt, Heiko Burau,
+#                     Rene Widera, Alexander Grund, Alexander Matthes
 #
 # This file is part of PIConGPU.
 #
@@ -22,39 +22,57 @@
 # Required cmake version
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 3.3.0)
 
 
 ################################################################################
-# Project 
+# Project
 ################################################################################
 
 project(PIConGPU)
 
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "install prefix" FORCE)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
 # set helper pathes to find libraries and packages
-set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/" "$ENV{MPI_ROOT}"
-    "$ENV{CUDA_ROOT}" "$ENV{BOOST_ROOT}" "$ENV{HDF5_ROOT}" "$ENV{VT_ROOT}")
+# Add specific hints
+list(APPEND CMAKE_PREFIX_PATH "$ENV{MPI_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{CUDA_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{BOOST_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{HDF5_ROOT}")
+list(APPEND CMAKE_PREFIX_PATH "$ENV{VT_ROOT}")
+# Add from environment after specific env vars
+list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
+# Last add generic system path to the end (as last fallback)
+list(APPEND "/usr/lib/x86_64-linux-gnu/")
 
 # own modules for find_packages
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../thirdParty/cmake-modules/)
 
 
 ################################################################################
-# Find CUDA 
+# Find CUDA
 ################################################################################
 
-find_package(CUDA 5.0 REQUIRED)
-
-if(CUDA_VERSION VERSION_LESS 5.5)
-    message(STATUS "CUDA Toolkit < 5.5 detected. We strongly recommend to still "
-                   "use CUDA 5.5+ drivers (319.82 or higher)!")
-endif(CUDA_VERSION VERSION_LESS 5.5)
+find_package(CUDA 7.5 REQUIRED)
 
 set(CUDA_ARCH sm_20 CACHE STRING "Set GPU architecture")
 string(COMPARE EQUAL ${CUDA_ARCH} "sm_10" IS_CUDA_ARCH_UNSUPPORTED)
 string(COMPARE EQUAL ${CUDA_ARCH} "sm_11" IS_CUDA_ARCH_UNSUPPORTED)
 string(COMPARE EQUAL ${CUDA_ARCH} "sm_12" IS_CUDA_ARCH_UNSUPPORTED)
 string(COMPARE EQUAL ${CUDA_ARCH} "sm_13" IS_CUDA_ARCH_UNSUPPORTED)
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 11)
+
+# work-around since the above flag does not necessarily put -std=c++11 in
+# the CMAKE_CXX_FLAGS, which is unfurtunately hiding the switch from FindCUDA
+if(NOT "${CMAKE_CXX_FLAGS}" MATCHES "-std=c\\+\\+11")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()
 
 if(IS_CUDA_ARCH_UNSUPPORTED)
     message(FATAL_ERROR "Unsupported CUDA architecture ${CUDA_ARCH} specified. "
@@ -79,7 +97,7 @@ if(CUDA_SHOW_REGISTER)
 endif(CUDA_SHOW_REGISTER)
 
 if(CUDA_KEEP_FILES)
-    make_directory("${PROJECT_BINARY_DIR}/nvcc_tmp")
+    file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/nvcc_tmp")
     set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}" --keep --keep-dir "${PROJECT_BINARY_DIR}/nvcc_tmp")
 endif(CUDA_KEEP_FILES)
 
@@ -92,7 +110,7 @@ option(VAMPIR_ENABLE "Create PIConGPU with VampirTrace support" OFF)
 
 # set filters: please do NOT use line breaks WITHIN the string!
 set(VT_INST_FILE_FILTER
-    "stl,usr/include,libgpugrid,vector_types.h,Vector.hpp,DeviceBuffer.hpp,DeviceBufferIntern.hpp,Buffer.hpp,StrideMapping.hpp,StrideMappingMethods.hpp,MappingDescription.hpp,AreaMapping.hpp,AreaMappingMethods.hpp,ExchangeMapping.hpp,ExchangeMappingMethods.hpp,DataSpace.hpp,Manager.hpp,Manager.tpp,Transaction.hpp,Transaction.tpp,TransactionManager.hpp,TransactionManager.tpp,Vector.tpp,Mask.hpp,ITask.hpp,EventTask.hpp,EventTask.tpp,StandartAccessor.hpp,StandartNavigator.hpp,HostBuffer.hpp,HostBufferIntern.hpp"
+    "stl,usr/include,libgpugrid,vector_types.h,Vector.hpp,DeviceBuffer.hpp,DeviceBufferIntern.hpp,Buffer.hpp,StrideMapping.hpp,StrideMappingMethods.hpp,MappingDescription.hpp,AreaMapping.hpp,AreaMappingMethods.hpp,ExchangeMapping.hpp,ExchangeMappingMethods.hpp,DataSpace.hpp,Manager.hpp,Manager.tpp,Transaction.hpp,Transaction.tpp,TransactionManager.hpp,TransactionManager.tpp,Vector.tpp,Mask.hpp,ITask.hpp,EventTask.hpp,EventTask.tpp,StandardAccessor.hpp,StandardNavigator.hpp,HostBuffer.hpp,HostBufferIntern.hpp"
     CACHE STRING "VampirTrace: Files to exclude from instrumentation")
 set(VT_INST_FUNC_FILTER
     "vector,Vector,dim3,GPUGrid,execute,allocator,Task,Manager,Transaction,Mask,operator,DataSpace,PitchedBox,Event,new,getGridDim,GetCurrentDataSpaces,MappingDescription,getOffset,getParticlesBuffer,getDataSpace,getInstance"
@@ -143,54 +161,6 @@ endif(VAMPIR_ENABLE)
 
 
 ################################################################################
-# Score-P
-################################################################################
-
-option(SCOREP_ENABLE "Create PIConGPU with Score-P support" OFF)
-
-if(SCOREP_ENABLE)
-    message(STATUS "Building with Score-P support")
-    set(SCOREP_ROOT "$ENV{SCOREP_ROOT}")
-    if(NOT SCOREP_ROOT)
-        message(FATAL_ERROR "Environment variable SCOREP_ROOT not set!")
-    endif(NOT SCOREP_ROOT)
-
-    # compile flags
-    execute_process(COMMAND $ENV{SCOREP_ROOT}/bin/scorep-config --nocompiler --cflags
-                    OUTPUT_VARIABLE SCOREP_COMPILEFLAGS
-                    RESULT_VARIABLE SCOREP_CONFIG_RETURN
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(NOT SCOREP_CONFIG_RETURN EQUAL 0)
-        message(FATAL_ERROR "Can NOT execute 'scorep-config' at $ENV{SCOREP_ROOT}/bin/scorep-config - check file permissions")
-    endif()
-
-    # link flags
-    execute_process(COMMAND $ENV{SCOREP_ROOT}/bin/scorep-config --cuda --mpp=mpi --ldflags
-                    OUTPUT_VARIABLE SCOREP_LINKFLAGS
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-    # libraries
-    execute_process(COMMAND $ENV{SCOREP_ROOT}/bin/scorep-config --cuda --mpp=mpi --libs
-                    OUTPUT_VARIABLE SCOREP_LIBFLAGS
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(STRIP "${SCOREP_LIBFLAGS}" SCOREP_LIBFLAGS)
-
-    # subsystem iniialization file
-    execute_process(COMMAND $ENV{SCOREP_ROOT}/bin/scorep-config --cuda --mpp=mpi --adapter-init
-                    OUTPUT_VARIABLE SCOREP_INIT_FILE
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-    file(WRITE ${CMAKE_BINARY_DIR}/scorep_init.c "${SCOREP_INIT_FILE}")
-
-    if(SCOREP_ENABLE)
-        set(SCOREP_SRCFILES "${CMAKE_BINARY_DIR}/scorep_init.c")
-    endif(SCOREP_ENABLE)
-
-    # modify our flags
-    set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} ${SCOREP_LINKFLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SCOREP_COMPILEFLAGS}")
-endif(SCOREP_ENABLE)
-
-
-################################################################################
 # Build type (debug, release)
 ################################################################################
 
@@ -218,7 +188,7 @@ include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
 set(LIBS ${LIBS} ${MPI_C_LIBRARIES})
 
 # bullxmpi fails if it can not find its c++ counter part
-if(MPI_CXX_FOUND) 
+if(MPI_CXX_FOUND)
     set(LIBS ${LIBS} ${MPI_CXX_LIBRARIES})
 endif(MPI_CXX_FOUND)
 
@@ -232,33 +202,82 @@ set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})
 
 
 ################################################################################
+# Find zlib
+################################################################################
+
+find_package(ZLIB REQUIRED)
+include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${ZLIB_LIBRARIES})
+
+
+################################################################################
 # Find Boost
 ################################################################################
 
-find_package(Boost 1.49.0 REQUIRED COMPONENTS program_options regex filesystem system)
+find_package(Boost 1.57.0 REQUIRED COMPONENTS program_options regex filesystem
+                                              system thread math_tr1)
 include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${Boost_LIBRARIES})
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "install prefix" FORCE)
-endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT) 
-
-# work-arounds
-if( (Boost_VERSION EQUAL 105500) AND
-    (CUDA_VERSION VERSION_LESS 6.5) )
-    # Boost Bug https://svn.boost.org/trac/boost/ticket/9392
-    # nvbug #1422182 submission ID #391854
-    message(STATUS "Boost: Applying noinline work around")
-    set(CUDA_NVCC_FLAGS
-      "${CUDA_NVCC_FLAGS} \"-DBOOST_NOINLINE=__attribute__((noinline))\" ")
+# Boost 1.55 added support for a define that makes result_of look for
+# the result<> template and falls back to decltype if none is found. This is
+# great for the transition from the "wrong" usage to the "correct" one as
+# both can be used. But:
+# 1) Cannot be used in 7.0 due to nvcc bug:
+#    http://stackoverflow.com/questions/31940457/
+# 2) Requires C++11 enabled as there is no further check in boost besides
+#    the version check of nvcc
+if( (NOT CUDA_VERSION VERSION_EQUAL 7.0) AND (CMAKE_CXX_STANDARD EQUAL 11) )
+    add_definitions(-DBOOST_RESULT_OF_USE_TR1_WITH_DECLTYPE_FALLBACK)
+else()
+    # Fallback
+    add_definitions(-DBOOST_RESULT_OF_USE_TR1)
 endif()
+
+
+# Boost >= 1.60.0 and CUDA != 7.5 failed when used with C++11
+# seen with boost 1.60.0 - 1.62.0 (atm latest) and CUDA 7.0, 8.0 (atm latest)
+# CUDA 7.5 works without a workaround
+if( (Boost_VERSION GREATER 105999) AND
+    (NOT CUDA_VERSION VERSION_EQUAL 7.5) )
+    # Boost Bug https://svn.boost.org/trac/boost/ticket/11897
+    message(STATUS "Boost: Disable template aliases")
+    add_definitions(-DBOOST_NO_CXX11_TEMPLATE_ALIASES)
+endif()
+
+
+################################################################################
+# Find OpenMP
+################################################################################
+
+find_package(OpenMP)
+if(OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+
+################################################################################
+# Find mallocMC
+################################################################################
+
+find_package(mallocMC 2.2.0 QUIET)
+
+if(NOT mallocMC_FOUND)
+  message(STATUS "Using mallocMC from thirdParty/ directory")
+  set(MALLOCMC_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../thirdParty/mallocMC")
+  find_package(mallocMC 2.2.0 REQUIRED)
+endif(NOT mallocMC_FOUND)
+
+include_directories(SYSTEM ${mallocMC_INCLUDE_DIRS})
+add_definitions(${mallocMC_DEFINITIONS})
+set(LIBS ${LIBS} ${mallocMC_LIBRARIES})
 
 
 ################################################################################
 # PMacc options
 ################################################################################
 
-option(PMACC_BLOCKING_KERNEL 
+option(PMACC_BLOCKING_KERNEL
        "Activate checks for every kernel call and synchronize after every kernel call" OFF)
 if(PMACC_BLOCKING_KERNEL)
     add_definitions(-DPMACC_SYNC_KERNEL=1)
@@ -286,7 +305,7 @@ endif(PARAM_OVERWRITES)
 set(SAME_NVCC_FLAGS_IN_SUBPROJECTS OFF)
 find_path(CUDA_MEMTEST_DIR
         NAMES CMakeLists.txt
-        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../cuda_memtest"
+        PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../../thirdParty/cuda_memtest"
         DOC "path to cuda_memtest"
         )
 
@@ -326,22 +345,16 @@ if(PIC_ENABLE_INSITU_VOLVIS)
 	set(LIBS ${LIBS} ${ICET_CORE_LIBS} ${ICET_MPI_LIBS})
 endif(PIC_ENABLE_INSITU_VOLVIS)
 
-
 ################################################################################
 # ADIOS
 ################################################################################
 
 # find adios installation
 #   set(ADIOS_USE_STATIC_LIBS ON) # force static linking
-find_package(ADIOS 1.6.0)
+find_package(ADIOS 1.10.0)
 
 if(ADIOS_FOUND)
     add_definitions(-DENABLE_ADIOS=1)
-    if(NOT (ADIOS_VERSION VERSION_LESS 1.7.0))
-        message(STATUS "Enable ADIOS data transforms")
-        add_definitions(-DADIOS_TRANSFORMS=1)
-    endif(NOT (ADIOS_VERSION VERSION_LESS 1.7.0))
-
     include_directories(SYSTEM ${ADIOS_INCLUDE_DIRS})
     set(LIBS ${LIBS} ${ADIOS_LIBRARIES})
 endif(ADIOS_FOUND)
@@ -370,7 +383,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Minform=inform")
 endif()
 
-
 ################################################################################
 # Configure include directories
 ################################################################################
@@ -388,7 +400,7 @@ include_directories(${PMACC_ROOT_DIR}/include)
 # find libSplash installation
 # prefer static libraries over shared ones (but do not force them)
 set(Splash_USE_STATIC_LIBS ON)
-find_package(Splash 1.2.4 COMPONENTS PARALLEL)
+find_package(Splash 1.6.0 COMPONENTS PARALLEL)
 
 if(Splash_FOUND)
     include_directories(SYSTEM ${Splash_INCLUDE_DIRS})
@@ -403,7 +415,7 @@ endif(Splash_FOUND)
 ################################################################################
 
 # find PNGwriter installation
-find_package(PNGwriter)
+find_package(PNGwriter 0.5.6)
 
 if(PNGwriter_FOUND)
     include_directories(SYSTEM ${PNGwriter_INCLUDE_DIRS})
@@ -412,6 +424,39 @@ if(PNGwriter_FOUND)
     set(LIBS ${LIBS} ${PNGwriter_LIBRARIES})
 endif(PNGwriter_FOUND)
 
+################################################################################
+# ISAAC
+################################################################################
+
+find_package(ISAAC 0.1.0 CONFIG QUIET)
+if(ISAAC_FOUND)
+    SET(ISAAC_STEREO "No" CACHE STRING "Using stereoscopy")
+    SET_PROPERTY(CACHE ISAAC_STEREO PROPERTY STRINGS No SideBySide Anaglyph)
+
+    if(${ISAAC_STEREO} STREQUAL "No")
+        add_definitions(-DISAAC_STEREO=0)
+    endif()
+    if(${ISAAC_STEREO} STREQUAL "SideBySide")
+        add_definitions(-DISAAC_STEREO=1)
+    endif()
+    if(${ISAAC_STEREO} STREQUAL "Anaglyph")
+        add_definitions(-DISAAC_STEREO=2)
+    endif()
+
+    include_directories(SYSTEM ${ISAAC_INCLUDE_DIRS})
+    set(LIBS ${LIBS} ${ISAAC_LIBRARIES})
+
+    set(ISAAC_MAX_FUNCTORS "3" CACHE STRING "Max length of the isaac functor chain" )
+    set(ISAAC_DEFAULT_WEIGHT "7" CACHE STRING "Default weight of an isaac source" )
+    add_definitions(${ISAAC_DEFINITIONS})
+    add_definitions(-DISAAC_MAX_FUNCTORS=${ISAAC_MAX_FUNCTORS})
+    add_definitions(-DISAAC_FUNCTOR_POW_ENABLED=0)
+    add_definitions(-DISAAC_DEFAULT_WEIGHT=${ISAAC_DEFAULT_WEIGHT})
+
+    add_definitions(-DENABLE_ISAAC=1)
+else(ISAAC_FOUND)
+    message(STATUS "Could NOT find ISAAC - set ISAAC_DIR or check your CMAKE_PREFIX_PATH" )
+endif(ISAAC_FOUND)
 
 ################################################################################
 # Check if PIC_EXTENSION_PATH is relative or absolute
@@ -445,16 +490,9 @@ file(GLOB SRCFILES "*.cpp")
 cuda_add_executable(picongpu
     ${CUDASRCFILES}
     ${SRCFILES}
-    ${SCOREP_SRCFILES}
 )
 
-target_link_libraries(picongpu  ${LIBS} ${CUDA_CUDART_LIBRARY} z m)
-
-if(SCOREP_ENABLE)
-    # Score-P libraries must be linked after the object to prevent symbols
-    # from being stripped on Titan
-    target_link_libraries(picongpu ${SCOREP_LIBFLAGS})
-endif(SCOREP_ENABLE)
+target_link_libraries(picongpu ${LIBS} ${CUDA_CUDART_LIBRARY} m)
 
 ################################################################################
 # Install PIConGPU
@@ -465,7 +503,7 @@ install(TARGETS picongpu
 
 #file(GLOB scripts_to_copy "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.sh")
 #foreach(f ${scripts_to_copy})
-#   GET_FILENAME_COMPONENT(file_name ${f} NAME CACHE)                                 
+#   GET_FILENAME_COMPONENT(file_name ${f} NAME CACHE)
 #   install(FILES "${f}" DESTINATION bin PERMISSIONS OWNER_EXECUTE OWNER_READ
 #           OWNER_WRITE GROUP_READ GROUP_EXECUTE)
 #endforeach(f)
@@ -473,12 +511,12 @@ install(TARGETS picongpu
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/scripts/" DESTINATION bin
     FILES_MATCHING PATTERN "*"
     PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE
-    PATTERN .svn EXCLUDE   
+    PATTERN .svn EXCLUDE
 )
 
 # If the installation prefix does not equal extension path, check if folder must be copied.
 # If there is no include folder in installation prefix, also copy all missing folders.
-if( (NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "${PIC_EXTENSION_PATH}") OR 
+if( (NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "${PIC_EXTENSION_PATH}") OR
     (NOT EXISTS "${CMAKE_INSTALL_PREFIX}/include"))
 
     #copy all important subfolders to install folder

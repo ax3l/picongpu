@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ALLOCATOR_HOSTMEMALLOCATOR_HPP
-#define ALLOCATOR_HOSTMEMALLOCATOR_HPP
+#pragma once
 
 #include <stdint.h>
 #include "math/vector/Size_t.hpp"
@@ -37,7 +36,7 @@ template<typename Type, int T_dim>
 struct HostMemAllocator
 {
     typedef Type type;
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
     typedef cursor::BufferCursor<type, T_dim> Cursor;
     typedef allocator::tag::host tag;
 
@@ -52,12 +51,12 @@ template<typename Type>
 struct HostMemAllocator<Type, 1>
 {
     typedef Type type;
-    static const int dim = 1;
-    typedef cursor::BufferCursor<type, dim> Cursor;
+    static constexpr int dim = 1;
+    typedef cursor::BufferCursor<type, 1> Cursor;
     typedef allocator::tag::host tag;
 
     HDINLINE
-    static cursor::BufferCursor<type, dim> allocate(const math::Size_t<dim>& size);
+    static cursor::BufferCursor<type, 1> allocate(const math::Size_t<1>& size);
     template<typename TCursor>
     HDINLINE
     static void deallocate(const TCursor& cursor);
@@ -68,4 +67,3 @@ struct HostMemAllocator<Type, 1>
 
 #include "HostMemAllocator.tpp"
 
-#endif // ALLOCATOR_HOSTMEMALLOCATOR_HPP

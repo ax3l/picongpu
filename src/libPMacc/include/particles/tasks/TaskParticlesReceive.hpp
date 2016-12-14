@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera
+ * Copyright 2013-2016 Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -30,18 +30,23 @@
 namespace PMacc
 {
 
-    template<class ParBase>
+    template<class T_Particles>
     class TaskParticlesReceive : public MPITask
     {
     public:
 
+        typedef T_Particles Particles;
+        typedef typename Particles::HandleGuardRegion HandleGuardRegion;
+        typedef typename HandleGuardRegion::HandleExchanged HandleExchanged;
+        typedef typename HandleGuardRegion::HandleNotExchanged HandleNotExchanged;
+
         enum
         {
-            Dim = ParBase::Dim,
+            Dim = Particles::Dim,
             Exchanges = traits::NumberOfExchanges<Dim>::value
         };
 
-        TaskParticlesReceive(ParBase &parBase) :
+        TaskParticlesReceive(Particles &parBase) :
         parBase(parBase),
         state(Constructor){ }
 
@@ -49,15 +54,22 @@ namespace PMacc
         {
             state = Init;
             EventTask serialEvent = __getTransactionEvent();
+            HandleExchanged handleExchanged;
+            HandleNotExchanged handleNotExchanged;
 
             for (int i = 1; i < Exchanges; ++i)
             {
+                /* Start new transaction */
+                __startTransaction(serialEvent);
+
+                /* Handle particles */
                 if (parBase.getParticlesBuffer().hasReceiveExchange(i))
-                {
-                    __startAtomicTransaction(serialEvent);
-                    Environment<>::get().ParticleFactory().createTaskReceiveParticlesExchange(parBase, i);
-                    tmpEvent += __endTransaction();
-                }
+                    handleExchanged.handleIncoming(parBase, i);
+                else
+                    handleNotExchanged.handleIncoming(parBase, i);
+
+                /* End transaction */
+                tmpEvent += __endTransaction();
             }
 
             state = WaitForReceived;
@@ -76,9 +88,7 @@ namespace PMacc
                 case CallFillGaps:
                     state = WaitForFillGaps;
                     __startTransaction();
-
                     parBase.fillBorderGaps();
-
                     tmpEvent = __endTransaction();
                     state = Finish;
                     break;
@@ -119,7 +129,7 @@ namespace PMacc
         };
 
 
-        ParBase& parBase;
+        Particles& parBase;
         state_t state;
         EventTask tmpEvent;
 

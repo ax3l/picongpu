@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,24 +20,20 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef _EXCHANGEINTERN_HPP
-#define	_EXCHANGEINTERN_HPP
-
-#include <assert.h>
-
-#include "types.h"
-#include "memory/buffers/Exchange.hpp"
-#include "memory/dataTypes/Mask.hpp"
 #include "dimensions/GridLayout.hpp"
 #include "mappings/simulation/GridController.hpp"
+#include "memory/buffers/Exchange.hpp"
+#include "memory/dataTypes/Mask.hpp"
+#include "memory/buffers/DeviceBufferIntern.hpp"
+#include "memory/buffers/HostBufferIntern.hpp"
 
 #include "eventSystem/tasks/Factory.hpp"
 #include "eventSystem/tasks/TaskReceive.hpp"
+#include "assert.hpp"
+#include "pmacc_types.hpp"
 
-#include "memory/buffers/DeviceBufferIntern.hpp"
-#include "memory/buffers/HostBufferIntern.hpp"
 
 namespace PMacc
 {
@@ -50,12 +46,12 @@ namespace PMacc
     {
     public:
 
-        ExchangeIntern(DeviceBufferIntern<TYPE, DIM>& source, GridLayout<DIM> memoryLayout, DataSpace<DIM> guardingCells, uint32_t exchange,
+        ExchangeIntern(DeviceBuffer<TYPE, DIM>& source, GridLayout<DIM> memoryLayout, DataSpace<DIM> guardingCells, uint32_t exchange,
                        uint32_t communicationTag, uint32_t area = BORDER, bool sizeOnDevice = false) :
         Exchange<TYPE, DIM>(exchange, communicationTag), deviceDoubleBuffer(NULL)
         {
 
-            assert(!guardingCells.isOneDimensionGreaterThan(memoryLayout.getGuard()));
+            PMACC_ASSERT(!guardingCells.isOneDimensionGreaterThan(memoryLayout.getGuard()));
 
             DataSpace<DIM> tmp_size = memoryLayout.getDataSpaceWithoutGuarding();
             /*
@@ -219,10 +215,9 @@ namespace PMacc
             return *deviceDoubleBuffer;
         }
 
-        EventTask startSend(EventTask &copyEvent)
+        EventTask startSend()
         {
-            //assert(recvTask != NULL);
-            return Environment<>::get().Factory().createTaskSend(*this, copyEvent);
+            return Environment<>::get().Factory().createTaskSend(*this);
         }
 
         EventTask startReceive()
@@ -241,6 +236,3 @@ namespace PMacc
     };
 
 }
-
-#endif	/* _EXCHANGEINTERN_HPP */
-

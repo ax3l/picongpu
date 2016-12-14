@@ -1,10 +1,10 @@
 /**
- * Copyright 2013-2014 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 
 #include <boost/mpl/map.hpp>
 #include <boost/mpl/list.hpp>
@@ -35,6 +35,7 @@
 #include "particles/memory/dataTypes/Particle.hpp"
 #include "particles/frame_types.hpp"
 #include "compileTime/conversion/SeqToMap.hpp"
+#include "compileTime/conversion/OperateOnSeq.hpp"
 #include <boost/utility/result_of.hpp>
 #include <boost/mpl/find.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -68,9 +69,19 @@ namespace pmacc = PMacc;
  */
 template<typename T_CreatePairOperator,
 typename T_ParticleDescription >
+struct Frame;
+
+template<typename T_CreatePairOperator,
+typename T_ParticleDescription >
 struct Frame :
 public InheritLinearly<typename T_ParticleDescription::MethodsList>,
-    protected pmath::MapTuple<typename SeqToMap<typename T_ParticleDescription::ValueTypeSeq, T_CreatePairOperator>::type, pmath::AlignedData>
+protected pmath::MapTuple<typename SeqToMap<typename T_ParticleDescription::ValueTypeSeq, T_CreatePairOperator>::type, pmath::AlignedData>,
+public InheritLinearly<
+    typename OperateOnSeq<
+        typename T_ParticleDescription::FrameExtensionList,
+        bmpl::apply1<bmpl::_1, Frame<T_CreatePairOperator,T_ParticleDescription> >
+    >::type
+>
 {
     typedef T_ParticleDescription ParticleDescription;
     typedef typename ParticleDescription::Name Name;
@@ -78,6 +89,7 @@ public InheritLinearly<typename T_ParticleDescription::MethodsList>,
     typedef typename ParticleDescription::ValueTypeSeq ValueTypeSeq;
     typedef typename ParticleDescription::MethodsList MethodsList;
     typedef typename ParticleDescription::FlagsList FlagList;
+    typedef typename ParticleDescription::FrameExtensionList FrameExtensionList;
     typedef Frame<T_CreatePairOperator, ParticleDescription> ThisType;
     /* definition of the MapTupel where we inherit from*/
     typedef pmath::MapTuple<typename SeqToMap<ValueTypeSeq, T_CreatePairOperator>::type, pmath::AlignedData> BaseType;
@@ -95,7 +107,7 @@ public InheritLinearly<typename T_ParticleDescription::MethodsList>,
     template<class F, class TKey>
     struct result<const F(TKey)>
     {
-        typedef typename GetKeyFromAlias_assert<ValueTypeSeq, TKey>::type Key;
+        typedef typename GetKeyFromAlias<ValueTypeSeq, TKey, errorHandlerPolicies::ThrowValueNotFound>::type Key;
         typedef typename boost::result_of<const BaseType(Key)>::type type;
     };
 
@@ -103,7 +115,7 @@ public InheritLinearly<typename T_ParticleDescription::MethodsList>,
     template<class F, class TKey>
     struct result< F(TKey)>
     {
-        typedef typename GetKeyFromAlias_assert<ValueTypeSeq, TKey>::type Key;
+        typedef typename GetKeyFromAlias<ValueTypeSeq, TKey, errorHandlerPolicies::ThrowValueNotFound>::type Key;
         typedef typename boost::result_of< BaseType(Key)>::type type;
     };
 
@@ -119,7 +131,7 @@ public InheritLinearly<typename T_ParticleDescription::MethodsList>,
         return ParticleType(*this, idx);
     }
 
-     /** access attribute with a identifier
+    /** access attribute with a identifier
      *
      * @param T_Key instance of identifier type
      *              (can be an alias, value_identifier or any other class)
@@ -180,11 +192,11 @@ typename T_CreatePairOperator,
 typename T_ParticleDescription
 >
 struct HasFlag<
-PMacc::Frame<T_CreatePairOperator, T_ParticleDescription>,T_IdentifierName>
+PMacc::Frame<T_CreatePairOperator, T_ParticleDescription>, T_IdentifierName>
 {
 private:
-    typedef PMacc::Frame<T_CreatePairOperator,T_ParticleDescription> FrameType;
-    typedef typename GetFlagType<FrameType,T_IdentifierName>::type SolvedAliasName;
+    typedef PMacc::Frame<T_CreatePairOperator, T_ParticleDescription> FrameType;
+    typedef typename GetFlagType<FrameType, T_IdentifierName>::type SolvedAliasName;
     typedef typename FrameType::FlagList FlagList;
 public:
 
@@ -196,7 +208,7 @@ typename T_CreatePairOperator,
 typename T_ParticleDescription
 >
 struct GetFlagType<
-PMacc::Frame<T_CreatePairOperator, T_ParticleDescription>,T_IdentifierName>
+PMacc::Frame<T_CreatePairOperator, T_ParticleDescription>, T_IdentifierName>
 {
 private:
     typedef PMacc::Frame<T_CreatePairOperator, T_ParticleDescription> FrameType;

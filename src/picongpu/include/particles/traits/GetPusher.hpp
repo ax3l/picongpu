@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Rene Widera
+ * Copyright 2014-2016 Rene Widera, Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -27,12 +27,15 @@
 namespace picongpu
 {
 
+namespace traits
+{
 template<typename T_Species>
 struct GetPusher
 {
     typedef typename PMacc::traits::Resolve<
         typename GetFlagType<typename T_Species::FrameType, particlePusher<> >::type
-    >::type type;
+      >::type type;
 };
 
+}// namespace traits
 }// namespace picongpu

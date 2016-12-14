@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,13 +20,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef STACKEXCHANGEBUFFER_HPP
-#define	STACKEXCHANGEBUFFER_HPP
+#pragma once
 
 #include "particles/memory/boxes/ExchangePopDataBox.hpp"
 #include "particles/memory/boxes/ExchangePushDataBox.hpp"
 #include "memory/buffers/Exchange.hpp"
-#include <cassert>
+#include "assert.hpp"
 
 namespace PMacc
 {
@@ -80,11 +79,9 @@ namespace PMacc
         ExchangePopDataBox<vint_t, FRAME, DIM> getHostExchangePopDataBox()
         {
             return ExchangePopDataBox<vint_t, FRAME, DIM > (
-                                                            stack.getHostBuffer().getBasePointer(),
-                                                            PopDataBox<vint_t, FRAMEINDEX > (
-                                                                                             stackIndexer.getHostBuffer().getBasePointer(),
-                                                                                             (vint_t*) stackIndexer.getHostBuffer().getCurrentSizePointer(),
-                                                                                             (vint_t) stackIndexer.getHostBuffer().getCurrentSize()));
+                                                            stack.getHostBuffer().getDataBox(),
+                                                            stackIndexer.getHostBuffer().getDataBox()
+                                                           );
         }
 
         /**
@@ -94,8 +91,8 @@ namespace PMacc
          */
         ExchangePushDataBox<vint_t, FRAME, DIM> getDeviceExchangePushDataBox()
         {
-            assert(stack.getDeviceBuffer().hasCurrentSizeOnDevice() == true);
-            assert(stackIndexer.getDeviceBuffer().hasCurrentSizeOnDevice() == true);
+            PMACC_ASSERT(stack.getDeviceBuffer().hasCurrentSizeOnDevice() == true);
+            PMACC_ASSERT(stackIndexer.getDeviceBuffer().hasCurrentSizeOnDevice() == true);
             return ExchangePushDataBox<vint_t, FRAME, DIM > (
                                                              stack.getDeviceBuffer().getBasePointer(),
                                                              (vint_t*) stack.getDeviceBuffer().getCurrentSizeOnDevicePointer(),
@@ -113,11 +110,9 @@ namespace PMacc
         ExchangePopDataBox<vint_t, FRAME, DIM> getDeviceExchangePopDataBox()
         {
             return ExchangePopDataBox<vint_t, FRAME, DIM > (
-                                                            stack.getDeviceBuffer().getBasePointer(),
-                                                            PopDataBox<vint_t, FRAMEINDEX > (
-                                                                                             stackIndexer.getDeviceBuffer().getBasePointer(),
-                                                                                             (vint_t*) stackIndexer.getDeviceBuffer().getCurrentSizeOnDevicePointer(),
-                                                                                             (vint_t) stackIndexer.getDeviceBuffer().getCurrentSize()));
+                                                            stack.getDeviceBuffer().getDataBox(),
+                                                            stackIndexer.getDeviceBuffer().getDataBox()
+                                                           );
         }
 
         void setCurrentSize(const size_t size)
@@ -175,6 +170,3 @@ namespace PMacc
         Exchange<FRAMEINDEX, DIM1>& stackIndexer;
     };
 }
-
-#endif	/* STACKEXCHANGEBUFFER_HPP */
-

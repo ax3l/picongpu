@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Felix Schmitt, Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Felix Schmitt, Rene Widera, Wolfgang Hoenig,
+ *                     Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -21,15 +22,17 @@
  */
 
 
-#ifndef _STREAMCONTROLLER_HPP
-#define	_STREAMCONTROLLER_HPP
-
-#include <cuda_runtime.h>
-#include <vector>
-
-#include "types.h"
+#pragma once
 
 #include "eventSystem/streams/EventStream.hpp"
+#include "pmacc_types.hpp"
+#include "Environment.def"
+
+#include <cuda_runtime.h>
+
+#include <string>
+#include <stdexcept>
+#include <vector>
 
 namespace PMacc
 {
@@ -138,7 +141,3 @@ namespace PMacc
     };
 
 } //namespace PMacc
-
-
-#endif	/* _ENVIRONMENTCONTROLLER_HPP */
-

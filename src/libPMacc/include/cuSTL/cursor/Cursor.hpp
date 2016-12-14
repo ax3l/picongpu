@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,12 +20,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CURSOR_CURSOR_HPP
-#define CURSOR_CURSOR_HPP
+#pragma once
 
 #include <boost/mpl/void.hpp>
 #include "math/vector/Int.hpp"
-#include "types.h"
+#include "pmacc_types.hpp"
 #include <boost/type_traits/add_const.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <cuSTL/cursor/traits.hpp>
@@ -51,7 +50,7 @@ class Cursor : private _Accessor, _Navigator
 {
 public:
     typedef typename _Accessor::type type;
-    typedef typename boost::remove_reference<type>::type pureType;
+    typedef typename boost::remove_reference<type>::type ValueType;
     typedef _Accessor Accessor;
     typedef _Navigator Navigator;
     typedef _Marker Marker;
@@ -95,8 +94,9 @@ public:
     template<typename Jump>
     HDINLINE This operator()(const Jump& jump) const
     {
-        return This(getAccessor(), getNavigator(),
-                    Navigator::operator()(this->marker, jump));
+        Navigator newNavigator(getNavigator());
+        Marker newMarker = newNavigator(this->marker, jump);
+        return This(getAccessor(), newNavigator, newMarker);
     }
 
     /* convenient method which is available if the navigator accepts a Int<1> */
@@ -166,7 +166,7 @@ namespace traits
 template<typename _Accessor, typename _Navigator, typename _Marker>
 struct dim< PMacc::cursor::Cursor<_Accessor, _Navigator, _Marker> >
 {
-    static const int value = PMacc::cursor::traits::dim<typename Cursor<_Accessor, _Navigator, _Marker>::Navigator >::value;
+    static constexpr int value = PMacc::cursor::traits::dim<typename Cursor<_Accessor, _Navigator, _Marker>::Navigator >::value;
 };
 
 } // traits
@@ -174,4 +174,4 @@ struct dim< PMacc::cursor::Cursor<_Accessor, _Navigator, _Marker> >
 } // cursor
 } // PMacc
 
-#endif // CURSOR_CURSOR_HPP
+

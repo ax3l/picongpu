@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,11 +20,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CUDAWRAPPERMEMCOPY_HPP
-#define CUDAWRAPPERMEMCOPY_HPP
+#pragma once
 
 #include "math/vector/Size_t.hpp"
-#include <types.h>
+#include "pmacc_types.hpp"
 
 namespace PMacc
 {
@@ -52,7 +51,7 @@ struct Memcopy<1>
     {
             const cudaMemcpyKind kind[] = {cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost,
                                      cudaMemcpyHostToHost, cudaMemcpyDeviceToDevice};
-            CUDA_CHECK_NO_EXCEP(cudaMemcpy(dest, source, sizeof(Type) * size.x(), kind[direction]));
+            CUDA_CHECK(cudaMemcpy(dest, source, sizeof(Type) * size.x(), kind[direction]));
     }
 };
 
@@ -67,7 +66,7 @@ struct Memcopy<2u>
             const cudaMemcpyKind kind[] = {cudaMemcpyHostToDevice, cudaMemcpyDeviceToHost,
                                      cudaMemcpyHostToHost, cudaMemcpyDeviceToDevice};
 
-            CUDA_CHECK_NO_EXCEP(cudaMemcpy2D(dest, pitchDest.x(), source, pitchSource.x(), sizeof(Type) * size.x(), size.y(),
+            CUDA_CHECK(cudaMemcpy2D(dest, pitchDest.x(), source, pitchSource.x(), sizeof(Type) * size.x(), size.y(),
                          kind[direction]));
     }
 };
@@ -85,10 +84,12 @@ struct Memcopy<3>
 
             cudaPitchedPtr pitchedPtrDest;
             pitchedPtrDest.pitch = pitchDest.x(); pitchedPtrDest.ptr = dest;
-            pitchedPtrDest.xsize = size.x(); pitchedPtrDest.ysize = size.y();
+            pitchedPtrDest.xsize = size.x() * sizeof (Type);
+            pitchedPtrDest.ysize = size.y();
             cudaPitchedPtr pitchedPtrSource;
             pitchedPtrSource.pitch = pitchSource.x(); pitchedPtrSource.ptr = source;
-            pitchedPtrSource.xsize = size.x(); pitchedPtrSource.ysize = size.y();
+            pitchedPtrSource.xsize = size.x() * sizeof (Type);
+            pitchedPtrSource.ysize = size.y();
 
             cudaMemcpy3DParms params;
             params.srcArray = NULL;
@@ -99,11 +100,9 @@ struct Memcopy<3>
             params.dstPtr = pitchedPtrDest;
             params.extent = make_cudaExtent(size.x() * sizeof(Type), size.y(), size.z());
             params.kind = kind[direction];
-            CUDA_CHECK_NO_EXCEP(cudaMemcpy3D(&params));
+            CUDA_CHECK(cudaMemcpy3D(&params));
     }
 };
 
 } // cudaWrapper
 } // PMacc
-
-#endif //CUDAWRAPPERMEMCOPY_HPP

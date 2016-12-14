@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Axel Huebl, Felix Schmitt, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,14 +20,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PARTICLESBUFFER_HPP
-#define	PARTICLESBUFFER_HPP
+#pragma once
 
 #include "particles/frame_types.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "particles/memory/boxes/ParticlesBox.hpp"
-#include "particles/memory/buffers/HeapBuffer.hpp"
-#include "particles/memory/boxes/HeapDataBox.hpp"
 #include "dimensions/GridLayout.hpp"
 #include "memory/dataTypes/Mask.hpp"
 #include "particles/memory/buffers/StackExchangeBuffer.hpp"
@@ -50,7 +47,8 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/pair.hpp>
 #include "particles/ParticleDescription.hpp"
-#include "traits/Resolve.hpp"
+#include "particles/memory/dataTypes/ListPointer.hpp"
+
 
 namespace PMacc
 {
@@ -69,58 +67,101 @@ public:
 
     /** create static array
      */
-    template<uint32_t T_size>
+    template< uint32_t T_size >
     struct OperatorCreatePairStaticArray
     {
+
         template<typename X>
         struct apply
         {
-            typedef
-            bmpl::pair<X,
-            StaticArray< typename traits::Resolve<X>::type::type, bmpl::integral_c<uint32_t,T_size> >
+            typedef bmpl::pair<
+                X,
+                StaticArray<
+                    typename traits::Resolve<X>::type::type,
+                    bmpl::integral_c<uint32_t, T_size>
+                >
             > type;
         };
     };
 
-    typedef ExchangeMemoryIndex<vint_t, DIM - 1 > PopPushType;
+    /** type of the border frame management object
+     *
+     * contains:
+     *   - superCell position of the border frames inside a given range
+     *   - start position inside the exchange stack for frames
+     *   - number of frames corresponding to the superCell position
+     */
+    typedef ExchangeMemoryIndex<
+        vint_t,
+        DIM - 1
+    > BorderFrameIndex;
 
     typedef SuperCellSize_ SuperCellSize;
 
+    typedef typename MakeSeq<
+        typename T_ParticleDescription::ValueTypeSeq,
+        localCellIdx,
+        multiMask
+    >::type ParticleAttributeList;
+
+    typedef typename MakeSeq<
+        typename T_ParticleDescription::ValueTypeSeq,
+        localCellIdx
+    >::type ParticleAttributeListBorder;
+
+    typedef
+    typename ReplaceValueTypeSeq<
+        T_ParticleDescription,
+        ParticleAttributeList
+    >::type FrameDescriptionWithManagementAttributes;
+
+    /** double linked list pointer */
     typedef
     typename MakeSeq<
-    typename T_ParticleDescription::ValueTypeSeq,
-    localCellIdx,
-    multiMask
-    >::type full_particleList;
+        PreviousFramePtr<>,
+        NextFramePtr<>
+    >::type LinkedListPointer;
 
-    typedef
-    typename MakeSeq<
-    typename T_ParticleDescription::ValueTypeSeq,
-    localCellIdx
-    >::type border_particleList;
+    /* extent particle description with pointer to a frame*/
+    typedef typename ReplaceFrameExtensionSeq<
+        FrameDescriptionWithManagementAttributes,
+        LinkedListPointer
+    >::type FrameDescription;
 
-    typedef
-    typename ReplaceValueTypeSeq<T_ParticleDescription, full_particleList>::type
-    ParticleDescriptionDefault;
-
+    /** frame definition
+     *
+     * a group of particles is stored as frame
+     */
     typedef Frame<
-    OperatorCreatePairStaticArray<PMacc::math::CT::volume<SuperCellSize>::type::value >, ParticleDescriptionDefault> ParticleType;
+        OperatorCreatePairStaticArray<
+            PMacc::math::CT::volume< SuperCellSize >::type::value
+        >,
+        FrameDescription
+    > FrameType;
 
-    typedef
-    typename ReplaceValueTypeSeq<T_ParticleDescription, border_particleList>::type
-    ParticleDescriptionBorder;
+    typedef typename ReplaceValueTypeSeq<
+        T_ParticleDescription,
+        ParticleAttributeListBorder
+    >::type FrameDescriptionBorder;
 
-    typedef Frame<OperatorCreatePairStaticArray<1u >, ParticleDescriptionBorder> ParticleTypeBorder;
+    /** frame which is used to communicate particles to neighbors
+     *
+     * - each frame contains only one particle
+     * - local administration attributes of a particle are removed
+     */
+    typedef Frame<
+        OperatorCreatePairStaticArray< 1u >,
+        FrameDescriptionBorder
+    > FrameTypeBorder;
 
+    typedef SuperCell<FrameType> SuperCellType;
 
 private:
 
-    /*this is only for internel calculations*/
+    /* this enum is used only for internal calculations */
     enum
     {
-        SizeOfOneBorderElement = (sizeof (ParticleTypeBorder) + sizeof (PopPushType)),
-        /*size=HeapBuffer overhead+prevFrameIndex+nextFrameIndex*/
-        SizeOfOneFrame = HeapBuffer<vint_t, ParticleType, ParticleTypeBorder >::SizeOfOneFrame + 2 * sizeof (vint_t)
+        SizeOfOneBorderElement = (sizeof (FrameTypeBorder) + sizeof (BorderFrameIndex))
     };
 
 public:
@@ -133,36 +174,20 @@ public:
      * @param gpuMemory how many memory on device is used for this instance (in byte)
      */
     ParticlesBuffer(DataSpace<DIM> layout, DataSpace<DIM> superCellSize) :
-    superCellSize(superCellSize), gridSize(layout), frames(NULL), framesExchanges(NULL), nextFrames(NULL), prevFrames(NULL)
+    superCellSize(superCellSize), gridSize(layout), framesExchanges(NULL)
     {
 
-        exchangeMemoryIndexer = new GridBuffer<PopPushType, DIM1 > (DataSpace<DIM1 > (0));
-        framesExchanges = new GridBuffer< ParticleType, DIM1, ParticleTypeBorder > (DataSpace<DIM1 > (0));
+        exchangeMemoryIndexer = new GridBuffer<BorderFrameIndex, DIM1 > (DataSpace<DIM1 > (0));
+        framesExchanges = new GridBuffer< FrameType, DIM1, FrameTypeBorder > (DataSpace<DIM1 > (0));
 
-        //std::cout << "size: " << sizeof (ParticleType) << " " << sizeof (ParticleTypeBorder) << std::endl;
         DataSpace<DIM> superCellsCount = gridSize / superCellSize;
 
-        superCells = new GridBuffer<SuperCell<vint_t>, DIM > (superCellsCount);
+        superCells = new GridBuffer<SuperCellType, DIM > (superCellsCount);
 
     }
 
-    void createParticleBuffer(size_t gpuMemory)
+    void createParticleBuffer()
     {
-
-        numFrames = gpuMemory / SizeOfOneFrame;
-
-        frames = new HeapBuffer<vint_t, ParticleType, ParticleTypeBorder > (DataSpace<DIM1 > (numFrames));
-
-        nextFrames = new GridBuffer<vint_t, DIM1 > (DataSpace<DIM1 > (numFrames));
-        prevFrames = new GridBuffer<vint_t, DIM1 > (DataSpace<DIM1 > (numFrames));
-
-        /** \fixme use own log level, like log<ggLog::MEMORY >
-         */
-        std::cout << "mem for particles=" << gpuMemory / 1024 / 1024 << " MiB = " <<
-            numFrames << " Frames = " <<
-            numFrames * superCellSize.productOfComponents() <<
-            " Particles" << std::endl;
-
         reset();
     }
 
@@ -172,10 +197,7 @@ public:
     virtual ~ParticlesBuffer()
     {
         __delete(superCells);
-        __delete(frames);
         __delete(framesExchanges);
-        __delete(nextFrames);
-        __delete(prevFrames);
         __delete(exchangeMemoryIndexer);
     }
 
@@ -184,20 +206,9 @@ public:
      */
     void reset()
     {
-        __startTransaction(__getTransactionEvent());
-        frames->reset(false);
-        frames->initialFillBuffer();
-        EventTask ev1 = __endTransaction();
-        __startTransaction(__getTransactionEvent());
-        superCells->getDeviceBuffer().setValue(SuperCell<vint_t > ());
-        superCells->getHostBuffer().setValue(SuperCell<vint_t > ());
 
-        /*nextFrames->getDeviceBuffer().setValue(INV_IDX);//!\todo: is this needed? On device we set any new frame values to INVALID_INDEX
-        prevFrames->getDeviceBuffer().setValue(INV_IDX);//!\todo: is this needed? On device we set any new frame values to INVALID_INDEX
-        nextFrames->getHostBuffer().setValue(INV_IDX);//!\todo: is this needed? On device we set any new frame values to INVALID_INDEX
-        prevFrames->getHostBuffer().setValue(INV_IDX);//!\todo: is this needed? On device we set any new frame values to INVALID_INDEX
-         */
-        __setTransactionEvent(__endTransaction() + ev1);
+        superCells->getDeviceBuffer().setValue(SuperCellType ());
+        superCells->getHostBuffer().setValue(SuperCellType ());
     }
 
     /**
@@ -209,26 +220,11 @@ public:
     void addExchange(Mask receive, size_t usedMemory, uint32_t communicationTag)
     {
 
-        size_t numBorderFrames = usedMemory / SizeOfOneBorderElement;
+        size_t numFrameTypeBorders = usedMemory / SizeOfOneBorderElement;
 
-        framesExchanges->addExchangeBuffer(receive, DataSpace<DIM1 > (numBorderFrames), communicationTag, true);
+        framesExchanges->addExchangeBuffer(receive, DataSpace<DIM1 > (numFrameTypeBorders), communicationTag, true, false);
 
-        exchangeMemoryIndexer->addExchangeBuffer(receive, DataSpace<DIM1 > (numBorderFrames), communicationTag | (1u << (20 - 5)), true);
-    }
-
-    /**
-     * Returns a ParticlesBox for host frame data.
-     *
-     * @return host frames ParticlesBox
-     */
-    ParticlesBox<ParticleType, DIM> getHostParticleBox()
-    {
-
-        return ParticlesBox<ParticleType, DIM > (
-                                                 superCells->getHostBuffer().getDataBox(),
-                                                 frames->getHostHeapDataBox(),
-                                                 VectorDataBox<vint_t > (nextFrames->getHostBuffer().getBasePointer()),
-                                                 VectorDataBox<vint_t > (prevFrames->getHostBuffer().getBasePointer()));
+        exchangeMemoryIndexer->addExchangeBuffer(receive, DataSpace<DIM1 > (numFrameTypeBorders), communicationTag | (1u << (20 - 5)), true, false);
     }
 
     /**
@@ -236,14 +232,25 @@ public:
      *
      * @return device frames ParticlesBox
      */
-    ParticlesBox<ParticleType, DIM> getDeviceParticleBox()
+    ParticlesBox<FrameType, DIM> getDeviceParticleBox()
     {
 
-        return ParticlesBox<ParticleType, DIM > (
-                                                 superCells->getDeviceBuffer().getDataBox(),
-                                                 frames->getDeviceHeapDataBox(),
-                                                 VectorDataBox<vint_t > (nextFrames->getDeviceBuffer().getBasePointer()),
-                                                 VectorDataBox<vint_t > (prevFrames->getDeviceBuffer().getBasePointer()));
+        return ParticlesBox<FrameType, DIM > (
+                                                 superCells->getDeviceBuffer().getDataBox());
+    }
+
+    /**
+     * Returns a ParticlesBox for host frame data.
+     *
+     * @return host frames ParticlesBox
+     */
+    ParticlesBox<FrameType, DIM> getHostParticleBox(int64_t memoryOffset)
+    {
+
+        return ParticlesBox<FrameType, DIM > (
+                                                 superCells->getHostBuffer().getDataBox(),
+                                                 memoryOffset
+                                                );
     }
 
     /**
@@ -270,17 +277,17 @@ public:
         return framesExchanges->hasReceiveExchange(ex);
     }
 
-    StackExchangeBuffer<ParticleTypeBorder, PopPushType, DIM - 1 > getSendExchangeStack(uint32_t ex)
+    StackExchangeBuffer<FrameTypeBorder, BorderFrameIndex, DIM - 1 > getSendExchangeStack(uint32_t ex)
     {
 
-        return StackExchangeBuffer<ParticleTypeBorder, PopPushType, DIM - 1 >
+        return StackExchangeBuffer<FrameTypeBorder, BorderFrameIndex, DIM - 1 >
             (framesExchanges->getSendExchange(ex), exchangeMemoryIndexer->getSendExchange(ex));
     }
 
-    StackExchangeBuffer<ParticleTypeBorder, PopPushType, DIM - 1 > getReceiveExchangeStack(uint32_t ex)
+    StackExchangeBuffer<FrameTypeBorder, BorderFrameIndex, DIM - 1 > getReceiveExchangeStack(uint32_t ex)
     {
 
-        return StackExchangeBuffer<ParticleTypeBorder, PopPushType, DIM - 1 >
+        return StackExchangeBuffer<FrameTypeBorder, BorderFrameIndex, DIM - 1 >
             (framesExchanges->getReceiveExchange(ex), exchangeMemoryIndexer->getReceiveExchange(ex));
     }
 
@@ -294,17 +301,17 @@ public:
     {
 
         return framesExchanges->asyncCommunication(serialEvent) +
-            exchangeMemoryIndexer->asyncCommunication(serialEvent);
+               exchangeMemoryIndexer->asyncCommunication(serialEvent);
     }
 
-    EventTask asyncSendParticles(EventTask serialEvent, uint32_t ex, EventTask &gpuFree)
+    EventTask asyncSendParticles(EventTask serialEvent, uint32_t ex)
     {
-        /*store every gpu free event seperat to avoid raceconditions*/
+        /* store each gpu-free event separately to avoid race conditions */
         EventTask framesExchangesGPUEvent;
         EventTask exchangeMemoryIndexerGPUEvent;
-        EventTask returnEvent = framesExchanges->asyncSend(serialEvent, ex, framesExchangesGPUEvent) +
-            exchangeMemoryIndexer->asyncSend(serialEvent, ex, exchangeMemoryIndexerGPUEvent);
-        gpuFree = framesExchangesGPUEvent + exchangeMemoryIndexerGPUEvent;
+        EventTask returnEvent = framesExchanges->asyncSend(serialEvent, ex) +
+            exchangeMemoryIndexer->asyncSend(serialEvent, ex);
+
         return returnEvent;
     }
 
@@ -316,56 +323,6 @@ public:
     }
 
     /**
-     * Starts copying data from host to device.
-     */
-    void hostToDevice()
-    {
-
-        __startTransaction(__getTransactionEvent());
-        frames->hostToDevice();
-        EventTask ev1 = __endTransaction();
-
-        __startTransaction(__getTransactionEvent());
-        superCells->hostToDevice();
-        EventTask ev2 = __endTransaction();
-
-        __startTransaction(__getTransactionEvent());
-        nextFrames->hostToDevice();
-        EventTask ev3 = __endTransaction();
-
-        __startTransaction(__getTransactionEvent());
-        prevFrames->hostToDevice();
-        EventTask ev4 = __endTransaction();
-
-        __setTransactionEvent(ev1 + ev2 + ev3 + ev4);
-    }
-
-    /**
-     * Starts copying data from device to host.
-     */
-    void deviceToHost()
-    {
-
-        __startTransaction(__getTransactionEvent());
-        frames->deviceToHost();
-        EventTask ev1 = __endTransaction();
-
-        __startTransaction(__getTransactionEvent());
-        superCells->deviceToHost();
-        EventTask ev2 = __endTransaction();
-
-        __startTransaction(__getTransactionEvent());
-        nextFrames->deviceToHost();
-        EventTask ev3 = __endTransaction();
-
-        __startTransaction(__getTransactionEvent());
-        prevFrames->deviceToHost();
-        EventTask ev4 = __endTransaction();
-
-        __setTransactionEvent(ev1 + ev2 + ev3 + ev4);
-    }
-
-    /**
      * Returns number of supercells in each dimension.
      *
      * @return number of supercells
@@ -373,7 +330,7 @@ public:
     DataSpace<DIM> getSuperCellsCount()
     {
 
-        assert(superCells != NULL);
+        PMACC_ASSERT(superCells != NULL);
         return superCells->getGridLayout().getDataSpace();
     }
 
@@ -385,7 +342,7 @@ public:
     GridLayout<DIM> getSuperCellsLayout()
     {
 
-        assert(superCells != NULL);
+        PMACC_ASSERT(superCells != NULL);
         return superCells->getGridLayout();
     }
 
@@ -400,32 +357,21 @@ public:
         return superCellSize;
     }
 
-    /**
-     * Returns number of frames.
-     *
-     * @return number of frames
-     */
-    size_t getFrameCount()
+    void deviceToHost()
     {
-        return numFrames;
+        superCells->deviceToHost();
     }
 
-private:
-    GridBuffer<PopPushType, DIM1> *exchangeMemoryIndexer;
 
-    GridBuffer<SuperCell<vint_t>, DIM> *superCells;
-    GridBuffer<vint_t, DIM1> *nextFrames;
-    GridBuffer<vint_t, DIM1> *prevFrames;
-    /*gridbuffer for hold borderFrames, we need a own buffer to create first exchanges without core momory*/
-    GridBuffer< ParticleType, DIM1, ParticleTypeBorder> *framesExchanges;
-    HeapBuffer<vint_t, ParticleType, ParticleTypeBorder> *frames;
+private:
+    GridBuffer<BorderFrameIndex, DIM1> *exchangeMemoryIndexer;
+
+    GridBuffer<SuperCellType, DIM> *superCells;
+    /*GridBuffer for hold borderFrames, we need a own buffer to create first exchanges without core memory*/
+    GridBuffer< FrameType, DIM1, FrameTypeBorder> *framesExchanges;
 
     DataSpace<DIM> superCellSize;
     DataSpace<DIM> gridSize;
 
-    size_t numFrames;
-
 };
 }
-
-#endif	/* PARTICLESBUFFER_HPP */

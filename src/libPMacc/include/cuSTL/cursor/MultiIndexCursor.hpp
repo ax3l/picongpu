@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,8 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CURSOR_MULTIINDEXCURSOR
-#define CURSOR_MULTIINDEXCURSOR
+#pragma once
 
 #include "Cursor.hpp"
 #include "accessor/MarkerAccessor.hpp"
@@ -43,7 +42,7 @@ template<int dim>
 HDINLINE
 cursor::Cursor<cursor::MarkerAccessor<math::Int<dim> >, MultiIndexNavigator<dim>,
                math::Int<dim> >
-               make_MultiIndexCursor(const math::Int<dim>& idx = math::Int<dim>(0))
+               make_MultiIndexCursor(const math::Int<dim>& idx = math::Int<dim>::create(0))
 {
     return make_Cursor(cursor::MarkerAccessor<math::Int<dim> >(),
                        MultiIndexNavigator<dim>(),
@@ -53,4 +52,3 @@ cursor::Cursor<cursor::MarkerAccessor<math::Int<dim> >, MultiIndexNavigator<dim>
 } // cursor
 } // PMacc
 
-#endif // CURSOR_MULTIINDEXCURSOR

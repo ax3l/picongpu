@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera, Wolfgang Hoenig
+ * Copyright 2013-2016 Rene Widera, Wolfgang Hoenig, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,13 +20,12 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef _ICOMMUNICATOR_HPP
-#define	_ICOMMUNICATOR_HPP
+#include "pmacc_types.hpp"
+#include "dimensions/DataSpace.hpp"
 
 #include <mpi.h>
-
-#include "types.h"
 
 namespace PMacc
 {
@@ -44,11 +43,13 @@ public:
     virtual const Mask& getCommunicationMask() const=0;
 
     /*! moves all GPUs from top to bottom (y-coordinate)
+     *
      * @return true if the position of gpu is switched to the end, else false
      */
     virtual bool slide() = 0;
 
     /*! slides multiple times
+     *
      * @param[in] numSlides number of slides
      * @return true if the position of gpu is switched to the end, else false
      */
@@ -57,6 +58,7 @@ public:
     //!\todo Interface should not depend on MPI!
 
     /*! starts sending via MPI (non-blocking)
+     *
      * \param[in] ex                direction to send (enum ExchangeType)
      * \param[in] send_data         pointer to data; should have at least send_data_count bytes
      * \param[in] send_data_count   message size in bytes to sent
@@ -79,10 +81,11 @@ public:
 
     virtual int getRank()=0;
 
+    /*! Return which of the three directions are periodic
+     *
+     * \return for each direction a false (0) or true(1) value
+     */
+    virtual DataSpace<DIM3> getPeriodic() const = 0;
 };
 
 } //namespace PMacc
-
-
-#endif	/* _ICOMMUNICATOR_HPP */
-

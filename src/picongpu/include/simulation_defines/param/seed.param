@@ -1,5 +1,5 @@
 /**
- * Copyright 2014 Axel Huebl
+ * Copyright 2014-2016 Axel Huebl, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -36,8 +36,15 @@ namespace picongpu
         operator()()
         {
             /** to vary (binary) identical simulations, use a combination of
-             *  time(NULL) from \see <time.h> (precision: seconds) */
+             *  time(NULL) from \see <ctime> (precision: seconds) */
             return 42;
         }
     };
+
+    /* seed for randomization of different particle attributes */
+    enum Seeds
+    {
+        TEMPERATURE_SEED = 255845, POSITION_SEED = 854666252, IONIZATION_SEED = 431630977
+    };
+
 } /* namespace picongpu */

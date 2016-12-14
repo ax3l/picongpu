@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,26 +20,24 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-#ifndef _BUFFER_HPP
-#define	_BUFFER_HPP
-
-#include <cassert>
-#include <limits>
-
-#include "types.h"
 #include "dimensions/DataSpace.hpp"
 #include "memory/boxes/DataBox.hpp"
 #include "memory/boxes/PitchedBox.hpp"
 #include "Environment.hpp"
+#include "assert.hpp"
+#include "pmacc_types.hpp"
+
+#include <limits>
 
 namespace PMacc
 {
 
     /**
-     * Minimal function descriptiin of a buffer,
+     * Minimal function description of a buffer,
      *
-     * @tparam TYPE datatype stored in the buffer
+     * @tparam TYPE data type stored in the buffer
      * @tparam DIM dimension of the buffer (1-3)
      */
     template <class TYPE, unsigned DIM>
@@ -49,15 +47,18 @@ namespace PMacc
 
         typedef DataBox<PitchedBox<TYPE, DIM> > DataBoxType;
 
-        /**
-         * constructor
-         * @param dataSpace description of spread of any dimension
+        /** constructor
+         *
+         * @param size extent for each dimension (in elements)
+         *             if the buffer is a view to an existing buffer the size
+         *             can be less than `physicalMemorySize`
+         * @param physicalMemorySize size of the physical memory (in elements)
          */
-        Buffer(DataSpace<DIM> dataSpace) :
-        data_space(dataSpace),data1D(true)
+        Buffer(DataSpace<DIM> size, DataSpace<DIM> physicalMemorySize) :
+        data_space(size), data1D(true), current_size(NULL), m_physicalMemorySize(physicalMemorySize)
         {
             CUDA_CHECK(cudaMallocHost(&current_size, sizeof (size_t)));
-            *current_size = dataSpace.productOfComponents();
+            *current_size = size.productOfComponents();
         }
 
         /**
@@ -85,6 +86,14 @@ namespace PMacc
         {
             return data_space;
         }
+
+        /** get size of the physical memory (in elements)
+         */
+        DataSpace<DIM> getPhysicalMemorySize() const
+        {
+            return m_physicalMemorySize;
+        }
+
 
         virtual DataSpace<DIM> getCurrentDataSpace()
         {
@@ -158,7 +167,7 @@ namespace PMacc
         virtual void setCurrentSize(const size_t newsize)
         {
             __startOperation(ITask::TASK_HOST);
-            assert(static_cast<size_t>(newsize) <= static_cast<size_t>(data_space.productOfComponents()));
+            PMACC_ASSERT(static_cast<size_t>(newsize) <= static_cast<size_t>(data_space.productOfComponents()));
             *current_size = newsize;
         }
 
@@ -185,6 +194,7 @@ namespace PMacc
         }
 
         DataSpace<DIM> data_space;
+        DataSpace<DIM> m_physicalMemorySize;
 
         size_t *current_size;
 
@@ -193,6 +203,3 @@ namespace PMacc
     };
 
 } //namespace PMacc
-
-#endif	/* _BUFFER_HPP */
-

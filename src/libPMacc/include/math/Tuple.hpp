@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <types.h>
+#include "pmacc_types.hpp"
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/pop_front.hpp>
 #include <boost/mpl/at.hpp>
@@ -31,6 +31,7 @@
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/int.hpp>
 #include <boost/mpl/minus.hpp>
+#include <boost/mpl/integral_c.hpp>
 #include <boost/preprocessor/repetition/enum.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_binary_params.hpp>
@@ -70,7 +71,7 @@ class Tuple<TypeList, false>
     : public Tuple<typename mpl::pop_front<TypeList>::type>
 {
 public:
-    static const int dim = mpl::size<TypeList>::type::value;
+    static constexpr int dim = mpl::size<TypeList>::type::value;
     typedef TypeList TypeList_;
 private:
     typedef Tuple<typename mpl::pop_front<TypeList>::type> base;
@@ -108,7 +109,7 @@ public:
     {
         return value;
     }
-    HDINLINE Value& at(mpl_::integral_c<int, 0>)
+    HDINLINE Value& at(mpl::integral_c<int, 0>)
     {
         return value;
     }
@@ -117,7 +118,7 @@ public:
     {
         return value;
     }
-    HDINLINE const Value& at(mpl_::integral_c<int, 0>) const
+    HDINLINE const Value& at(mpl::integral_c<int, 0>) const
     {
         return value;
     }

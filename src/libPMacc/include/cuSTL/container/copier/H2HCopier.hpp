@@ -1,10 +1,11 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,11 +21,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COPIER_H2HCOPIER_HPP
-#define COPIER_H2HCOPIER_HPP
+#pragma once
 
 #include "Memcopy.hpp"
-#include <types.h>
+#include "pmacc_types.hpp"
 
 namespace PMacc
 {
@@ -34,9 +34,11 @@ namespace copier
 template<int T_dim>
 struct H2HCopier
 {
-    static const int dim = T_dim;
+    static constexpr int dim = T_dim;
+
+    PMACC_NO_NVCC_HDWARNING /* Should never be called from device functions */
     template<typename Type>
-    static void copy(Type* dest, const math::Size_t<dim-1>& pitchDest,
+    HDINLINE static void copy(Type* dest, const math::Size_t<dim-1>& pitchDest,
          Type* source, const math::Size_t<dim-1>& pitchSource,
          const math::Size_t<dim>& size)
     {
@@ -47,5 +49,3 @@ struct H2HCopier
 
 } // copier
 } // PMacc
-
-#endif // COPIER_H2HCOPIER_HPP

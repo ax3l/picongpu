@@ -1,6 +1,7 @@
 /**
- * Copyright 2013-2015 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
- *                     Richard Pausch, Alexander Debus, Marco Garten
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Richard Pausch, Alexander Debus, Marco Garten,
+ *                     Benjamin Worpitz, Alexander Grund
  *
  * This file is part of PIConGPU.
  *
@@ -21,12 +22,15 @@
 
 #pragma once
 
-#include <cassert>
+#include "verify.hpp"
+#include "assert.hpp"
+
 #include <string>
 #include <vector>
 #include <boost/lexical_cast.hpp>
+#include <boost/mpl/count.hpp>
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulationControl/SimulationHelper.hpp"
 #include "simulation_defines.hpp"
 
@@ -44,9 +48,13 @@
 #include "fields/FieldJ.hpp"
 #include "fields/FieldTmp.hpp"
 #include "fields/MaxwellSolver/Solvers.hpp"
+#include "fields/currentInterpolation/CurrentInterpolation.hpp"
 #include "fields/background/cellwiseOperation.hpp"
 #include "initialization/IInitPlugin.hpp"
 #include "initialization/ParserGridDistribution.hpp"
+#include "particles/synchrotronPhotons/SynchrotronFunctions.hpp"
+#include "random/methods/XorMin.hpp"
+#include "random/RNGProvider.hpp"
 
 #include "nvidia/reduce/Reduce.hpp"
 #include "memory/boxes/DataBoxDim1Access.hpp"
@@ -58,6 +66,11 @@
 
 #include "algorithms/ForEach.hpp"
 #include "particles/ParticlesFunctors.hpp"
+#include "particles/InitFunctors.hpp"
+#include "particles/memory/buffers/MallocMCBuffer.hpp"
+#include "particles/traits/FilterByFlag.hpp"
+#include "particles/IdProvider.hpp"
+
 #include <boost/mpl/int.hpp>
 
 namespace picongpu
@@ -85,11 +98,17 @@ public:
     fieldE(NULL),
     fieldJ(NULL),
     fieldTmp(NULL),
+    mallocMCBuffer(NULL),
+    myFieldSolver(NULL),
+    myCurrentInterpolation(NULL),
+    pushBGField(NULL),
+    currentBGField(NULL),
     cellDescription(NULL),
     initialiserController(NULL),
-    slidingWindow(false)
+    slidingWindow(false),
+    rngFactory(NULL)
     {
-        ForEach<VectorAllSpecies, particles::AssignNull<bmpl::_1>, MakeIdentifier<bmpl::_1>  > setPtrToNull;
+        ForEach<VectorAllSpecies, particles::AssignNull<bmpl::_1>, MakeIdentifier<bmpl::_1> > setPtrToNull;
         setPtrToNull(forward(particleStorage));
     }
 
@@ -163,7 +182,7 @@ public:
 
         Environment<simDim>::get().initDevices(gpus, isPeriodic);
 
-        DataSpace<simDim> myGPUpos( Environment<simDim>::get().GridController().getPosition() );
+        DataSpace<simDim> myGPUpos(Environment<simDim>::get().GridController().getPosition());
 
         // calculate the number of local grid cells and
         // the local cell offset to the global box
@@ -215,12 +234,11 @@ public:
             if (isPeriodic[i] == 0)
             {
                 /*negativ direction*/
-                assert((int) ABSORBER_CELLS[i][0] <= (int) cellDescription->getGridLayout().getDataSpaceWithoutGuarding()[i]);
+                PMACC_VERIFY((int) ABSORBER_CELLS[i][0] <= (int) cellDescription->getGridLayout().getDataSpaceWithoutGuarding()[i]);
                 /*positiv direction*/
-                assert((int) ABSORBER_CELLS[i][1] <= (int) cellDescription->getGridLayout().getDataSpaceWithoutGuarding()[i]);
+                PMACC_VERIFY((int) ABSORBER_CELLS[i][1] <= (int) cellDescription->getGridLayout().getDataSpaceWithoutGuarding()[i]);
             }
         }
-
     }
 
     virtual void pluginUnload()
@@ -235,15 +253,21 @@ public:
 
         __delete(fieldTmp);
 
+        __delete(mallocMCBuffer);
+
         __delete(myFieldSolver);
 
-        ForEach<VectorAllSpecies, particles::CallDelete<bmpl::_1> , MakeIdentifier<bmpl::_1> > deleteParticleMemory;
+        __delete(myCurrentInterpolation);
+
+        ForEach<VectorAllSpecies, particles::CallDelete<bmpl::_1>, MakeIdentifier<bmpl::_1> > deleteParticleMemory;
         deleteParticleMemory(forward(particleStorage));
 
         __delete(laser);
         __delete(pushBGField);
         __delete(currentBGField);
         __delete(cellDescription);
+
+        __delete(rngFactory);
     }
 
     void notify(uint32_t)
@@ -251,7 +275,7 @@ public:
 
     }
 
-    virtual uint32_t init()
+    virtual void init()
     {
         namespace nvmem = PMacc::nvidia::memory;
         // create simulation data such as fields and particles
@@ -262,38 +286,87 @@ public:
         pushBGField = new cellwiseOperation::CellwiseOperation < CORE + BORDER + GUARD > (*cellDescription);
         currentBGField = new cellwiseOperation::CellwiseOperation < CORE + BORDER + GUARD > (*cellDescription);
 
-        //std::cout<<"Grid x="<<layout.getDataSpace().x()<<" y="<<layout.getDataSpace().y()<<std::endl;
-
         laser = new LaserPhysics(cellDescription->getGridLayout());
+
+        // Make a list of all species that can be ionized
+        typedef typename PMacc::particles::traits::FilterByFlag
+        <
+            VectorAllSpecies,
+            ionizer<>
+        >::type VectorSpeciesWithIonizer;
+
+        /* Make a list of `boost::true_type`s and `boost::false_type`s for species that use or do not use the RNG during ionization */
+        typedef typename PMacc::OperateOnSeq<VectorSpeciesWithIonizer,picongpu::traits::UsesRNG<picongpu::traits::GetIonizer<bmpl::_> > >::type VectorIonizersUsingRNG;
+        /* define a type that contains the number of `boost::true_type`s when `::value` is accessed */
+        typedef typename boost::mpl::count<VectorIonizersUsingRNG, boost::true_type>::type NumReqRNGs;
+
+        // Initialize random number generator and synchrotron functions, if there are synchrotron photon species
+        typedef typename PMacc::particles::traits::FilterByFlag<VectorAllSpecies,
+                                                                synchrotronPhotons<> >::type AllSynchrotronPhotonsSpecies;
+
+        if(!bmpl::empty<AllSynchrotronPhotonsSpecies>::value || NumReqRNGs::value)
+        {
+            // create factory for the random number generator
+            this->rngFactory = new RNGFactory(Environment<simDim>::get().SubGrid().getLocalDomain().size);
+            // init factory
+            PMacc::GridController<simDim>& gridCon = PMacc::Environment<simDim>::get().GridController();
+            this->rngFactory->init(gridCon.getScalarPosition());
+        }
+
+        // Initialize synchrotron functions, if there are synchrotron photon species
+        if(!bmpl::empty<AllSynchrotronPhotonsSpecies>::value)
+        {
+            this->synchrotronFunctions.init();
+        }
 
         ForEach<VectorAllSpecies, particles::CreateSpecies<bmpl::_1>, MakeIdentifier<bmpl::_1> > createSpeciesMemory;
         createSpeciesMemory(forward(particleStorage), cellDescription);
 
         size_t freeGpuMem(0);
-        Environment<>::get().EnvMemoryInfo().getMemoryInfo(&freeGpuMem);
-        freeGpuMem -= totalFreeGpuMemory;
-
-        if( Environment<>::get().EnvMemoryInfo().isSharedMemoryPool() )
+        Environment<>::get().MemoryInfo().getMemoryInfo(&freeGpuMem);
+        if(freeGpuMem < reservedGpuMemorySize)
         {
-            freeGpuMem /= 2;
+            PMacc::log< picLog::MEMORY > ("%1% MiB free memory < %2% MiB required reserved memory")
+                % (freeGpuMem / 1024 / 1024) % (reservedGpuMemorySize / 1024 / 1024) ;
+            std::stringstream msg;
+            msg << "Cannot reserve "
+                << (reservedGpuMemorySize / 1024 / 1024) << " MiB as there is only "
+                << (freeGpuMem / 1024 / 1024) << " MiB free GPU memory left";
+            throw std::runtime_error(msg.str());
+        }
+
+        size_t heapSize = freeGpuMem - reservedGpuMemorySize;
+
+        if( Environment<>::get().MemoryInfo().isSharedMemoryPool() )
+        {
+            heapSize /= 2;
             log<picLog::MEMORY > ("Shared RAM between GPU and host detected - using only half of the 'device' memory.");
         }
         else
             log<picLog::MEMORY > ("RAM is NOT shared between GPU and host.");
 
-        ForEach<VectorAllSpecies, particles::CallCreateParticleBuffer<bmpl::_1>, MakeIdentifier<bmpl::_1> > createParticleBuffer;
-        createParticleBuffer(forward(particleStorage), freeGpuMem);
+        // initializing the heap for particles
+        mallocMC::initHeap(heapSize);
+        this->mallocMCBuffer = new MallocMCBuffer();
 
-        Environment<>::get().EnvMemoryInfo().getMemoryInfo(&freeGpuMem);
+        ForEach<VectorAllSpecies, particles::CallCreateParticleBuffer<bmpl::_1>, MakeIdentifier<bmpl::_1> > createParticleBuffer;
+        createParticleBuffer(forward(particleStorage));
+
+        Environment<>::get().MemoryInfo().getMemoryInfo(&freeGpuMem);
         log<picLog::MEMORY > ("free mem after all mem is allocated %1% MiB") % (freeGpuMem / 1024 / 1024);
+
+        IdProvider<simDim>::init();
 
         fieldB->init(*fieldE, *laser);
         fieldE->init(*fieldB, *laser);
-        fieldJ->init(*fieldE);
+        fieldJ->init(*fieldE, *fieldB);
         fieldTmp->init();
 
         // create field solver
         this->myFieldSolver = new fieldSolver::FieldSolver(*cellDescription);
+
+        // create current interpolation
+        this->myCurrentInterpolation = new fieldSolver::CurrentInterpolation;
 
 
         ForEach<VectorAllSpecies, particles::CallInit<bmpl::_1>, MakeIdentifier<bmpl::_1> > particleInit;
@@ -302,9 +375,24 @@ public:
 
         /* add CUDA streams to the StreamController for concurrent execution */
         Environment<>::get().StreamController().addStreams(6);
+    }
 
+    virtual uint32_t fillSimulation()
+    {
+        /* assume start (restart in initialiserController might change that) */
         uint32_t step = 0;
 
+        /* set slideCounter properties for PIConGPU MovingWindow: assume start
+         * (restart in initialiserController might change this again)
+         */
+        MovingWindow::getInstance().setSlideCounter(0, 0);
+        /* Update MPI domain decomposition: will also update SubGrid domain
+         * information such as local offsets in y-direction
+         */
+        GridController<simDim> &gc = Environment<simDim>::get().GridController();
+        gc.setStateAfterSlides(0);
+
+        /* fill all objects registed in DataConnector */
         if (initialiserController)
         {
             initialiserController->printInformation();
@@ -313,13 +401,14 @@ public:
                 /* we do not require --restart-step if a master checkpoint file is found */
                 if (this->restartStep < 0)
                 {
-                    this->restartStep = readCheckpointMasterFile();
+                    std::vector<uint32_t> checkpoints = readCheckpointMasterFile();
 
-                    if (this->restartStep < 0)
+                    if (checkpoints.empty())
                     {
                         throw std::runtime_error(
-                                "Restart failed. You must provide the '--restart-step' argument. See picongpu --help.");
-                    }
+                                                 "Restart failed. You must provide the '--restart-step' argument. See picongpu --help.");
+                    } else
+                        this->restartStep = checkpoints.back();
                 }
 
                 initialiserController->restart((uint32_t)this->restartStep, this->restartDirectory);
@@ -328,11 +417,13 @@ public:
             else
             {
                 initialiserController->init();
+                ForEach<particles::InitPipeline, particles::CallFunctor<bmpl::_1> > initSpecies;
+                initSpecies(forward(particleStorage), step);
             }
         }
 
-
-        Environment<>::get().EnvMemoryInfo().getMemoryInfo(&freeGpuMem);
+        size_t freeGpuMem(0u);
+        Environment<>::get().MemoryInfo().getMemoryInfo(&freeGpuMem);
         log<picLog::MEMORY > ("free mem after all particles are initialized %1% MiB") % (freeGpuMem / 1024 / 1024);
 
         /** a background field for the particle pusher might be added at the
@@ -342,10 +433,10 @@ public:
         if( step != 0 )
         {
             namespace nvfct = PMacc::nvidia::functors;
-            (*pushBGField)( fieldE, nvfct::Sub(), fieldBackgroundE(fieldE->getUnit()),
-                            step, fieldBackgroundE::InfluenceParticlePusher);
-            (*pushBGField)( fieldB, nvfct::Sub(), fieldBackgroundB(fieldB->getUnit()),
-                            step, fieldBackgroundB::InfluenceParticlePusher);
+            (*pushBGField)( fieldE, nvfct::Sub(), FieldBackgroundE(fieldE->getUnit()),
+                            step, FieldBackgroundE::InfluenceParticlePusher);
+            (*pushBGField)( fieldB, nvfct::Sub(), FieldBackgroundB(fieldB->getUnit()),
+                            step, FieldBackgroundB::InfluenceParticlePusher);
         }
 
         // communicate all fields
@@ -359,6 +450,7 @@ public:
 
     virtual ~MySimulation()
     {
+        mallocMC::finalizeHeap();
     }
 
     /**
@@ -370,45 +462,86 @@ public:
     {
         namespace nvfct = PMacc::nvidia::functors;
 
-        /* Ionization */
-        ForEach<VectorAllSpecies, particles::CallIonization<bmpl::_1>, MakeIdentifier<bmpl::_1> > particleIonization;
-        particleIonization(forward(particleStorage), currentStep);
+        /* Initialize ionization routine for each species with the flag `ionizer<>` */
+        typedef typename PMacc::particles::traits::FilterByFlag
+        <
+            VectorAllSpecies,
+            ionizer<>
+        >::type VectorSpeciesWithIonizer;
+        ForEach<VectorSpeciesWithIonizer, particles::CallIonization<bmpl::_1>, MakeIdentifier<bmpl::_1> > particleIonization;
+        particleIonization(forward(particleStorage), cellDescription, currentStep);
+
+        /* call the synchrotron radiation module for each radiating species (normally electrons) */
+        typedef typename PMacc::particles::traits::FilterByFlag<VectorAllSpecies,
+                                                                synchrotronPhotons<> >::type AllSynchrotronPhotonsSpecies;
+
+        ForEach<AllSynchrotronPhotonsSpecies,
+                particles::CallSynchrotronPhotons<bmpl::_1>,
+                MakeIdentifier<bmpl::_1> > synchrotronRadiation;
+        synchrotronRadiation(forward(particleStorage), cellDescription, currentStep, this->synchrotronFunctions);
+
 
         EventTask initEvent = __getTransactionEvent();
         EventTask updateEvent;
         EventTask commEvent;
 
-        ForEach<VectorAllSpecies, particles::CallUpdate<bmpl::_1>, MakeIdentifier<bmpl::_1> > particleUpdate;
-        particleUpdate(forward(particleStorage), currentStep, initEvent, forward(updateEvent), forward(commEvent));
+        /* push all species */
+        particles::PushAllSpecies pushAllSpecies;
+        pushAllSpecies(particleStorage, currentStep, initEvent, updateEvent, commEvent);
 
         __setTransactionEvent(updateEvent);
-
         /** remove background field for particle pusher */
-        (*pushBGField)(fieldE, nvfct::Sub(), fieldBackgroundE(fieldE->getUnit()),
-                       currentStep, fieldBackgroundE::InfluenceParticlePusher);
-        (*pushBGField)(fieldB, nvfct::Sub(), fieldBackgroundB(fieldB->getUnit()),
-                       currentStep, fieldBackgroundB::InfluenceParticlePusher);
+        (*pushBGField)(fieldE, nvfct::Sub(), FieldBackgroundE(fieldE->getUnit()),
+                       currentStep, FieldBackgroundE::InfluenceParticlePusher);
+        (*pushBGField)(fieldB, nvfct::Sub(), FieldBackgroundB(fieldB->getUnit()),
+                       currentStep, FieldBackgroundB::InfluenceParticlePusher);
 
         this->myFieldSolver->update_beforeCurrent(currentStep);
 
-        fieldJ->clear();
+        FieldJ::ValueType zeroJ( FieldJ::ValueType::create(0.) );
+        fieldJ->assign( zeroJ );
 
         __setTransactionEvent(commEvent);
-        (*currentBGField)(fieldJ, nvfct::Add(), fieldBackgroundJ(fieldJ->getUnit()),
-                          currentStep, fieldBackgroundJ::activated);
+        (*currentBGField)(fieldJ, nvfct::Add(), FieldBackgroundJ(fieldJ->getUnit()),
+                          currentStep, FieldBackgroundJ::activated);
 #if (ENABLE_CURRENT == 1)
-        ForEach<VectorAllSpecies, ComputeCurrent<bmpl::_1,bmpl::int_<CORE + BORDER> >, MakeIdentifier<bmpl::_1> > computeCurrent;
+        typedef typename PMacc::particles::traits::FilterByFlag
+        <
+            VectorAllSpecies,
+            current<>
+        >::type VectorSpeciesWithCurrentSolver;
+        ForEach<VectorSpeciesWithCurrentSolver, ComputeCurrent<bmpl::_1,bmpl::int_<CORE + BORDER> >, MakeIdentifier<bmpl::_1> > computeCurrent;
         computeCurrent(forward(fieldJ),forward(particleStorage), currentStep);
 #endif
 
 #if  (ENABLE_CURRENT == 1)
-        if(bmpl::size<VectorAllSpecies>::type::value>0)
+        if(bmpl::size<VectorSpeciesWithCurrentSolver>::type::value > 0)
         {
             EventTask eRecvCurrent = fieldJ->asyncCommunication(__getTransactionEvent());
-            fieldJ->addCurrentToE<CORE > ();
 
-            __setTransactionEvent(eRecvCurrent);
-            fieldJ->addCurrentToE<BORDER > ();
+            const DataSpace<simDim> currentRecvLower( GetMargin<fieldSolver::CurrentInterpolation>::LowerMargin( ).toRT( ) );
+            const DataSpace<simDim> currentRecvUpper( GetMargin<fieldSolver::CurrentInterpolation>::UpperMargin( ).toRT( ) );
+
+            /* without interpolation, we do not need to access the FieldJ GUARD
+             * and can therefor overlap communication of GUARD->(ADD)BORDER & computation of CORE */
+            if( currentRecvLower == DataSpace<simDim>::create(0) &&
+                currentRecvUpper == DataSpace<simDim>::create(0) )
+            {
+                fieldJ->addCurrentToEMF<CORE >(*myCurrentInterpolation);
+                __setTransactionEvent(eRecvCurrent);
+                fieldJ->addCurrentToEMF<BORDER >(*myCurrentInterpolation);
+            } else
+            {
+                /* in case we perform a current interpolation/filter, we need
+                 * to access the BORDER area from the CORE (and the GUARD area
+                 * from the BORDER)
+                 * `fieldJ->asyncCommunication` first adds the neighbors' values
+                 * to BORDER (send) and then updates the GUARD (receive)
+                 * \todo split the last `receive` part in a separate method to
+                 *       allow already a computation of CORE */
+                __setTransactionEvent(eRecvCurrent);
+                fieldJ->addCurrentToEMF<CORE + BORDER>(*myCurrentInterpolation);
+            }
         }
 #endif
 
@@ -430,13 +563,13 @@ public:
          */
         namespace nvfct = PMacc::nvidia::functors;
 
-        (*pushBGField)( fieldE, nvfct::Add(), fieldBackgroundE(fieldE->getUnit()),
-                        currentStep, fieldBackgroundE::InfluenceParticlePusher );
-        (*pushBGField)( fieldB, nvfct::Add(), fieldBackgroundB(fieldB->getUnit()),
-                        currentStep, fieldBackgroundB::InfluenceParticlePusher );
+        (*pushBGField)( fieldE, nvfct::Add(), FieldBackgroundE(fieldE->getUnit()),
+                        currentStep, FieldBackgroundE::InfluenceParticlePusher );
+        (*pushBGField)( fieldB, nvfct::Add(), FieldBackgroundB(fieldB->getUnit()),
+                        currentStep, FieldBackgroundB::InfluenceParticlePusher );
     }
 
-    void resetAll(uint32_t currentStep)
+    virtual void resetAll(uint32_t currentStep)
     {
 
         fieldB->reset(currentStep);
@@ -454,13 +587,15 @@ public:
             log<picLog::SIMULATION_STATE > ("slide in step %1%") % currentStep;
             resetAll(currentStep);
             initialiserController->slide(currentStep);
+            ForEach<particles::InitPipeline, particles::CallFunctor<bmpl::_1> > initSpecies;
+            initSpecies(forward(particleStorage), currentStep);
         }
     }
 
     virtual void setInitController(IInitPlugin *initController)
     {
 
-        assert(initController != NULL);
+        PMACC_ASSERT(initController != NULL);
         this->initialiserController = initController;
     }
 
@@ -478,59 +613,16 @@ private:
 
         for(uint32_t i=0;i<simDim;++i)
         {
-        // global size must a devisor of supercell size
-        // note: this is redundant, while using the local condition below
-
-        assert(globalGridSize[i] % MappingDesc::SuperCellSize::toRT()[i] == 0);
-        // local size must a devisor of supercell size
-        assert(gridSizeLocal[i] % MappingDesc::SuperCellSize::toRT()[i] == 0);
-        // local size must be at least 3 supercells (1x core + 2x border)
-        // note: size of border = guard_size (in supercells)
-        // \todo we have to add the guard_x/y/z for modified supercells here
-        assert( (uint32_t) gridSizeLocal[i] / MappingDesc::SuperCellSize::toRT()[i] >= 3 * GUARD_SIZE);
+            // global size must be a devisor of supercell size
+            // note: this is redundant, while using the local condition below
+            PMACC_VERIFY(globalGridSize[i] % MappingDesc::SuperCellSize::toRT()[i] == 0);
+            // local size must be a devisor of supercell size
+            PMACC_VERIFY(gridSizeLocal[i] % MappingDesc::SuperCellSize::toRT()[i] == 0);
+            // local size must be at least 3 supercells (1x core + 2x border)
+            // note: size of border = guard_size (in supercells)
+            // \todo we have to add the guard_x/y/z for modified supercells here
+            PMACC_VERIFY((uint32_t) gridSizeLocal[i] / MappingDesc::SuperCellSize::toRT()[i] >= 3 * GUARD_SIZE);
         }
-    }
-
-    /**
-     * Return the last line of the checkpoint master file if any
-     *
-     * @return last checkpoint timestep or -1
-     */
-    int32_t readCheckpointMasterFile(void)
-    {
-        int32_t lastCheckpointStep = -1;
-
-        const std::string checkpointMasterFile =
-            this->restartDirectory + std::string("/") + this->CHECKPOINT_MASTER_FILE;
-
-        if (boost::filesystem::exists(checkpointMasterFile))
-        {
-            std::ifstream file;
-            file.open(checkpointMasterFile.c_str());
-
-            /* read each line, last line will become the returned checkpoint step */
-            std::string line;
-            while (file)
-            {
-                std::getline(file, line);
-
-                if (line.size() > 0)
-                {
-                    try {
-                        lastCheckpointStep = boost::lexical_cast<int32_t>(line);
-                    } catch( boost::bad_lexical_cast const& )
-                    {
-                        std::cerr << "Warning: checkpoint master file contains invalid data ("
-                                << line << ")" << std::endl;
-                        lastCheckpointStep = -1;
-                    }
-                }
-            }
-
-            file.close();
-        }
-
-        return lastCheckpointStep;
     }
 
 protected:
@@ -539,18 +631,28 @@ protected:
     FieldE *fieldE;
     FieldJ *fieldJ;
     FieldTmp *fieldTmp;
+    MallocMCBuffer *mallocMCBuffer;
 
     // field solver
     fieldSolver::FieldSolver* myFieldSolver;
+    fieldSolver::CurrentInterpolation* myCurrentInterpolation;
+
     cellwiseOperation::CellwiseOperation< CORE + BORDER + GUARD >* pushBGField;
     cellwiseOperation::CellwiseOperation< CORE + BORDER + GUARD >* currentBGField;
 
-    typedef typename SeqToMap<VectorAllSpecies, TypeToPointerPair<bmpl::_1> >::type ParticleStorageMap;
+    typedef SeqToMap<VectorAllSpecies, TypeToPointerPair<bmpl::_1> >::type ParticleStorageMap;
     typedef PMacc::math::MapTuple<ParticleStorageMap> ParticleStorage;
 
     ParticleStorage particleStorage;
 
     LaserPhysics *laser;
+
+    // Synchrotron functions (used in synchrotronPhotons module)
+    particles::synchrotronPhotons::SynchrotronFunctions synchrotronFunctions;
+
+    // factory for the random number generator
+    typedef PMacc::random::RNGProvider<simDim, PMacc::random::methods::XorMin> RNGFactory;
+    RNGFactory* rngFactory;
 
     // output classes
 
@@ -572,3 +674,6 @@ protected:
     bool slidingWindow;
 };
 } /* namespace picongpu */
+
+#include "fields/Fields.tpp"
+#include "particles/synchrotronPhotons/SynchrotronFunctions.tpp"

@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,14 +18,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef LIVEVIEWCLIENT_HPP
-#define	LIVEVIEWCLIENT_HPP
+#pragma once
 
 #include "plugins/output/sockets/SocketConnector.hpp"
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 
@@ -42,19 +39,19 @@ namespace picongpu
     struct uint8_t3
     {
 
-        uint8_t3(uint8_t x, uint8_t y, uint8_t z) : x(x), y(y), z(z)
+        uint8_t3(uint8_t x, uint8_t y, uint8_t z) : m_x(x), m_y(y), m_z(z)
         {
         }
 
-        uint8_t x;
-        uint8_t y;
-        uint8_t z;
+        uint8_t m_x;
+        uint8_t m_y;
+        uint8_t m_z;
     };
 
     struct LiveViewClient
     {
 
-        LiveViewClient(std::string ip, std::string port) : socket(NULL), ip(ip), port(port)
+        LiveViewClient(std::string ip, std::string port) : socket(NULL), m_ip(ip), m_port(port)
         {
         }
 
@@ -63,27 +60,37 @@ namespace picongpu
             __delete(socket);
         }
 
+        /** block until all shared resource are free
+         *
+         * take care that all resources used by `operator()`
+         * can safely used without conflicts
+         */
+        void join()
+        {
+        }
+
         template<class Box>
         void operator()(
                         const Box data,
                         const Size2D size,
-                        const MessageHeader & header);
+                        const MessageHeader header);
 
     private:
         SocketConnector *socket;
-        std::string ip;
-        std::string port;
+        std::string m_ip;
+        std::string m_port;
     };
 
     template<>
-    inline void LiveViewClient::operator() < DataBox<PitchedBox<float3_X, DIM2 > > >(
-                                                                                   const DataBox<PitchedBox<float3_X, DIM2 > > data,
-                                                                                   const Size2D size,
-                                                                                   const MessageHeader& header
-                                                                                   )
+    inline void LiveViewClient::operator() < DataBox<PitchedBox<float3_X, DIM2 > > >
+    (
+        const DataBox<PitchedBox<float3_X, DIM2 > > data,
+        const Size2D size,
+        const MessageHeader header
+    )
     {
         if (!socket)
-            socket = new SocketConnector(ip, port);
+            socket = new SocketConnector(m_ip, m_port);
 
         size_t elems = MessageHeader::bytes + header.window.size.productOfComponents() * sizeof (uint8_t3);
         char *array = new char[elems];
@@ -104,15 +111,12 @@ namespace picongpu
         {
             for (int x = 0; x < size.x(); ++x)
             {
-                smallPic[y ][x].x = (uint8_t) (data[y ][x ].x() * 255.f);
-                smallPic[y ][x].y = (uint8_t) (data[y ][x ].y() * 255.f);
-                smallPic[y ][x].z = (uint8_t) (data[y ][x ].z() * 255.f);
+                smallPic[y ][x].m_x = (uint8_t) (data[y ][x ].x() * 255.f);
+                smallPic[y ][x].m_y = (uint8_t) (data[y ][x ].y() * 255.f);
+                smallPic[y ][x].m_z = (uint8_t) (data[y ][x ].z() * 255.f);
             }
         }
         socket->send(array, elems);
         delete[] array;
     }
 }
-
-#endif	/* LIVEVIEWCLIENT_HPP */
-

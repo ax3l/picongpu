@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "types.h"
-#include "math/vector/tools/twistVectorAxes.hpp"
+#include "pmacc_types.hpp"
+#include "math/vector/TwistComponents.hpp"
 
 namespace PMacc
 {
@@ -33,8 +33,8 @@ namespace cursor
 template<typename TCursor, typename Axes>
 struct TwistAxesAccessor
 {
-    typedef typename math::tools::result_of::TwistVectorAxes<
-        Axes, typename TCursor::pureType>::type type;
+    typedef typename math::result_of::TwistComponents<
+        Axes, typename TCursor::ValueType>::type type;
 
     /** Returns a reference to the result of '*cursor' (with twisted axes).
      *
@@ -43,7 +43,7 @@ struct TwistAxesAccessor
      */
     HDINLINE type operator()(TCursor& cursor)
     {
-        return math::tools::twistVectorAxes<Axes>(*cursor);
+        return math::twistComponents<Axes>(*cursor);
     }
 
     ///\todo: implement const method here with a const TCursor& argument and 'type' as return type.

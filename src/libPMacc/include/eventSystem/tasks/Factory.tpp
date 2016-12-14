@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Rene Widera
+ * Copyright 2013-2016 Rene Widera, Benjamin Worpitz
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -20,6 +20,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
 #include "eventSystem/tasks/Factory.hpp"
 
@@ -37,13 +38,13 @@
 #include "eventSystem/tasks/TaskSetCurrentSizeOnDevice.hpp"
 #include "eventSystem/tasks/TaskSendMPI.hpp"
 #include "eventSystem/tasks/TaskReceiveMPI.hpp"
+#include "eventSystem/tasks/TaskGetCurrentSizeFromDevice.hpp"
 #include "eventSystem/streams/EventStream.hpp"
 #include "eventSystem/streams/StreamController.hpp"
-#include "eventSystem/tasks/TaskGetCurrentSizeFromDevice.hpp"
 
 namespace PMacc
 {
-    
+
     /**
      * creates a TaskCopyHostToDevice
      * @param src HostBuffer to copy data from
@@ -94,7 +95,6 @@ namespace PMacc
     /**
      * Creates a TaskReceive.
      * @param ex Exchange to create new TaskReceive with
-     * @param task_out returns the newly created task
      * @param registeringTask optional pointer to an ITask which should be registered at the new task as an observer
      */
     template <class TYPE, unsigned DIM>
@@ -109,14 +109,13 @@ namespace PMacc
     /**
      * Creates a TaskSend.
      * @param ex Exchange to create new TaskSend with
-     * @param task_in TaskReceive to register at new TaskSend
      * @param registeringTask optional pointer to an ITask which should be registered at the new task as an observer
      */
     template <class TYPE, unsigned DIM>
-    inline EventTask Factory::createTaskSend(Exchange<TYPE, DIM> &ex, EventTask &copyEvent,
+    inline EventTask Factory::createTaskSend(Exchange<TYPE, DIM> &ex,
     ITask *registeringTask)
     {
-        TaskSend<TYPE, DIM>* task = new TaskSend<TYPE, DIM > (ex, copyEvent);
+        TaskSend<TYPE, DIM>* task = new TaskSend<TYPE, DIM > (ex);
 
         return startTask(*task, registeringTask);
     }
@@ -217,7 +216,7 @@ namespace PMacc
 
         return task;
     }
-    
+
 
     inline EventTask Factory::startTask(ITask& task, ITask *registeringTask )
     {
@@ -229,7 +228,7 @@ namespace PMacc
         task.init();
         Environment<>::get().Manager().addTask(&task);
         Environment<>::get().TransactionManager().setTransactionEvent(event);
-        
+
         return event;
     }
 

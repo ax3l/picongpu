@@ -1,10 +1,10 @@
 /*
- * Copyright 2013-2014 Felix Schmitt, Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Axel Huebl, Rene Widera
  *
  * This file is part of splash2txt.
  *
  * splash2txt is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -77,9 +77,9 @@ private:
     size_t s[3];
 };
 
-enum FileMode { FM_SPLASH = 0 
+enum FileMode { FM_SPLASH = 0
 #if (ENABLE_ADIOS == 1)
-               ,FM_ADIOS = 1 
+               ,FM_ADIOS = 1
 #endif
 };
 

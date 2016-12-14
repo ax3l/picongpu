@@ -1,10 +1,10 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera, Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -19,6 +19,8 @@
  * and the GNU Lesser General Public License along with libPMacc.
  * If not, see <http://www.gnu.org/licenses/>.
  */
+
+#pragma once
 
 namespace PMacc
 {
@@ -36,14 +38,15 @@ DeviceMemAllocator<Type, T_dim>::allocate(const math::Size_t<T_dim>& size)
 
     cudaData.ptr = NULL;
     cudaData.pitch = 1;
-    cudaData.xsize = size.x();
+    cudaData.xsize = size[0] * sizeof (Type);
     cudaData.ysize = 1;
 
     if (dim == 2u)
     {
-        cudaData.xsize = size[0];
+        cudaData.xsize = size[0] * sizeof (Type);
         cudaData.ysize = size[1];
-        CUDA_CHECK_NO_EXCEP(cudaMallocPitch(&cudaData.ptr, &cudaData.pitch, cudaData.xsize * sizeof (Type), cudaData.ysize));
+        if(size.productOfComponents())
+            CUDA_CHECK(cudaMallocPitch(&cudaData.ptr, &cudaData.pitch, cudaData.xsize, cudaData.ysize));
         pitch[0] = cudaData.pitch;
     }
     else if (dim == 3u)
@@ -52,7 +55,8 @@ DeviceMemAllocator<Type, T_dim>::allocate(const math::Size_t<T_dim>& size)
         extent.width = size[0] * sizeof (Type);
         extent.height = size[1];
         extent.depth = size[2];
-        CUDA_CHECK_NO_EXCEP(cudaMalloc3D(&cudaData, extent));
+        if(size.productOfComponents())
+            CUDA_CHECK(cudaMalloc3D(&cudaData, extent));
         pitch[0] = cudaData.pitch;
         pitch[1] = cudaData.pitch * size[1];
     }
@@ -62,7 +66,7 @@ DeviceMemAllocator<Type, T_dim>::allocate(const math::Size_t<T_dim>& size)
 #endif
 
 #ifdef __CUDA_ARCH__
-    Type* dataPointer = 0;
+    Type* dataPointer = NULL;
     math::Size_t<T_dim-1> pitch;
     return cursor::BufferCursor<Type, T_dim>(dataPointer, pitch);
 #endif
@@ -73,15 +77,16 @@ cursor::BufferCursor<Type, 1>
 DeviceMemAllocator<Type, 1>::allocate(const math::Size_t<1>& size)
 {
 #ifndef __CUDA_ARCH__
-    Type* dataPointer;
+    Type* dataPointer = NULL;
 
-    CUDA_CHECK_NO_EXCEP(cudaMalloc((void**)&dataPointer, size[0] * sizeof(Type)));
+    if(size[0])
+        CUDA_CHECK(cudaMalloc((void**)&dataPointer, size[0] * sizeof(Type)));
 
     return cursor::BufferCursor<Type, 1>(dataPointer, math::Size_t<0>());
 #endif
 
 #ifdef __CUDA_ARCH__
-    Type* dataPointer = 0;
+    Type* dataPointer = NULL;
     return cursor::BufferCursor<Type, 1>(dataPointer, math::Size_t<0>());
 #endif
 }
@@ -91,7 +96,7 @@ template<typename TCursor>
 void DeviceMemAllocator<Type, T_dim>::deallocate(const TCursor& cursor)
 {
 #ifndef __CUDA_ARCH__
-    CUDA_CHECK_NO_EXCEP(cudaFree(cursor.getMarker()));
+    CUDA_CHECK(cudaFree(cursor.getMarker()));
 #endif
 }
 
@@ -100,7 +105,7 @@ template<typename TCursor>
 void DeviceMemAllocator<Type, 1>::deallocate(const TCursor& cursor)
 {
 #ifndef __CUDA_ARCH__
-    CUDA_CHECK_NO_EXCEP(cudaFree(cursor.getMarker()));
+    CUDA_CHECK(cudaFree(cursor.getMarker()));
 #endif
 }
 

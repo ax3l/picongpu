@@ -1,5 +1,5 @@
 /**
- * Copyright 2013-2014 Axel Huebl
+ * Copyright 2013-2016 Axel Huebl
  *
  * This file is part of PIConGPU.
  *
@@ -70,7 +70,7 @@ namespace picongpu
         void pluginUnload();
 
     public:
-        PhaseSpaceMulti( const std::string _name, const std::string _prefix );
+        PhaseSpaceMulti( );
         virtual ~PhaseSpaceMulti() {}
 
         void notify( uint32_t ) {}

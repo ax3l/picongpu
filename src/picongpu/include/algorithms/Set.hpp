@@ -1,5 +1,5 @@
 /**
- * Copyright 2013 Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Heiko Burau, Rene Widera
  *
  * This file is part of PIConGPU.
  *
@@ -18,13 +18,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
 
-
-#ifndef SET_HPP
-#define	SET_HPP
-
-
-#include "types.h"
+#include "pmacc_types.hpp"
 
 namespace picongpu
 {
@@ -49,6 +45,4 @@ private:
     const PMACC_ALIGN(value, Type_);
 };
 }
-
-#endif	/* SET_HPP */
 

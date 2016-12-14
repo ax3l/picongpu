@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Heiko Burau, Rene Widera
+ * Copyright 2013-2016 Axel Huebl, Heiko Burau, Rene Widera,
+ *                     Richard Pausch
  *
  * This file is part of PIConGPU.
  *
@@ -21,7 +22,7 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 
 namespace picongpu
 {
@@ -30,25 +31,40 @@ namespace picongpu
         template<class Velocity, class Gamma>
         struct Push
         {
+            /* this is an optional extension for sub-sampling pushes that enables grid to particle interpolation
+             * for particle positions outside the super cell in one push
+             */
+            typedef typename PMacc::math::CT::make_Int<simDim,0>::type LowerMargin;
+            typedef typename PMacc::math::CT::make_Int<simDim,0>::type UpperMargin;
 
-            template<typename EType, typename BType, typename PosType, typename MomType, typename MassType, typename ChargeType >
+            template<typename T_FunctorFieldE, typename T_FunctorFieldB, typename T_Pos, typename T_Mom, typename T_Mass,
+                     typename T_Charge, typename T_Weighting>
                     __host__ DINLINE void operator()(
-                                                        const BType bField,
-                                                        const EType eField,
-                                                        PosType& pos,
-                                                        MomType& mom,
-                                                        const MassType mass,
-                                                        const ChargeType charge)
+                                                        const T_FunctorFieldB,
+                                                        const T_FunctorFieldE,
+                                                        T_Pos& pos,
+                                                        T_Mom& mom,
+                                                        const T_Mass mass,
+                                                        const T_Charge,
+                                                        const T_Weighting)
             {
+                typedef T_Mom MomType;
 
                 Velocity velocity;
-                const PosType vel = velocity(mom, mass);
+                const MomType vel = velocity(mom, mass);
 
 
                 for(uint32_t d=0;d<simDim;++d)
                 {
                     pos[d] += (vel[d] * DELTA_T) / cellSize[d];
                 }
+            }
+
+            static PMacc::traits::StringProperty getStringProperties()
+            {
+                PMacc::traits::StringProperty propList( "name", "other" );
+                propList["param"] = "free streaming";
+                return propList;
             }
         };
     } //namespace

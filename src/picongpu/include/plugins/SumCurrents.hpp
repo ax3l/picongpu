@@ -1,5 +1,6 @@
 /**
- * Copyright 2013-2014 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Axel Huebl, Felix Schmitt, Heiko Burau, Rene Widera,
+ *                     Felix Schmitt, Benjamin Worpitz
  *
  * This file is part of PIConGPU.
  *
@@ -18,14 +19,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-
-#ifndef SUMCURRENTS_HPP
-#define	SUMCURRENTS_HPP
+#pragma once
 
 #include <iostream>
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
 #include "simulation_types.hpp"
 
@@ -33,7 +31,6 @@
 
 #include "fields/FieldJ.hpp"
 
-#include "basicOperations.hpp"
 #include "dimensions/DataSpaceOperations.hpp"
 #include "plugins/ILightweightPlugin.hpp"
 
@@ -43,45 +40,47 @@ using namespace PMacc;
 
 namespace po = boost::program_options;
 
-typedef typename FieldJ::DataBoxType J_DataBox;
+typedef FieldJ::DataBoxType J_DataBox;
 
-template<class Mapping>
-__global__ void kernelSumCurrents(J_DataBox fieldJ, float3_X* gCurrent, Mapping mapper)
+struct KernelSumCurrents
 {
-    typedef typename Mapping::SuperCellSize SuperCellSize;
-
-    __shared__ float3_X sh_sumJ;
-    __syncthreads(); /*wait that all shared memory is initialised*/
-
-    const DataSpace<simDim > threadIndex(threadIdx);
-    const int linearThreadIdx = DataSpaceOperations<simDim>::template map<SuperCellSize > (threadIndex);
-
-    if (linearThreadIdx == 0)
+    template<class Mapping>
+    DINLINE void operator()(J_DataBox fieldJ, float3_X* gCurrent, Mapping mapper) const
     {
-        sh_sumJ = float3_X(float_X(0.0), float_X(0.0), float_X(0.0));
+        typedef typename Mapping::SuperCellSize SuperCellSize;
+
+        __shared__ float3_X sh_sumJ;
+
+        const DataSpace<simDim > threadIndex(threadIdx);
+        const int linearThreadIdx = DataSpaceOperations<simDim>::template map<SuperCellSize > (threadIndex);
+
+        if (linearThreadIdx == 0)
+        {
+            sh_sumJ = float3_X::create(0.0);
+        }
+
+        __syncthreads();
+
+
+        const DataSpace<simDim> superCellIdx(mapper.getSuperCellIndex(DataSpace<simDim > (blockIdx)));
+        const DataSpace<simDim> cell(superCellIdx * SuperCellSize::toRT() + threadIndex);
+
+        const float3_X myJ = fieldJ(cell);
+
+        atomicAddWrapper(&(sh_sumJ.x()), myJ.x());
+        atomicAddWrapper(&(sh_sumJ.y()), myJ.y());
+        atomicAddWrapper(&(sh_sumJ.z()), myJ.z());
+
+        __syncthreads();
+
+        if (linearThreadIdx == 0)
+        {
+            atomicAddWrapper(&(gCurrent->x()), sh_sumJ.x());
+            atomicAddWrapper(&(gCurrent->y()), sh_sumJ.y());
+            atomicAddWrapper(&(gCurrent->z()), sh_sumJ.z());
+        }
     }
-
-    __syncthreads();
-
-
-    const DataSpace<simDim> superCellIdx(mapper.getSuperCellIndex(DataSpace<simDim > (blockIdx)));
-    const DataSpace<simDim> cell(superCellIdx * SuperCellSize::toRT() + threadIndex);
-
-    const float3_X myJ = fieldJ(cell);
-
-    atomicAddWrapper(&(sh_sumJ.x()), myJ.x());
-    atomicAddWrapper(&(sh_sumJ.y()), myJ.y());
-    atomicAddWrapper(&(sh_sumJ.z()), myJ.z());
-
-    __syncthreads();
-
-    if (linearThreadIdx == 0)
-    {
-        atomicAddWrapper(&(gCurrent->x()), sh_sumJ.x());
-        atomicAddWrapper(&(gCurrent->y()), sh_sumJ.y());
-        atomicAddWrapper(&(gCurrent->z()), sh_sumJ.z());
-    }
-}
+};
 
 class SumCurrents : public ILightweightPlugin
 {
@@ -133,9 +132,9 @@ public:
                                    gCurrent.z() * CELL_WIDTH * CELL_HEIGHT);
 #endif
         float3_64 realCurrent_SI(
-                                 double(realCurrent.x()) * (UNIT_CHARGE / UNIT_TIME),
-                                 double(realCurrent.y()) * (UNIT_CHARGE / UNIT_TIME),
-                                 double(realCurrent.z()) * (UNIT_CHARGE / UNIT_TIME));
+                                 float_64(realCurrent.x()) * (UNIT_CHARGE / UNIT_TIME),
+                                 float_64(realCurrent.y()) * (UNIT_CHARGE / UNIT_TIME),
+                                 float_64(realCurrent.z()) * (UNIT_CHARGE / UNIT_TIME));
 
         /*FORMAT OUTPUT*/
         typedef std::numeric_limits< float_64 > dbl;
@@ -185,13 +184,15 @@ private:
 
     float3_X getSumCurrents()
     {
-        sumcurrents->getDeviceBuffer().setValue(float3_X(float_X(0.0), float_X(0.0), float_X(0.0)));
-        dim3 block(MappingDesc::SuperCellSize::toRT().toDim3());
+        sumcurrents->getDeviceBuffer().setValue(float3_X::create(0.0));
+        auto block = MappingDesc::SuperCellSize::toRT();
 
-        __picKernelArea(kernelSumCurrents, *cellDescription, CORE + BORDER)
-            (block)
+        AreaMapping<CORE + BORDER, MappingDesc> mapper(*cellDescription);
+        PMACC_KERNEL(KernelSumCurrents{})
+            (mapper.getGridDim(), block)
             (fieldJ->getDeviceDataBox(),
-             sumcurrents->getDeviceBuffer().getBasePointer());
+             sumcurrents->getDeviceBuffer().getBasePointer(),
+             mapper);
         sumcurrents->deviceToHost();
         return sumcurrents->getHostBuffer().getDataBox()[0];
     }
@@ -200,6 +201,4 @@ private:
 
 }
 
-
-#endif	/* SUMCURRENTS_HPP */
 

@@ -1,10 +1,11 @@
 /**
- * Copyright 2013-2014 Rene Widera, Felix Schmitt
+ * Copyright 2013-2016 Rene Widera, Felix Schmitt, Benjamin Worpitz,
+ *                     Alexander Grund
  *
  * This file is part of libPMacc.
  *
  * libPMacc is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -22,8 +23,9 @@
 
 #pragma once
 
-#include "types.h"
+#include "pmacc_types.hpp"
 #include "identifier/identifier.hpp"
+#include "ppFunctions.hpp"
 #include <string>
 #include "traits/Resolve.hpp"
 #include <boost/mpl/if.hpp>
@@ -34,6 +36,15 @@ namespace PMacc
 identifier(pmacc_void);
 identifier(pmacc_isAlias);
 } //namespace PMacc
+
+#ifdef __CUDACC__
+    #define PMACC_alias_CUDA(name,id)                                          \
+        namespace PMACC_JOIN(device_placeholder,id){                           \
+            __constant__ PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_); \
+        }
+#else
+    #define PMACC_alias_CUDA(name,id)
+#endif
 
 /*define special makros for creating classes which are only used as identifer*/
 #define PMACC_alias(name,id)                                                   \
@@ -51,9 +62,7 @@ identifier(pmacc_isAlias);
     namespace PMACC_JOIN(host_placeholder,id){                                 \
         PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_);      \
     }                                                                          \
-    namespace PMACC_JOIN(device_placeholder,id){                               \
-        __constant__ PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_); \
-    }                                                                          \
+    PMACC_alias_CUDA(name,id);                                                 \
     PMACC_PLACEHOLDER(id);
 
 

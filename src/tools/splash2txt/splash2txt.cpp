@@ -1,10 +1,11 @@
 /*
- * Copyright 2013-2014 Felix Schmitt, Axel Huebl, Rene Widera
+ * Copyright 2013-2016 Felix Schmitt, Axel Huebl, Rene Widera,
+ *                     Alexander Grund
  *
  * This file is part of splash2txt.
  *
  * splash2txt is free software: you can redistribute it and/or modify
- * it under the terms of of either the GNU General Public License or
+ * it under the terms of either the GNU General Public License or
  * the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
@@ -36,45 +37,44 @@ const char* allowedReverseSlices[numAllowedSlices] = { "yx", "zx", "zy" };
 std::ostream &errorStream  = std::cerr;
 
 bool parseOptions( int argc, char** argv, ProgramOptions &options )
-throw (std::runtime_error )
 {
-    try
-    {
-        // add help message
-        std::stringstream desc_stream;
-        desc_stream << "Usage splash2txt [options] <input-file>" << std::endl;
+    // add help message
+    std::stringstream desc_stream;
+    desc_stream << "Usage splash2txt [options] <input-file>" << std::endl;
 
-        po::options_description desc( desc_stream.str( ) );
+    po::options_description desc( desc_stream.str( ) );
 
-        std::string slice_string = "";
-        std::string filemode = "splash";
+    std::string slice_string = "";
+    std::string filemode = "splash";
 
 #if (ENABLE_ADIOS==1)
-        const std::string filemodeOptions = "[splash,adios]";
+    const std::string filemodeOptions = "[splash,adios]";
 #else
-        const std::string filemodeOptions = "[splash]";
+    const std::string filemodeOptions = "[splash]";
 #endif
 
-        // add possible options
-        desc.add_options( )
-            ( "help,h", "print help message" )
-            ( "verbose,v", "verbose output, print status messages" )
-            ( "mode,m", po::value< std::string > ( &filemode )->default_value( filemode ), (std::string("File Mode ") + filemodeOptions).c_str() )
-            ( "list,l", "list the available datasets for an input file" )
-            ( "input-file", po::value< std::string > ( &options.inputFile ), "parallel input file" )
-            ( "output-file,o", po::value< std::string > ( &options.outputFile ), "output file (otherwise stdout)" )
-            ( "step,s", po::value<uint32_t > ( &options.step )->default_value( options.step ), "requested simulation step" )
-            ( "data,d", po::value<std::vector<std::string> > ( &options.data )->multitoken( ), "name of datasets to print" )
-            ( "slice", po::value< std::string > ( &slice_string )->default_value( "xy" ), "dimensions of slice for field data, e.g. xy" )
-            /// \todo if the standard offset value would be the MIDDLE of the global simulation area, it would be awesome
-            ( "offset", po::value<size_t > ( &options.sliceOffset )->default_value( 0 ), "offset of slice in dataset" )
-            ( "delimiter", po::value<std::string>( &options.delimiter )->default_value( " " ), "select a delimiter for data elements. default is a single space character" )
-            ( "no-units", "no conversion of stored data elements with their respective unit" )
-            ;
+    // add possible options
+    desc.add_options( )
+        ( "help,h", "print help message" )
+        ( "verbose,v", "verbose output, print status messages" )
+        ( "mode,m", po::value< std::string > ( &filemode )->default_value( filemode ), (std::string("File Mode ") + filemodeOptions).c_str() )
+        ( "list,l", "list the available datasets for an input file" )
+        ( "input-file", po::value< std::string > ( &options.inputFile ), "parallel input file" )
+        ( "output-file,o", po::value< std::string > ( &options.outputFile ), "output file (otherwise stdout)" )
+        ( "step,s", po::value<uint32_t > ( &options.step )->default_value( options.step ), "requested simulation step" )
+        ( "data,d", po::value<std::vector<std::string> > ( &options.data )->multitoken( ), "name of datasets to print" )
+        ( "slice", po::value< std::string > ( &slice_string )->default_value( "xy" ), "dimensions of slice for field data, e.g. xy" )
+        /// \todo if the standard offset value would be the MIDDLE of the global simulation area, it would be awesome
+        ( "offset", po::value<size_t > ( &options.sliceOffset )->default_value( 0 ), "offset of slice in dataset" )
+        ( "delimiter", po::value<std::string>( &options.delimiter )->default_value( " " ), "select a delimiter for data elements. default is a single space character" )
+        ( "no-units", "no conversion of stored data elements with their respective unit" )
+        ;
 
-        po::positional_options_description pos_options;
-        pos_options.add( "input-file", -1 );
+    po::positional_options_description pos_options;
+    pos_options.add( "input-file", -1 );
 
+    try
+    {
         // parse command line options and store values in vm
         po::variables_map vm;
         po::store( po::command_line_parser( argc, argv ).
@@ -159,8 +159,9 @@ throw (std::runtime_error )
         }
 
     }
-    catch ( boost::program_options::error e )
+    catch ( const boost::program_options::error& )
     {
+        errorStream << desc << "\n";
         throw std::runtime_error( "Error parsing command line options!" );
     }
 
@@ -205,7 +206,7 @@ int main( int argc, char** argv )
     {
         parseSuccessfull = parseOptions( argc, argv, options );
     }
-    catch ( std::runtime_error e )
+    catch ( const std::runtime_error& e )
     {
         errorStream << "Error: " << e.what( ) << std::endl;
         mpi_finalize();
@@ -252,7 +253,7 @@ int main( int argc, char** argv )
             file.close( );
         }
     }
-    catch ( std::runtime_error e )
+    catch ( const std::runtime_error& e )
     {
         errorStream << "Error: " << e.what( ) << std::endl;
         delete tools;
