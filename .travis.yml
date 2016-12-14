@@ -23,3 +23,26 @@ script:
   # Disallow spaces before pre-compiler macros                                #
   #############################################################################
   - test/hasSpaceBeforePrecompiler
+
+  #############################################################################
+  # Disallow PRs to `ComputationalRadiationPhysics/picongpu` branch `master`  #
+  # if not an other mainline branch such as `dev` or `release-...`            #
+  # See: https://docs.travis-ci.com/user/environment-variables/               #
+  #############################################################################
+  - echo "$TRAVIS_REPO_SLUG"
+  - echo "$TRAVIS_PULL_REQUEST_BRANCH"
+  - env
+  - if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ];
+      then
+      # destination branch
+      if [ "$TRAVIS_BRANCH" == "master" ];
+        then
+        # destination repo
+        if [ "$TRAVIS_REPO_SLUG" == "ComputationalRadiationPhysics/picongpu" ];
+        then
+          echo "... have to check origin now...";
+          # irrelevant: origin branch $TRAVIS_PULL_REQUEST_BRANCH
+          # relevant: origin repo_slug !! (where to find?!)
+        fi;
+      fi;
+    fi
