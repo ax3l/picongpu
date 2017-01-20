@@ -55,18 +55,18 @@ namespace picongpu
     using namespace PMacc;
 
     FieldTmp::FieldTmp(
-        MappingDesc cellDescription,
+        GridLayout< simDim > layout,
         uint32_t slotId
     ) :
-        SimulationFieldHelper<MappingDesc>( cellDescription ),
-        fieldTmp( NULL ),
+        SimulationFieldHelper< simDim >( layout ),
+        fieldTmp( nullptr ),
         m_slotId( slotId )
     {
         m_commTag =
             ++PMacc::traits::detail::GetUniqueTypeId< uint8_t >::counter +
             SPECIES_FIRSTTAG;
 
-        fieldTmp = new GridBuffer<ValueType, simDim > ( cellDescription.getGridLayout( ) );
+        fieldTmp = new GridBuffer<ValueType, simDim > ( layout );
 
         /** \todo The exchange has to be resetted and set again regarding the
          *  temporary "Fill-"Functor we want to use.
@@ -74,7 +74,7 @@ namespace picongpu
          *  Problem: buffers don't allow "bigger" exchange during run time.
          *           so let's stay with the maximum guards.
          */
-        const DataSpace<simDim> coreBorderSize = cellDescription.getGridLayout( ).getDataSpaceWithoutGuarding( );
+        const DataSpace<simDim> coreBorderSize = layout.getDataSpaceWithoutGuarding( );
 
         typedef typename PMacc::particles::traits::FilterByFlag
         <
@@ -183,6 +183,7 @@ namespace picongpu
             typename FrameSolver::UpperMargin
             > BlockArea;
 
+        const MappingDesc cellDescription = MappingDesc(this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
         StrideMapping<AREA, 3, MappingDesc> mapper( cellDescription );
         typename ParticlesClass::ParticlesBoxType pBox = parClass.getDeviceParticlesBox( );
         FieldTmp::DataBoxType tmpBox = this->fieldTmp->getDeviceBuffer( ).getDataBox( );
@@ -235,7 +236,8 @@ namespace picongpu
 
     void FieldTmp::bashField( uint32_t exchangeType )
     {
-        ExchangeMapping<GUARD, MappingDesc> mapper( this->cellDescription, exchangeType );
+        const MappingDesc cellDescription = MappingDesc(this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
+        ExchangeMapping<GUARD, MappingDesc> mapper( cellDescription, exchangeType );
 
         auto grid = mapper.getGridDim( );
 
@@ -251,7 +253,8 @@ namespace picongpu
 
     void FieldTmp::insertField( uint32_t exchangeType )
     {
-        ExchangeMapping<GUARD, MappingDesc> mapper( this->cellDescription, exchangeType );
+        const MappingDesc cellDescription = MappingDesc(this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
+        ExchangeMapping<GUARD, MappingDesc> mapper( cellDescription, exchangeType );
 
         auto grid = mapper.getGridDim( );
 
@@ -282,11 +285,6 @@ namespace picongpu
     GridBuffer<typename FieldTmp::ValueType, simDim> &FieldTmp::getGridBuffer( )
     {
         return *fieldTmp;
-    }
-
-    GridLayout< simDim> FieldTmp::getGridLayout( )
-    {
-        return cellDescription.getGridLayout( );
     }
 
     void FieldTmp::reset( uint32_t )

@@ -36,6 +36,7 @@
 #include "dataManagement/ISimulationData.hpp"
 
 /*libPMacc*/
+#include "dimensions/GridLayout.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "mappings/simulation/GridController.hpp"
 #include "fields/LaserPhysics.def"
@@ -49,7 +50,9 @@ namespace picongpu
 {
     using namespace PMacc;
 
-    class FieldB : public SimulationFieldHelper<MappingDesc>, public ISimulationData
+    class FieldB :
+        public SimulationFieldHelper< simDim >,
+        public ISimulationData
     {
     public:
         typedef float3_X ValueType;
@@ -58,9 +61,7 @@ namespace picongpu
 
         typedef DataBox<PitchedBox<ValueType, simDim> > DataBoxType;
 
-        typedef MappingDesc::SuperCellSize SuperCellSize;
-
-        FieldB( MappingDesc cellDescription);
+        FieldB( GridLayout< simDim > layout );
 
         virtual ~FieldB();
 
@@ -85,8 +86,6 @@ namespace picongpu
         void init(FieldE &fieldE, LaserPhysics &laserPhysics);
 
         DataBoxType getHostDataBox();
-
-        GridLayout<simDim> getGridLayout();
 
         DataBoxType getDeviceDataBox();
 

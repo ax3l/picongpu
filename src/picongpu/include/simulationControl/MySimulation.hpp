@@ -282,11 +282,11 @@ public:
     {
         namespace nvmem = PMacc::nvidia::memory;
         // create simulation data such as fields and particles
-        fieldB = new FieldB(*cellDescription);
-        fieldE = new FieldE(*cellDescription);
-        fieldJ = new FieldJ(*cellDescription);
+        fieldB = new FieldB(cellDescription->getGridLayout());
+        fieldE = new FieldE(cellDescription->getGridLayout());
+        fieldJ = new FieldJ(cellDescription->getGridLayout());
         for( uint32_t slot = 0; slot < fieldTmpNumSlots; ++slot)
-            fieldTmp.push_back( new FieldTmp( *cellDescription, slot ) );
+            fieldTmp.push_back( new FieldTmp( cellDescription->getGridLayout(), slot ) );
         pushBGField = new cellwiseOperation::CellwiseOperation < CORE + BORDER + GUARD > (*cellDescription);
         currentBGField = new cellwiseOperation::CellwiseOperation < CORE + BORDER + GUARD > (*cellDescription);
 

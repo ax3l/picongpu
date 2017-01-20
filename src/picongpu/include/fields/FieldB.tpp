@@ -37,8 +37,6 @@
 
 #include "fields/FieldManipulator.hpp"
 
-#include "dimensions/SuperCellDescription.hpp"
-
 #include "FieldE.hpp"
 
 #include "MaxwellSolver/Solvers.hpp"
@@ -61,12 +59,12 @@ namespace picongpu
 
 using namespace PMacc;
 
-FieldB::FieldB( MappingDesc cellDescription ) :
-SimulationFieldHelper<MappingDesc>( cellDescription ),
-fieldE( NULL )
+FieldB::FieldB( GridLayout< simDim > layout ) :
+    SimulationFieldHelper< simDim >( layout ),
+    fieldE( nullptr )
 {
     /*#####create FieldB###############*/
-    fieldB = new GridBuffer<ValueType, simDim > ( cellDescription.getGridLayout( ) );
+    fieldB = new GridBuffer<ValueType, simDim > ( layout );
 
     typedef typename PMacc::particles::traits::FilterByFlag
     <
@@ -170,12 +168,6 @@ void FieldB::init( FieldE &fieldE, LaserPhysics &laserPhysics )
     this->laser = &laserPhysics;
 
     Environment<>::get().DataConnector().registerData( *this );
-}
-
-GridLayout<simDim> FieldB::getGridLayout( )
-{
-
-    return cellDescription.getGridLayout( );
 }
 
 FieldB::DataBoxType FieldB::getHostDataBox( )

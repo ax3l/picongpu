@@ -35,6 +35,7 @@
 #include "dataManagement/ISimulationData.hpp"
 
 /*libPMacc*/
+#include "dimensions/GridLayout.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "mappings/simulation/GridController.hpp"
 #include "memory/boxes/DataBox.hpp"
@@ -56,7 +57,9 @@ using namespace PMacc;
 //                            j.z() * cellSize.x() * cellSize.y())
 //
 
-class FieldJ : public SimulationFieldHelper<MappingDesc>, public ISimulationData
+class FieldJ :
+    public SimulationFieldHelper< simDim >,
+    public ISimulationData
 {
 public:
 
@@ -66,15 +69,13 @@ public:
 
     typedef DataBox<PitchedBox<ValueType, simDim> > DataBoxType;
 
-    FieldJ(MappingDesc cellDescription);
+    FieldJ( GridLayout< simDim > layout );
 
     virtual ~FieldJ();
 
     virtual EventTask asyncCommunication(EventTask serialEvent);
 
     void init(FieldE &fieldE, FieldB &fieldB);
-
-    GridLayout<simDim> getGridLayout();
 
     void reset(uint32_t currentStep);
 

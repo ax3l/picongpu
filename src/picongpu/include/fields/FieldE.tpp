@@ -31,7 +31,6 @@
 #include "mappings/kernel/ExchangeMapping.hpp"
 
 #include "fields/FieldManipulator.hpp"
-#include "dimensions/SuperCellDescription.hpp"
 
 #include "FieldB.hpp"
 
@@ -56,11 +55,11 @@ namespace picongpu
 {
 using namespace PMacc;
 
-FieldE::FieldE( MappingDesc cellDescription ) :
-SimulationFieldHelper<MappingDesc>( cellDescription ),
-fieldB( NULL )
+FieldE::FieldE( GridLayout< simDim > layout ) :
+    SimulationFieldHelper< simDim >( layout ),
+    fieldB( nullptr )
 {
-    fieldE = new GridBuffer<ValueType, simDim > ( cellDescription.getGridLayout( ) );
+    fieldE = new GridBuffer<ValueType, simDim > ( layout );
     typedef typename PMacc::particles::traits::FilterByFlag
     <
         VectorAllSpecies,
@@ -174,11 +173,6 @@ FieldE::DataBoxType FieldE::getHostDataBox( )
 GridBuffer<FieldE::ValueType, simDim> &FieldE::getGridBuffer( )
 {
     return *fieldE;
-}
-
-GridLayout< simDim> FieldE::getGridLayout( )
-{
-    return cellDescription.getGridLayout( );
 }
 
 void FieldE::laserManipulation( uint32_t currentStep )

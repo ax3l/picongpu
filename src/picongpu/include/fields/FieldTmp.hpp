@@ -36,6 +36,7 @@
 #include "dataManagement/ISimulationData.hpp"
 
 /*libPMacc*/
+#include "dimensions/GridLayout.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "mappings/simulation/GridController.hpp"
 #include "memory/boxes/DataBox.hpp"
@@ -51,23 +52,17 @@ namespace picongpu
      *  "gridded" particle data (charge density, energy density, ...)
      */
     class FieldTmp :
-        public SimulationFieldHelper<MappingDesc>,
+        public SimulationFieldHelper< simDim >,
         public ISimulationData
     {
     public:
         typedef float1_X ValueType;
         typedef promoteType<float_64, ValueType>::type UnitValueType;
 
-        typedef MappingDesc::SuperCellSize SuperCellSize;
         typedef DataBox<PitchedBox<ValueType, simDim> > DataBoxType;
 
-        MappingDesc getCellDescription()
-        {
-            return this->cellDescription;
-        }
-
         FieldTmp(
-            MappingDesc cellDescription,
+            GridLayout< simDim > layout,
             uint32_t slotId
         );
 
@@ -100,8 +95,6 @@ namespace picongpu
         DataBoxType getHostDataBox( );
 
         GridBuffer<ValueType, simDim>& getGridBuffer( );
-
-        GridLayout<simDim> getGridLayout( );
 
         template<uint32_t AREA, class FrameSolver, class ParticlesClass>
         void computeValue(ParticlesClass& parClass, uint32_t currentStep);

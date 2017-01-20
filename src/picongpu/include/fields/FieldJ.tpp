@@ -52,11 +52,14 @@ namespace picongpu
 
 using namespace PMacc;
 
-FieldJ::FieldJ( MappingDesc cellDescription ) :
-SimulationFieldHelper<MappingDesc>( cellDescription ),
-fieldJ( cellDescription.getGridLayout( ) ), fieldE( NULL ), fieldB( NULL ), fieldJrecv( NULL )
+FieldJ::FieldJ( GridLayout< simDim > layout ) :
+    SimulationFieldHelper< simDim >( layout ),
+    fieldJ( layout ),
+    fieldE( nullptr ),
+    fieldB( nullptr ),
+    fieldJrecv( nullptr )
 {
-    const DataSpace<simDim> coreBorderSize = cellDescription.getGridLayout( ).getDataSpaceWithoutGuarding( );
+    const DataSpace<simDim> coreBorderSize = layout.getDataSpaceWithoutGuarding( );
 
     /* cell margins the current might spread to due to particle shapes */
     typedef bmpl::accumulate<
@@ -123,7 +126,7 @@ fieldJ( cellDescription.getGridLayout( ) ), fieldE( NULL ), fieldB( NULL ), fiel
     if( originRecvGuard != DataSpace<simDim>::create(0) ||
         endRecvGuard != DataSpace<simDim>::create(0) )
     {
-        fieldJrecv = new GridBuffer<ValueType, simDim > ( fieldJ.getDeviceBuffer(), cellDescription.getGridLayout( ) );
+        fieldJrecv = new GridBuffer<ValueType, simDim > ( fieldJ.getDeviceBuffer(), this->gridLayout );
 
         /*go over all directions*/
         for ( uint32_t i = 1; i < NumberOfExchanges<simDim>::value; ++i )
@@ -183,7 +186,8 @@ EventTask FieldJ::asyncCommunication( EventTask serialEvent )
 
 void FieldJ::bashField( uint32_t exchangeType )
 {
-    ExchangeMapping<GUARD, MappingDesc> mapper( this->cellDescription, exchangeType );
+    const MappingDesc cellDescription = MappingDesc( this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE );
+    ExchangeMapping<GUARD, MappingDesc> mapper( cellDescription, exchangeType );
 
     auto grid = mapper.getGridDim( );
 
@@ -199,7 +203,8 @@ void FieldJ::bashField( uint32_t exchangeType )
 
 void FieldJ::insertField( uint32_t exchangeType )
 {
-    ExchangeMapping<GUARD, MappingDesc> mapper( this->cellDescription, exchangeType );
+    const MappingDesc cellDescription = MappingDesc(this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
+    ExchangeMapping<GUARD, MappingDesc> mapper( cellDescription, exchangeType );
 
     auto grid = mapper.getGridDim( );
 
@@ -218,11 +223,6 @@ void FieldJ::init( FieldE &fieldE, FieldB &fieldB )
     this->fieldB = &fieldB;
 
     Environment<>::get( ).DataConnector( ).registerData( *this );
-}
-
-GridLayout<simDim> FieldJ::getGridLayout( )
-{
-    return cellDescription.getGridLayout( );
 }
 
 void FieldJ::reset( uint32_t )
@@ -292,6 +292,7 @@ void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t )
         typename GetMargin<ParticleCurrentSolver>::UpperMargin
         > BlockArea;
 
+    const MappingDesc cellDescription = MappingDesc(this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
     StrideMapping<AREA, 3, MappingDesc> mapper( cellDescription );
     typename ParticlesClass::ParticlesBoxType pBox = parClass.getDeviceParticlesBox( );
     FieldJ::DataBoxType jBox = this->fieldJ.getDeviceBuffer( ).getDataBox( );
@@ -314,6 +315,7 @@ void FieldJ::computeCurrent( ParticlesClass &parClass, uint32_t )
 template<uint32_t AREA, class T_CurrentInterpolation>
 void FieldJ::addCurrentToEMF( T_CurrentInterpolation& myCurrentInterpolation )
 {
+    const MappingDesc cellDescription = MappingDesc(this->gridLayout.getDataSpace(), GUARD_SIZE, GUARD_SIZE);
     AreaMapping<AREA, MappingDesc> mapper(cellDescription);
     PMACC_KERNEL( KernelAddCurrentToEMF{} )
         ( mapper.getGridDim(), MappingDesc::SuperCellSize::toRT( ) )
