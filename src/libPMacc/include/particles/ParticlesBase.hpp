@@ -42,7 +42,8 @@ namespace PMacc
 struct ParticlesTag;
 
 template<typename T_ParticleDescription, class T_MappingDesc>
-class ParticlesBase : public SimulationFieldHelper<T_MappingDesc>
+class ParticlesBase :
+    public SimulationFieldHelper< T_MappingDesc::Dim >
 {
     typedef T_ParticleDescription ParticleDescription;
     typedef T_MappingDesc MappingDesc;
@@ -81,7 +82,12 @@ protected:
 
     BufferType *particlesBuffer;
 
-    ParticlesBase(MappingDesc description) : SimulationFieldHelper<MappingDesc>(description), particlesBuffer(NULL)
+    MappingDesc cellDescription;
+
+    ParticlesBase(MappingDesc description) :
+        cellDescription( description ),
+        SimulationFieldHelper< MappingDesc::Dim >( cellDescription.getGridLayout() ),
+        particlesBuffer( nullptr )
     {
     }
 

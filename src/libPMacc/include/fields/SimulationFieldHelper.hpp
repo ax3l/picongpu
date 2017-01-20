@@ -30,15 +30,13 @@
 namespace PMacc
 {
 
-template<class CellDescription>
+template< unsigned DIM >
 class SimulationFieldHelper
 {
 public:
 
-    typedef CellDescription MappingDesc;
-
-    SimulationFieldHelper(CellDescription description) :
-    cellDescription(description)
+    SimulationFieldHelper( GridLayout< DIM > layout ) :
+    gridLayout( layout )
     {}
 
     virtual ~SimulationFieldHelper(){}
@@ -53,8 +51,19 @@ public:
      */
     virtual void syncToDevice() = 0;
 
+    /**
+     * ...
+     *
+     * @return ...
+     */
+    GridLayout< DIM >
+    getGridLayout( )
+    {
+        return gridLayout;
+    }
+
 protected:
-    CellDescription cellDescription;
+    GridLayout< DIM > gridLayout;
 };
 
 } //namespace PMacc
