@@ -53,7 +53,7 @@
         {                                                                      \
                 return in_default;                                             \
         }                                                                      \
-        static std::string getName()                                           \
+        static HINLINE std::string getName()                                   \
         {                                                                      \
                 return std::string(#name);                                     \
         }                                                                      \

@@ -78,7 +78,8 @@ namespace traits
 
     /** stream operator for a StringProperty
      */
-    std::ostream& operator<<( std::ostream& out, const StringProperty& property )
+    static std::ostream&
+    operator<<( std::ostream& out, const StringProperty& property )
     {
         out << property.value;
         return out;

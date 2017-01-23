@@ -44,7 +44,7 @@
 #include "particles/particleFilter/FilterFactory.hpp"
 #include "particles/particleFilter/PositionFilter.hpp"
 #include "particles/operations/CountParticles.hpp"
-#include "particles/IdProvider.def"
+#include "particles/IdProvider.hpp"
 
 #include "dataManagement/DataConnector.hpp"
 #include "mappings/simulation/GridController.hpp"

@@ -19,22 +19,16 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
-#include <string>
-#include <vector>
-
-/*pic default*/
-#include "pmacc_types.hpp"
+/* PIConGPU */
 #include "simulation_defines.hpp"
-#include "simulation_classTypes.hpp"
 
 #include "Fields.def"
+
+/* PMacc */
 #include "fields/SimulationFieldHelper.hpp"
 #include "dataManagement/ISimulationData.hpp"
-
-/*libPMacc*/
 #include "dimensions/GridLayout.hpp"
 #include "memory/buffers/GridBuffer.hpp"
 #include "mappings/simulation/GridController.hpp"
@@ -44,12 +38,16 @@
 
 #include "math/Vector.hpp"
 
+/* stdlib */
+#include <string>
+#include <vector>
+
 
 namespace picongpu
 {
     using namespace PMacc;
 
-    class FieldE:
+    class FieldE :
         public SimulationFieldHelper< simDim >,
         public ISimulationData
     {
@@ -67,7 +65,7 @@ namespace picongpu
 
         virtual void reset(uint32_t currentStep);
 
-        HDINLINE static UnitValueType getUnit();
+        UnitValueType getUnit();
 
         /** powers of the 7 base measures
          *
@@ -75,7 +73,7 @@ namespace picongpu
          * (length L, mass M, time T, electric current I,
          *  thermodynamic temperature theta, amount of substance N,
          *  luminous intensity J) */
-        HINLINE static std::vector<float_64> getUnitDimension();
+        std::vector<float_64> getUnitDimension();
 
         static std::string getName();
 
@@ -83,13 +81,13 @@ namespace picongpu
 
         virtual EventTask asyncCommunication(EventTask serialEvent);
 
-        void init(FieldB &fieldB,LaserPhysics &laserPhysics);
+        void init( LaserPhysics &laserPhysics );
 
         DataBoxType getDeviceDataBox();
 
         DataBoxType getHostDataBox();
 
-        GridBuffer<ValueType,simDim>& getGridBuffer();
+        GridBuffer<ValueType, simDim>& getGridBuffer();
 
         SimulationDataId getUniqueId();
 
@@ -104,12 +102,10 @@ namespace picongpu
         void absorbeBorder();
 
 
-        GridBuffer<ValueType,simDim> *fieldE;
-
-        FieldB *fieldB;
+        GridBuffer<ValueType, simDim> *fieldE;
 
         LaserPhysics *laser;
     };
 
 
-} // namespace picongpu
+}

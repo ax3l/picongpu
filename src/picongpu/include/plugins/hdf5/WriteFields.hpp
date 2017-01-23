@@ -66,13 +66,6 @@ class WriteFields
 private:
     typedef typename T::ValueType ValueType;
 
-    static std::vector<float_64> getUnit()
-    {
-        typedef typename T::UnitValueType UnitType;
-        UnitType unit = T::getUnit();
-        return CreateUnit::createUnit(unit, T::numComponents);
-    }
-
 public:
 
     HDINLINE void operator()(ThreadParams* params)
@@ -101,14 +94,14 @@ public:
 
         Field::writeField(params,
                           T::getName(),
-                          getUnit(),
-                          T::getUnitDimension(),
+                          CreateUnit::createUnit( field->getUnit(), T::numComponents ),
+                          field->getUnitDimension(),
                           inCellPosition,
                           timeOffset,
                           field->getHostDataBox(),
                           ValueType());
 
-        dc.releaseData(T::getName());
+        dc.releaseData( T::getName() );
 #endif
     }
 

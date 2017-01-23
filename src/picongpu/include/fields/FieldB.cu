@@ -19,53 +19,54 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "mallocMCconfig.hpp"
+#include "simulation_defines.hpp"
 
-#include "memory/buffers/GridBuffer.hpp"
-#include "mappings/simulation/GridController.hpp"
+#include "fields/FieldB.hpp"
 
-#include "dataManagement/DataConnector.hpp"
+#include "fields/LaserPhysics.hpp"
 
-#include "mappings/kernel/AreaMapping.hpp"
 #include "eventSystem/EventSystem.hpp"
+#include "dataManagement/DataConnector.hpp"
+#include "mappings/kernel/AreaMapping.hpp"
 #include "mappings/kernel/ExchangeMapping.hpp"
+#include "memory/buffers/GridBuffer.hpp"
 
 #include "fields/FieldManipulator.hpp"
-
-#include "FieldB.hpp"
-
-#include "fields/FieldE.kernel"
 
 #include "MaxwellSolver/Solvers.hpp"
 #include "fields/numericalCellTypes/NumericalCellTypes.hpp"
 
 #include "math/Vector.hpp"
 
-#include <list>
-
+#include <boost/mpl/accumulate.hpp>
 #include "particles/traits/GetInterpolation.hpp"
 #include "particles/traits/FilterByFlag.hpp"
+
 #include "traits/GetMargin.hpp"
 #include "traits/SIBaseUnits.hpp"
 #include "particles/traits/GetMarginPusher.hpp"
-#include <boost/mpl/accumulate.hpp>
-#include "fields/LaserPhysics.hpp"
+
+#include <list>
+#include <iostream>
+
 
 namespace picongpu
 {
+
 using namespace PMacc;
 
-FieldE::FieldE( GridLayout< simDim > layout ) :
-    SimulationFieldHelper< simDim >( layout ),
-    fieldB( nullptr )
+FieldB::FieldB( GridLayout< simDim > layout ) :
+    SimulationFieldHelper< simDim >( layout )
 {
-    fieldE = new GridBuffer<ValueType, simDim > ( layout );
+    /*#####create FieldB###############*/
+    fieldB = new GridBuffer<ValueType, simDim > ( layout );
+
     typedef typename PMacc::particles::traits::FilterByFlag
     <
         VectorAllSpecies,
         interpolation<>
     >::type VectorSpeciesWithInterpolation;
-
     typedef bmpl::accumulate<
         VectorSpeciesWithInterpolation,
         typename PMacc::math::CT::make_Int<simDim, 0>::type,
@@ -81,11 +82,11 @@ FieldE::FieldE( GridLayout< simDim > layout ) :
     /* Calculate the maximum Neighbors we need from MAX(ParticleShape, FieldSolver) */
     typedef PMacc::math::CT::max<
         LowerMarginInterpolation,
-        GetMargin<fieldSolver::FieldSolver, FIELD_E>::LowerMargin
+        GetMargin<fieldSolver::FieldSolver, FIELD_B>::LowerMargin
         >::type LowerMarginInterpolationAndSolver;
     typedef PMacc::math::CT::max<
         UpperMarginInterpolation,
-        GetMargin<fieldSolver::FieldSolver, FIELD_E>::UpperMargin
+        GetMargin<fieldSolver::FieldSolver, FIELD_B>::UpperMargin
         >::type UpperMarginInterpolationAndSolver;
 
     /* Calculate upper and lower margin for pusher
@@ -112,137 +113,114 @@ FieldE::FieldE( GridLayout< simDim > layout ) :
     const DataSpace<simDim> originGuard( LowerMargin( ).toRT( ) );
     const DataSpace<simDim> endGuard( UpperMargin( ).toRT( ) );
 
-    /*receive from all directions*/
+    /*go over all directions*/
     for ( uint32_t i = 1; i < NumberOfExchanges<simDim>::value; ++i )
     {
         DataSpace<simDim> relativMask = Mask::getRelativeDirections<simDim > ( i );
-        /*guarding cells depend on direction
-         * for negativ direction use originGuard else endGuard (relativ direction ZERO is ignored)
-         * don't switch end and origin because this is a readbuffer and no sendbuffer
+        /* guarding cells depend on direction
+         * for negative direction use originGuard else endGuard (relative direction ZERO is ignored)
+         * don't switch end and origin because this is a read buffer and no send buffer
          */
         DataSpace<simDim> guardingCells;
         for ( uint32_t d = 0; d < simDim; ++d )
             guardingCells[d] = ( relativMask[d] == -1 ? originGuard[d] : endGuard[d] );
-        fieldE->addExchange( GUARD, i, guardingCells, FIELD_E );
+        fieldB->addExchange( GUARD, i, guardingCells, FIELD_B );
     }
+
 }
 
-FieldE::~FieldE( )
+FieldB::~FieldB( )
 {
-    __delete(fieldE);
+    __delete(fieldB);
 }
 
-SimulationDataId FieldE::getUniqueId()
+SimulationDataId FieldB::getUniqueId()
 {
     return getName();
 }
 
-void FieldE::synchronize( )
+void FieldB::synchronize( )
 {
-    fieldE->deviceToHost( );
+    fieldB->deviceToHost( );
 }
 
-void FieldE::syncToDevice( )
+void FieldB::syncToDevice( )
 {
-    fieldE->hostToDevice( );
+
+    fieldB->hostToDevice( );
 }
 
-EventTask FieldE::asyncCommunication( EventTask serialEvent )
+EventTask FieldB::asyncCommunication( EventTask serialEvent )
 {
-    return fieldE->asyncCommunication( serialEvent );
+
+    EventTask eB = fieldB->asyncCommunication( serialEvent );
+    return eB;
 }
 
-void FieldE::init( FieldB &fieldB, LaserPhysics &laserPhysics )
+void FieldB::init( LaserPhysics &laserPhysics )
 {
-    this->fieldB = &fieldB;
+
     this->laser = &laserPhysics;
 
-    Environment<>::get().DataConnector().registerData( *this);
+    Environment<>::get().DataConnector().registerData( *this );
 }
 
-FieldE::DataBoxType FieldE::getDeviceDataBox( )
+FieldB::DataBoxType FieldB::getHostDataBox( )
 {
-    return fieldE->getDeviceBuffer( ).getDataBox( );
+
+    return fieldB->getHostBuffer( ).getDataBox( );
 }
 
-FieldE::DataBoxType FieldE::getHostDataBox( )
+FieldB::DataBoxType FieldB::getDeviceDataBox( )
 {
-    return fieldE->getHostBuffer( ).getDataBox( );
+
+    return fieldB->getDeviceBuffer( ).getDataBox( );
 }
 
-GridBuffer<FieldE::ValueType, simDim> &FieldE::getGridBuffer( )
+GridBuffer<FieldB::ValueType, simDim> &FieldB::getGridBuffer( )
 {
-    return *fieldE;
+
+    return *fieldB;
 }
 
-void FieldE::laserManipulation( uint32_t currentStep )
+void FieldB::reset( uint32_t )
 {
-    const uint32_t numSlides = MovingWindow::getInstance().getSlideCounter(currentStep);
-
-    /* Disable laser if
-     * - init time of laser is over or
-     * - we have periodic boundaries in Y direction or
-     * - we already performed a slide
-     */
-    if ( ( currentStep * DELTA_T ) >= laserProfile::INIT_TIME ||
-         Environment<simDim>::get().GridController().getCommunicationMask( ).isSet( TOP ) || numSlides != 0 ) return;
-
-    DataSpace<simDim-1> gridBlocks;
-    DataSpace<simDim-1> blockSize;
-    gridBlocks.x()=fieldE->getGridLayout( ).getDataSpaceWithoutGuarding( ).x( ) / SuperCellSize::x::value;
-    blockSize.x()=SuperCellSize::x::value;
-#if(SIMDIM ==DIM3)
-    gridBlocks.y()=fieldE->getGridLayout( ).getDataSpaceWithoutGuarding( ).z( ) / SuperCellSize::z::value;
-    blockSize.y()=SuperCellSize::z::value;
-#endif
-    PMACC_KERNEL( KernelLaserE{} )
-        ( gridBlocks,
-          blockSize )
-        ( this->getDeviceDataBox( ), laser->getLaserManipulator( currentStep ) );
+    fieldB->getHostBuffer( ).reset( true );
+    fieldB->getDeviceBuffer( ).reset( false );
 }
 
-void FieldE::reset( uint32_t )
+FieldB::UnitValueType
+FieldB::getUnit( )
 {
-    fieldE->getHostBuffer( ).reset( true );
-    fieldE->getDeviceBuffer( ).reset( false );
+    return UnitValueType( UNIT_BFIELD, UNIT_BFIELD, UNIT_BFIELD );
 }
 
-
-HDINLINE
-FieldE::UnitValueType
-FieldE::getUnit( )
-{
-    return UnitValueType( UNIT_EFIELD, UNIT_EFIELD, UNIT_EFIELD );
-}
-
-HINLINE
 std::vector<float_64>
-FieldE::getUnitDimension( )
+FieldB::getUnitDimension( )
 {
     /* L, M, T, I, theta, N, J
      *
-     * E is in volts per meters: V / m = kg * m / (A * s^3)
-     *   -> L * M * T^-3 * I^-1
+     * B is in Tesla : kg / (A * s^2)
+     *   -> M * T^-2 * I^-1
      */
     std::vector<float_64> unitDimension( 7, 0.0 );
-    unitDimension.at(SIBaseUnits::length) =  1.0;
-    unitDimension.at(SIBaseUnits::mass)   =  1.0;
-    unitDimension.at(SIBaseUnits::time)   = -3.0;
+    unitDimension.at(SIBaseUnits::mass) =  1.0;
+    unitDimension.at(SIBaseUnits::time) = -2.0;
     unitDimension.at(SIBaseUnits::electricCurrent) = -1.0;
 
     return unitDimension;
 }
 
 std::string
-FieldE::getName( )
+FieldB::getName( )
 {
-    return "E";
+    return "B";
 }
 
 uint32_t
-FieldE::getCommTag( )
+FieldB::getCommTag( )
 {
-    return FIELD_E;
+    return FIELD_B;
 }
 
-}
+} //namespace picongpu

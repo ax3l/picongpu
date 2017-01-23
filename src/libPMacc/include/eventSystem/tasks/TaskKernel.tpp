@@ -28,7 +28,7 @@
 
 namespace PMacc{
 
-    void TaskKernel::activateChecks()
+    inline void TaskKernel::activateChecks()
     {
         canBeChecked = true;
         this->activate();
@@ -36,4 +36,4 @@ namespace PMacc{
         Environment<>::get().Manager().addTask(this);
         __setTransactionEvent(EventTask(this->getId()));
     }
-} //namespace PMacc
+}

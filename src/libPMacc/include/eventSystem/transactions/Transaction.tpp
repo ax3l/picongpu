@@ -31,7 +31,7 @@
 namespace PMacc
 {
 
-Transaction::Transaction( EventTask event ) : baseEvent( event )
+inline Transaction::Transaction( EventTask event ) : baseEvent( event )
 {
 
 }
@@ -47,7 +47,7 @@ inline EventTask Transaction::getTransactionEvent( )
     return baseEvent;
 }
 
-void Transaction::operation( ITask::TaskType operation )
+inline void Transaction::operation( ITask::TaskType operation )
 {
     if ( operation == ITask::TASK_CUDA )
     {
@@ -66,7 +66,7 @@ void Transaction::operation( ITask::TaskType operation )
     baseEvent.waitForFinished( );
 }
 
-EventStream* Transaction::getEventStream( ITask::TaskType )
+inline EventStream* Transaction::getEventStream( ITask::TaskType )
 {
     Manager &manager = Environment<>::get( ).Manager( );
     ITask* baseTask = manager.getITaskIfNotFinished( this->baseEvent.getTaskId( ) );

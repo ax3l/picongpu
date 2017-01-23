@@ -72,8 +72,6 @@ Particles<
         SpeciesParticleDescription,
         MappingDesc
     >( cellDescription ),
-    fieldB( NULL ),
-    fieldE( NULL ),
     m_gridLayout(gridLayout),
     m_datasetID( datasetID )
 {
@@ -206,11 +204,8 @@ Particles<
     T_Name,
     T_Attributes,
     T_Flags
->::init( FieldE &fieldE, FieldB &fieldB )
+>::init( )
 {
-    this->fieldE = &fieldE;
-    this->fieldB = &fieldB;
-
     Environment<>::get( ).DataConnector( ).registerData( *this );
 }
 
@@ -248,12 +243,17 @@ Particles<
 
     auto block = MappingDesc::SuperCellSize::toRT();
 
+    DataConnector & dc = Environment<>::get().DataConnector();
+
+    FieldE& fieldE = dc.getData< FieldE >( FieldE::getName(), true );
+    FieldB& fieldB = dc.getData< FieldB >( FieldB::getName(), true );
+
     AreaMapping<CORE+BORDER,MappingDesc> mapper(this->cellDescription);
     PMACC_KERNEL( KernelMoveAndMarkParticles<BlockArea>{} )
         (mapper.getGridDim(), block)
         ( this->getDeviceParticlesBox( ),
-          this->fieldE->getDeviceDataBox( ),
-          this->fieldB->getDeviceDataBox( ),
+          fieldE.getDeviceDataBox( ),
+          fieldB.getDeviceDataBox( ),
           FrameSolver( ),
           mapper
           );

@@ -20,20 +20,21 @@
 
 #pragma once
 
-#include "pmacc_types.hpp"
+#include "SimulationStarter.def"
 #include "simulation_defines.hpp"
 
-#include <boost/program_options/options_description.hpp>
-#include <iostream>
-
-#include "simulation_defines.hpp"
 #include "ArgsParser.hpp"
+#include "MySimulation.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "mappings/simulation/GridController.hpp"
 #include "dimensions/GridLayout.hpp"
 #include "mappings/kernel/MappingDescription.hpp"
 #include "pluginSystem/PluginConnector.hpp"
 #include "simulationControl/ISimulationStarter.hpp"
+
+#include <boost/program_options/options_description.hpp>
+
+#include <iostream>
 
 namespace picongpu
 {

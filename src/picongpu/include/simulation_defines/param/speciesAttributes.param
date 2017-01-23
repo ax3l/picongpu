@@ -27,7 +27,7 @@
 #include "identifier/identifier.hpp"
 #include "identifier/alias.hpp"
 #include "identifier/value_identifier.hpp"
-#include "particles/IdProvider.def"
+#include "particles/IdProvider.hpp"
 
 
 /** \file speciesAttributes.param

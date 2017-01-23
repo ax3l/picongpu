@@ -20,12 +20,15 @@
 
 #pragma once
 
+#include "LaserPhysics.hpp"
+
 #include "math/Vector.hpp"
 #include "simulation_classTypes.hpp"
 #include "dimensions/DataSpace.hpp"
 #include "memory/boxes/CachedBox.hpp"
 #include "nvidia/functors/Assign.hpp"
 #include "mappings/threads/ThreadCollective.hpp"
+
 
 namespace picongpu
 {

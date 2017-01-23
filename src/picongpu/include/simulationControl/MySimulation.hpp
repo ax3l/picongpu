@@ -22,20 +22,13 @@
 
 #pragma once
 
+#include "MySimulation.def"
 #include "verify.hpp"
 #include "assert.hpp"
-
-#include <string>
-#include <vector>
-#include <boost/lexical_cast.hpp>
-#include <boost/mpl/count.hpp>
 
 #include "pmacc_types.hpp"
 #include "simulationControl/SimulationHelper.hpp"
 #include "simulation_defines.hpp"
-
-#include "particles/bremsstrahlung/ScaledSpectrum.hpp"
-#include "particles/bremsstrahlung/PhotonEmissionAngle.hpp"
 
 #include "eventSystem/EventSystem.hpp"
 #include "dimensions/GridLayout.hpp"
@@ -50,11 +43,18 @@
 #include "fields/FieldB.hpp"
 #include "fields/FieldJ.hpp"
 #include "fields/FieldTmp.hpp"
+
+#include "particles/Particles.tpp"
+#include "particles/synchrotronPhotons/PhotonCreator.hpp"
+#include "particles/IdProvider.hpp"
+
 #include "fields/MaxwellSolver/Solvers.hpp"
 #include "fields/currentInterpolation/CurrentInterpolation.hpp"
 #include "fields/background/cellwiseOperation.hpp"
 #include "initialization/IInitPlugin.hpp"
 #include "initialization/ParserGridDistribution.hpp"
+#include "particles/bremsstrahlung/ScaledSpectrum.hpp"
+#include "particles/bremsstrahlung/PhotonEmissionAngle.hpp"
 #include "particles/synchrotronPhotons/SynchrotronFunctions.hpp"
 #include "random/methods/XorMin.hpp"
 #include "random/RNGProvider.hpp"
@@ -71,10 +71,19 @@
 #include "particles/ParticlesFunctors.hpp"
 #include "particles/InitFunctors.hpp"
 #include "particles/memory/buffers/MallocMCBuffer.hpp"
-#include "particles/traits/FilterByFlag.hpp"
 #include "particles/IdProvider.hpp"
 
+#include "traits/UsesRNG.hpp"
+#include "particles/traits/GetIonizer.hpp"
+#include "particles/traits/FilterByFlag.hpp"
+
 #include <boost/mpl/int.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/mpl/count.hpp>
+
+#include <string>
+#include <vector>
+
 
 namespace picongpu
 {
@@ -373,9 +382,9 @@ public:
 
         IdProvider<simDim>::init();
 
-        fieldB->init(*fieldE, *laser);
-        fieldE->init(*fieldB, *laser);
-        fieldJ->init(*fieldE, *fieldB);
+        fieldB->init( *laser );
+        fieldE->init( *laser );
+        fieldJ->init( *fieldE, *fieldB );
         for( auto* slot : fieldTmp )
             slot->init();
 

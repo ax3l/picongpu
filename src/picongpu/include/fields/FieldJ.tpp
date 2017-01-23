@@ -235,7 +235,6 @@ void FieldJ::assign( ValueType value )
     //fieldJ.reset(false);
 }
 
-HDINLINE
 FieldJ::UnitValueType
 FieldJ::getUnit( )
 {
@@ -243,7 +242,6 @@ FieldJ::getUnit( )
     return UnitValueType( UNIT_CURRENT, UNIT_CURRENT, UNIT_CURRENT );
 }
 
-HINLINE
 std::vector<float_64>
 FieldJ::getUnitDimension( )
 {

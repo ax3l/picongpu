@@ -324,19 +324,40 @@ include_directories(BEFORE ${PIC_EXTENSION_PATH}/include)
 # Compile & Link PIConGPU
 ################################################################################
 
-file(GLOB_RECURSE CUDASRCFILES "*.cu")
+set(CUDA_SEPARABLE_COMPILATION ON)
+
+#file(GLOB_RECURSE CUDASRCFILES "*.cu")
 file(GLOB_RECURSE SRCFILES "*.cpp")
 
-add_library(picongpu-hostonly
+#add_library(picongpu-hostonly
+#    STATIC
+#    ${SRCFILES}
+#)
+
+# avoid allocating too much static memory in device-link step
+#   Murphy et al.,
+#   Separate Compilation in Language-Integrated Heterogeneous Environment (2013),
+#   Section 5: Multiple Device Links
+cuda_add_library(picongpu-fieldE
     STATIC
+    "include/fields/FieldE.cu"
+)
+
+cuda_add_library(picongpu-fieldB
+    STATIC
+    "include/fields/FieldB.cu"
+)
+
+cuda_add_library(picongpu-main
+    STATIC
+    "main.cu"
+)
+
+add_executable(picongpu
     ${SRCFILES}
 )
 
-cuda_add_executable(picongpu
-    ${CUDASRCFILES}
-)
-
-target_link_libraries(picongpu ${LIBS} picongpu-hostonly m)
+target_link_libraries(picongpu ${LIBS} picongpu-fieldE picongpu-fieldB picongpu-main m)
 
 ################################################################################
 # Install PIConGPU

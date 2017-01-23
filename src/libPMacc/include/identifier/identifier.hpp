@@ -36,7 +36,7 @@
 #ifdef __CUDACC__
 #   define PMACC_identifier_CUDA(name,id)                                         \
         namespace PMACC_JOIN(device_placeholder,id){                               \
-            __constant__ PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_); \
+            extern __constant__ PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_); \
         }
 #else
 #   define PMACC_identifier_CUDA(name,id)
@@ -51,11 +51,13 @@
     }                                                                          \
     using namespace PMACC_JOIN(placeholder_definition,id);                     \
     namespace PMACC_JOIN(host_placeholder,id){                                 \
-        PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_);        \
+        static PMACC_JOIN(placeholder_definition,id)::name PMACC_JOIN(name,_);        \
     }                                                                          \
     PMACC_identifier_CUDA(name,id);                                            \
     PMACC_PLACEHOLDER(id);
-
+// alternative for global vars: extern (same in all)
+// careful: check all assumptions on
+//          "there will be only one translation unit", so we can
 
 /** create an identifier (identifier with arbitrary code as second parameter
  * !! second parameter is optional and can be any C++ code one can add inside a class

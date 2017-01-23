@@ -33,7 +33,7 @@
 #include "plugins/adios/ADIOSWriter.def"
 
 #include "particles/frame_types.hpp"
-#include "particles/IdProvider.def"
+#include "particles/IdProvider.hpp"
 #include "assert.hpp"
 
 #include <adios.h>
@@ -405,12 +405,6 @@ private:
         typedef typename T::UnitValueType UnitType;
         typedef typename GetComponentsType<ValueType>::type ComponentType;
 
-        static std::vector<float_64> getUnit()
-        {
-            UnitType unit = T::getUnit();
-            return createUnit(unit, T::numComponents);
-        }
-
         HDINLINE void operator()(ThreadParams* params)
         {
 #ifndef __CUDA_ARCH__
@@ -440,10 +434,21 @@ private:
              *        implementation */
             const float_X timeOffset = 0.0;
 
+            DataConnector &dc = Environment<>::get().DataConnector();
+            auto& field = dc.getData< T >( T::getName(), true );
 
             PICToAdios<ComponentType> adiosType;
-            defineFieldVar(params, components, adiosType.type, T::getName(), getUnit(),
-                T::getUnitDimension(), inCellPosition, timeOffset);
+            defineFieldVar(
+                params,
+                components,
+                adiosType.type,
+                T::getName(),
+                createUnit( field.getUnit() , T::numComponents ),
+                field.getUnitDimension(),
+                inCellPosition,
+                timeOffset
+            );
+            dc.releaseData( T::getName() );
 #endif
         }
     };

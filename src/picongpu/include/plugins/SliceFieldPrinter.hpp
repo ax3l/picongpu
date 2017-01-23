@@ -53,7 +53,7 @@ private:
     void pluginUnload();
 
     template<typename TField>
-    void printSlice(const TField& field, int nAxis, float slicePoint, std::string filename);
+    void printSlice(const TField& field, float_64 fieldUnit, int nAxis, float slicePoint, std::string filename);
 
     friend class SliceFieldPrinterMulti<Field>;
 public:

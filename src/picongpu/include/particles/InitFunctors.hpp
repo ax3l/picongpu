@@ -20,22 +20,22 @@
 
 #pragma once
 
-#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
-#include <boost/mpl/if.hpp>
 #include "traits/HasFlag.hpp"
 #include "traits/GetFlagType.hpp"
-#include "fields/Fields.def"
 #include "math/MapTuple.hpp"
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/accumulate.hpp>
-#include <boost/mpl/apply.hpp>
-#include <boost/mpl/apply_wrap.hpp>
 #include "compileTime/conversion/TypeToPointerPair.hpp"
 #include "particles/manipulators/manipulators.def"
 #include "particles/densityProfiles/IProfile.def"
 #include "particles/startPosition/IFunctor.def"
 #include "traits/Resolve.hpp"
+
+#include <boost/mpl/if.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/accumulate.hpp>
+#include <boost/mpl/apply.hpp>
+#include <boost/mpl/apply_wrap.hpp>
+
 
 namespace picongpu
 {

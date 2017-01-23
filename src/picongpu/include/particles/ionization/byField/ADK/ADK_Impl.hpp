@@ -20,15 +20,10 @@
 
 #pragma once
 
-#include <boost/type_traits/integral_constant.hpp>
-
 #include "simulation_defines.hpp"
 #include "traits/Resolve.hpp"
 #include "traits/UsesRNG.hpp"
 #include "mappings/kernel/AreaMapping.hpp"
-
-#include "fields/FieldB.hpp"
-#include "fields/FieldE.hpp"
 
 #include "particles/ionization/byField/ADK/ADK.def"
 #include "particles/ionization/byField/ADK/AlgorithmADK.hpp"
@@ -42,6 +37,11 @@
 #include "random/methods/XorMin.hpp"
 #include "random/distributions/Uniform.hpp"
 #include "random/RNGProvider.hpp"
+
+#include "fields/FieldB.hpp"
+#include "fields/FieldE.hpp"
+
+#include <boost/type_traits/integral_constant.hpp>
 
 namespace picongpu
 {
@@ -110,8 +110,9 @@ namespace ionization
 
             typedef MappingDesc::SuperCellSize TVec;
 
-            typedef FieldE::ValueType ValueType_E;
-            typedef FieldB::ValueType ValueType_B;
+            using ValueType_B = FieldB::ValueType; // FieldB::ValueType
+            using ValueType_E = FieldE::ValueType; // FieldE::ValueType
+            //using ValueType_B = float3_X; // FieldB::ValueType
             /* global memory EM-field device databoxes */
             PMACC_ALIGN(eBox, FieldE::DataBoxType);
             PMACC_ALIGN(bBox, FieldB::DataBoxType);

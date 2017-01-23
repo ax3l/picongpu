@@ -40,7 +40,7 @@ identifier(pmacc_isAlias);
 #ifdef __CUDACC__
 #   define PMACC_alias_CUDA(name,id)                                          \
         namespace PMACC_JOIN(device_placeholder,id){                           \
-            __constant__ PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_); \
+            extern __constant__ PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_); \
         }
 #else
 #   define PMACC_alias_CUDA(name,id)
@@ -60,7 +60,7 @@ identifier(pmacc_isAlias);
     }                                                                          \
     using namespace PMACC_JOIN(placeholder_definition,id);                     \
     namespace PMACC_JOIN(host_placeholder,id){                                 \
-        PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_);      \
+        extern PMACC_JOIN(placeholder_definition,id)::name<> PMACC_JOIN(name,_); \
     }                                                                          \
     PMACC_alias_CUDA(name,id);                                                 \
     PMACC_PLACEHOLDER(id);

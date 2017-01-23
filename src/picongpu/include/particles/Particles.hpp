@@ -21,11 +21,9 @@
 
 #pragma once
 
-#include "pmacc_types.hpp"
+#include "Particles.def"
 #include "simulation_classTypes.hpp"
 
-#include "fields/Fields.def"
-#include "fields/Fields.hpp"
 #include "particles/ParticlesBase.hpp"
 #include "particles/memory/buffers/ParticlesBuffer.hpp"
 #include "particles/manipulators/manipulators.def"
@@ -37,6 +35,7 @@
 
 #include <string>
 #include <sstream>
+
 
 namespace picongpu
 {
@@ -84,7 +83,7 @@ public:
 
     void createParticleBuffer();
 
-    void init(FieldE &fieldE, FieldB &fieldB);
+    void init();
 
     void update(uint32_t currentStep);
 
@@ -160,32 +159,6 @@ public:
 private:
     SimulationDataId m_datasetID;
     GridLayout<simDim> m_gridLayout;
-
-
-    FieldE *fieldE;
-    FieldB *fieldB;
 };
 
-namespace traits
-{
-    template<
-        typename T_Name,
-        typename T_Attributes,
-        typename T_Flags
-    >
-    struct GetDataBoxType<
-        picongpu::Particles<
-            T_Name,
-            T_Attributes,
-            T_Flags
-       >
-    >
-    {
-        typedef typename picongpu::Particles<
-            T_Name,
-            T_Attributes,
-            T_Flags
-        >::ParticlesBoxType type;
-    };
-} //namespace traits
 } //namespace picongpu

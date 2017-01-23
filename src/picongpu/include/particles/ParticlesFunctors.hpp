@@ -21,23 +21,28 @@
 
 #pragma once
 
-#include "pmacc_types.hpp"
 #include "simulation_defines.hpp"
-#include <boost/mpl/if.hpp>
-#include "traits/HasFlag.hpp"
-#include "fields/Fields.def"
-#include "math/MapTuple.hpp"
-#include <boost/mpl/plus.hpp>
-#include <boost/mpl/accumulate.hpp>
+
+#include "particles/ionization/byField/ionizers.hpp"
+#include "particles/synchrotronPhotons/SynchrotronFunctions.hpp"
+#include "particles/bremsstrahlung/Bremsstrahlung.hpp"
+#include "particles/creation/creation.hpp"
 
 #include "communication/AsyncCommunication.hpp"
 #include "particles/traits/GetIonizer.hpp"
 #include "particles/traits/FilterByFlag.hpp"
 #include "particles/traits/GetPhotonCreator.hpp"
 #include "particles/traits/ResolveAliasFromSpecies.hpp"
-#include "particles/synchrotronPhotons/SynchrotronFunctions.hpp"
-#include "particles/bremsstrahlung/Bremsstrahlung.hpp"
-#include "particles/creation/creation.hpp"
+
+#include "fields/Fields.hpp"
+
+#include "traits/HasFlag.hpp"
+#include "math/MapTuple.hpp"
+
+#include <boost/mpl/if.hpp>
+#include <boost/mpl/plus.hpp>
+#include <boost/mpl/accumulate.hpp>
+
 
 namespace picongpu
 {
@@ -114,7 +119,7 @@ struct CallInit
                             FieldE* fieldE,
                             FieldB* fieldB) const
     {
-        tuple[SpeciesName()]->init( *fieldE, *fieldB );
+        tuple[SpeciesName()]->init( );
     }
 };
 

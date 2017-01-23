@@ -27,9 +27,6 @@
 
 #include "pluginSystem/PluginConnector.hpp"
 
-#include "fields/FieldE.hpp"
-#include "fields/FieldB.hpp"
-
 #include "initialization/SimStartInitialiser.hpp"
 
 #include "initialization/IInitPlugin.hpp"

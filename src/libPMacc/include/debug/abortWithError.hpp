@@ -38,7 +38,7 @@ namespace PMacc
      * @param lineNumber line in file
      * @param msg user defined error message
      */
-    void abortWithError(
+    static void abortWithError(
         const std::string exp,
         const std::string filename,
         const uint32_t lineNumber,

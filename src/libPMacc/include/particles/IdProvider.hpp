@@ -34,7 +34,7 @@ namespace PMacc {
 
     namespace idDetail {
 
-        __device__ uint64_cu nextId;
+        static __device__ uint64_cu nextId;
 
         struct SetNextId
         {

@@ -1,0 +1,65 @@
+/**
+ * Copyright 2013-2017 Axel Huebl, Heiko Burau, Rene Widera, Felix Schmitt,
+ *                     Marco Garten, Alexander Grund
+ *
+ * This file is part of PIConGPU.
+ *
+ * PIConGPU is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PIConGPU is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PIConGPU.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include "traits/GetDataBoxType.hpp"
+
+
+namespace picongpu
+{
+
+    /** particle species
+     *
+     * @tparam T_Name name of the species [type boost::mpl::string]
+     * @tparam T_Attributes sequence with attributes [type boost::mpl forward sequence]
+     * @tparam T_Flags sequence with flags e.g. solver [type boost::mpl forward sequence]
+     */
+    template<
+        typename T_Name,
+        typename T_Attributes,
+        typename T_Flags
+    >
+    class Particles;
+
+namespace traits
+{
+    template<
+        typename T_Name,
+        typename T_Attributes,
+        typename T_Flags
+    >
+    struct GetDataBoxType<
+        picongpu::Particles<
+            T_Name,
+            T_Attributes,
+            T_Flags
+       >
+    >
+    {
+        typedef typename picongpu::Particles<
+            T_Name,
+            T_Attributes,
+            T_Flags
+        >::ParticlesBoxType type;
+    };
+}
+}

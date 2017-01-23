@@ -23,9 +23,9 @@
 #pragma once
 
 #include "initialization/InitialiserController.hpp"
-#include "plugins/PluginController.hpp"
-#include "simulationControl/MySimulation.hpp"
-#include "simulationControl/SimulationStarter.hpp"
+#include "plugins/PluginController.def"
+#include "simulationControl/MySimulation.def"
+#include "simulationControl/SimulationStarter.def"
 
 /* Define a starter for the simulation with the name "SimStarter"
  *

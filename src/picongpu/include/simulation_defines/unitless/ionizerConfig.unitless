@@ -19,5 +19,3 @@
  */
 
 #pragma once
-
-#include "particles/ionization/byField/fieldIonizationCalc.hpp"

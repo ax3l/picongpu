@@ -67,7 +67,7 @@ namespace picongpu
 
         virtual void reset(uint32_t currentStep);
 
-        HDINLINE static UnitValueType getUnit();
+        UnitValueType getUnit();
 
         /** powers of the 7 base measures
          *
@@ -75,7 +75,7 @@ namespace picongpu
          * (length L, mass M, time T, electric current I,
          *  thermodynamic temperature theta, amount of substance N,
          *  luminous intensity J) */
-        HINLINE static std::vector<float_64> getUnitDimension();
+        std::vector<float_64> getUnitDimension();
 
         static std::string getName();
 
@@ -83,13 +83,13 @@ namespace picongpu
 
         virtual EventTask asyncCommunication(EventTask serialEvent);
 
-        void init(FieldE &fieldE, LaserPhysics &laserPhysics);
+        void init( LaserPhysics &laserPhysics );
 
         DataBoxType getHostDataBox();
 
         DataBoxType getDeviceDataBox();
 
-        GridBuffer<ValueType, simDim> &getGridBuffer();
+        GridBuffer<ValueType, simDim>& getGridBuffer();
 
         SimulationDataId getUniqueId();
 
@@ -105,7 +105,6 @@ namespace picongpu
 
         GridBuffer<ValueType, simDim> *fieldB;
 
-        FieldE *fieldE;
         LaserPhysics *laser;
     };
 

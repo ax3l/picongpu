@@ -30,14 +30,14 @@
 
 namespace PMacc
 {
-    CudaEvent::CudaEvent( ) : isRecorded( false ), finished( true ), refCounter( 0u )
+    inline CudaEvent::CudaEvent( ) : isRecorded( false ), finished( true ), refCounter( 0u )
     {
         log( ggLog::CUDA_RT()+ggLog::MEMORY(), "create event" );
         CUDA_CHECK( cudaEventCreateWithFlags( &event, cudaEventDisableTiming ) );
     }
 
 
-    CudaEvent::~CudaEvent( )
+    inline CudaEvent::~CudaEvent( )
     {
         PMACC_ASSERT( refCounter == 0u );
         log( ggLog::CUDA_RT()+ggLog::MEMORY(), "sync and delete event" );
@@ -47,12 +47,12 @@ namespace PMacc
 
     }
 
-    void CudaEvent::registerHandle()
+    inline void CudaEvent::registerHandle()
     {
         ++refCounter;
     }
 
-    void CudaEvent::releaseHandle()
+    inline void CudaEvent::releaseHandle()
     {
         assert( refCounter != 0u );
         // get old value and decrement
@@ -68,7 +68,7 @@ namespace PMacc
     }
 
 
-    bool CudaEvent::isFinished()
+    inline bool CudaEvent::isFinished()
     {
         // avoid cuda driver calls if event is already finished
         if( finished )
@@ -89,7 +89,7 @@ namespace PMacc
     }
 
 
-    void CudaEvent::recordEvent(cudaStream_t stream)
+    inline void CudaEvent::recordEvent(cudaStream_t stream)
     {
         /* disallow double recording */
         assert(isRecorded == false);
@@ -99,4 +99,4 @@ namespace PMacc
         CUDA_CHECK(cudaEventRecord(event, stream));
     }
 
-} // namepsace PMacc
+}

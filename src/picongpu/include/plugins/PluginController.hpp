@@ -24,9 +24,8 @@
 
 #pragma once
 
-#include "pmacc_types.hpp"
+#include "PluginController.def"
 #include "simulation_defines.hpp"
-#include "simulation_types.hpp"
 #include "assert.hpp"
 
 #include "plugins/CountParticles.hpp"

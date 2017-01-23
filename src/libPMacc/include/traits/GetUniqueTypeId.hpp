@@ -36,7 +36,7 @@ namespace traits
 
 namespace detail
 {
-
+namespace {
 /** create unique id
  *
  * id is not beginning with zero
@@ -64,6 +64,7 @@ const uint64_t GetUniqueTypeId<T_Type>::id = ++GetUniqueTypeId<uint8_t>::counter
 template<typename T_Type>
 uint64_t GetUniqueTypeId<T_Type>::counter = GetUniqueTypeId<T_Type>::id;
 
+}
 } //namespace detail
 
 /** Get a unique id of a type

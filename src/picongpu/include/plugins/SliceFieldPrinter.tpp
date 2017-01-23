@@ -44,14 +44,20 @@ namespace picongpu
 namespace SliceFieldPrinterHelper
 {
 template<class Field>
-class ConversionFunctor
+struct ConversionFunctor
 {
-public:
-  /* convert field data to higher precision and convert to SI units on GPUs */
-  DINLINE void operator()(float3_64& target, const typename Field::ValueType fieldData) const
-  {
-    target = precisionCast<float_64>(fieldData) *  float_64((Field::getUnit())[0]) ;
-  }
+    float_64 simUnit;
+
+    HDINLINE
+    ConversionFunctor( float_64 fieldUnit ) : simUnit( fieldUnit )
+    {
+    }
+
+    /* convert field data to higher precision and convert to SI units on GPUs */
+    DINLINE void operator()(float3_64& target, const typename Field::ValueType fieldData) const
+    {
+      target = precisionCast<float_64>(fieldData) * simUnit;
+    }
 };
 } // end namespace SliceFieldPrinterHelper
 
@@ -109,20 +115,22 @@ void SliceFieldPrinter<Field>::notify(uint32_t currentStep)
       namespace vec = ::PMacc::math;
       typedef SuperCellSize BlockDim;
       DataConnector &dc = Environment<>::get().DataConnector();
+      auto& field = dc.getData< Field >( Field::getName(), true );
       auto field_coreBorder =
-                 dc.getData<Field > (Field::getName(), true).getGridBuffer().
+                 field.getGridBuffer().
                  getDeviceBuffer().cartBuffer().
                  view(BlockDim::toRT(), -BlockDim::toRT());
 
       std::ostringstream filename;
       filename << this->fileName << "_" << currentStep << ".dat";
-      printSlice(field_coreBorder, this->plane, this->slicePoint, filename.str());
+      printSlice(field_coreBorder, field.getUnit()[0], this->plane, this->slicePoint, filename.str());
+      dc.releaseData( Field::getName() );
     }
 }
 
 template<typename Field>
 template<typename TField>
-void SliceFieldPrinter<Field>::printSlice(const TField& field, int nAxis, float slicePoint, std::string filename)
+void SliceFieldPrinter<Field>::printSlice(const TField& field, float_64 fieldUnit, int nAxis, float slicePoint, std::string filename)
 {
     namespace vec = PMacc::math;
 
@@ -148,7 +156,7 @@ void SliceFieldPrinter<Field>::printSlice(const TField& field, int nAxis, float 
     vec::UInt32<3> twistedAxesVec((nAxis+1)%3, (nAxis+2)%3, nAxis);
 
     /* convert data to higher precision and to SI units */
-    SliceFieldPrinterHelper::ConversionFunctor<Field> cf;
+    SliceFieldPrinterHelper::ConversionFunctor<Field> cf( fieldUnit );
     algorithm::kernel::RT::Foreach()(
       dBuffer_SI->zone(), dBuffer_SI->origin(),
       cursor::tools::slice(field.originCustomAxes(twistedAxesVec)(0,0,localPlane)),
@@ -158,7 +166,7 @@ void SliceFieldPrinter<Field>::printSlice(const TField& field, int nAxis, float 
     vec::UInt32<2> twistedAxesVec((nAxis+1)%2, nAxis);
 
     /* convert data to higher precision and to SI units */
-    SliceFieldPrinterHelper::ConversionFunctor<Field> cf;
+    SliceFieldPrinterHelper::ConversionFunctor<Field> cf( fieldUnit );
     algorithm::kernel::RT::Foreach()(
       dBuffer_SI->zone(), dBuffer_SI->origin(),
       cursor::tools::slice(field.originCustomAxes(twistedAxesVec)(0,localPlane)),
