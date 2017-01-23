@@ -45,16 +45,16 @@
 namespace mallocMC{                                                             \
   typedef MALLOCMC_USER_DEFINED_TYPENAME mallocMCType;                           \
                                                                                \
-MAMC_ACCELERATOR mallocMCType mallocMCGlobalObject;                               \
+MAMC_ACCELERATOR extern mallocMCType mallocMCGlobalObject;                               \
                                                                                \
-MAMC_HOST void* initHeap(                                                       \
+MAMC_HOST static void* initHeap(                                                       \
     size_t heapsize = 8U*1024U*1024U,                                          \
     mallocMCType &p = mallocMCGlobalObject                                       \
     )                                                                          \
 {                                                                              \
     return p.initHeap(heapsize);                                               \
 }                                                                              \
-MAMC_HOST void finalizeHeap(                                                    \
+MAMC_HOST static void finalizeHeap(                                                    \
     mallocMCType &p = mallocMCGlobalObject                                       \
     )                                                                          \
 {                                                                              \
@@ -71,18 +71,21 @@ MAMC_HOST void finalizeHeap(                                                    
 #define MALLOCMC_AVAILABLESLOTS()                                               \
 namespace mallocMC{                                                             \
 MAMC_HOST                                                                       \
+static                                                                          \
 unsigned getAvailableSlots(                                                     \
     size_t slotSize,                                                            \
     mallocMCType &p = mallocMCGlobalObject){                                    \
     return p.getAvailableSlots(slotSize);                                       \
 }                                                                               \
 MAMC_ACCELERATOR                                                                \
+static                                                                          \
 unsigned getAvailableSlotsAccelerator(                                          \
     size_t slotSize,                                                            \
     mallocMCType &p = mallocMCGlobalObject){                                    \
     return p.getAvailableSlotsAccelerator(slotSize);                            \
 }                                                                               \
 MAMC_HOST MAMC_ACCELERATOR                                                      \
+static                                                                          \
 bool providesAvailableSlots(){                                                  \
     return Traits<mallocMCType>::providesAvailableSlots;                        \
 }                                                                               \
@@ -104,11 +107,13 @@ bool providesAvailableSlots(){                                                  
 #define MALLOCMC_MALLOC()                                                       \
 namespace mallocMC{                                                             \
 MAMC_ACCELERATOR                                                                \
+static                                                                         \
 void* malloc(size_t t) __THROW                                                 \
 {                                                                              \
   return mallocMC::mallocMCGlobalObject.alloc(t);                                \
 }                                                                              \
 MAMC_ACCELERATOR                                                                \
+static                                                                         \
 void  free(void* p) __THROW                                                    \
 {                                                                              \
   mallocMC::mallocMCGlobalObject.dealloc(p);                                     \
@@ -124,6 +129,7 @@ void  free(void* p) __THROW                                                    \
 #define MALLOCMC_HEAPLOC()                                                     \
 namespace mallocMC{                                                            \
 MAMC_HOST                                                                      \
+static                                                                         \
 std::vector<mallocMC::HeapInfo> getHeapLocations()                             \
 {                                                                              \
   return mallocMC::mallocMCGlobalObject.getHeapLocations();                    \
