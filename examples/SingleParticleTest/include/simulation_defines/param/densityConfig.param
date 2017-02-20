@@ -71,7 +71,7 @@ namespace densityProfiles
             // X=32: middle of X plane (gyro-motion in X-Y)
             // Y=5:  do not start fully at border, e.g., if someone wants to increase E, and so mass over time
             // Z=16: middle of box in Z, move slowly in positive Z as E-field drift
-            const PMacc::math::UInt64< DIM3 > cell_start( 32u, 5u, 16u );
+            const PMacc::math::UInt64< DIM3 > cell_start( 12u, 0u, 6u );
 
             bool isStartCell = true;
             for( uint64_t d = 0; d < simDim; ++d )

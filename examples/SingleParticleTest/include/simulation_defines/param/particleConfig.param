@@ -24,6 +24,7 @@
 
 #include "particles/startPosition/functors.def"
 #include "particles/manipulators/manipulators.def"
+#include "particles/traits/GetAtomicNumbers.hpp"
 #include "nvidia/functors/Add.hpp"
 #include "nvidia/functors/Assign.hpp"
 
@@ -67,6 +68,18 @@ namespace manipulators
         DriftParam,
         nvidia::functors::Assign
     > AssignYDrift;
+
+    // unary particle manipulator
+    struct FourTimesChargedFunctor
+    {
+        template< typename T_Particle >
+        DINLINE void operator()( T_Particle& particle )
+        {
+            constexpr float_X protonNumber = GetAtomicNumbers<T_Particle>::type::numberOfProtons;
+            particle[ boundElectrons_ ] = protonNumber - 4u;
+        }
+    };
+    using FourTimesCharged = FreeImpl< FourTimesChargedFunctor >;
 
 } // namespace manipulators
 

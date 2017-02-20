@@ -85,11 +85,21 @@ using InitPipeline = mpl::vector<
     CreateDensity<
         densityProfiles::FreeFormula,
         startPosition::OnePosition,
-        PIC_Electrons
+        Positrons
+    >,
+    ManipulateDeriveSpecies<
+        manipulators::DensityWeighting,
+        Positrons,
+        Protons
+    >,
+    ManipulateDeriveSpecies<
+        manipulators::DensityWeighting,
+        Positrons,
+        Carbons
     >,
     Manipulate<
-        manipulators::AssignYDrift,
-        PIC_Electrons
+        manipulators::FourTimesCharged,
+        Carbons
     >
 >;
 

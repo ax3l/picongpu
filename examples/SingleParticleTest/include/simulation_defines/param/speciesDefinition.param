@@ -56,38 +56,100 @@ using DefaultParticleAttributes = MakeSeq_t<
 #   define PARAM_ENABLEPUSHER 1
 #endif
 
-/*--------------------------- electrons --------------------------------------*/
+/*--------------------------- positrons --------------------------------------*/
 
 /* ratio relative to BASE_CHARGE and BASE_MASS */
-value_identifier(float_X, MassRatioElectrons, 1.0);
-value_identifier(float_X, ChargeRatioElectrons, 1.0);
+value_identifier(float_X, MassRatioPositrons, 1.0);
+value_identifier(float_X, ChargeRatioPositrons, -1.0);
 
-using ParticleFlagsElectrons = bmpl::vector<
+/* ratio to BASE_DENSITY (e.g. n_e) */
+value_identifier(float_X, DensityRatioPositrons, 2.0);
+
+using ParticleFlagsPositrons = bmpl::vector<
 /* enable the pusher only if PARAM_ENABLEPUSHER is defined as one `1` */
 #if( PARAM_ENABLEPUSHER == 1 )
     particlePusher<UsedParticlePusher>,
 #endif
     shape<UsedParticleShape>,
     interpolation<UsedField2Particle>,
-    current<UsedParticleCurrentSolver>,
-    massRatio<MassRatioElectrons>,
-    chargeRatio<ChargeRatioElectrons>
+    massRatio<MassRatioPositrons>,
+    chargeRatio<ChargeRatioPositrons>,
+    densityRatio<DensityRatioPositrons>
 >;
 
 /* define species electrons */
-using PIC_Electrons = Particles<
-    bmpl::string<'e'>,
+using Positrons = Particles<
+    bmpl::string< 'e', 'p' >,
     DefaultParticleAttributes,
-    ParticleFlagsElectrons
+    ParticleFlagsPositrons
+>;
+
+/*--------------------------- protons --------------------------------------*/
+
+/* ratio relative to BASE_CHARGE and BASE_MASS */
+value_identifier(float_X, MassRatioProtons, 1836.);
+value_identifier(float_X, ChargeRatioProtons, -1.0);
+
+/* ratio to BASE_DENSITY (e.g. n_e) */
+value_identifier(float_X, DensityRatioProtons, 3.0);
+
+using ParticleFlagsProtons = bmpl::vector<
+/* enable the pusher only if PARAM_ENABLEPUSHER is defined as one `1` */
+#if( PARAM_ENABLEPUSHER == 1 )
+    particlePusher<UsedParticlePusher>,
+#endif
+    shape<UsedParticleShape>,
+    interpolation<UsedField2Particle>,
+    massRatio<MassRatioProtons>,
+    chargeRatio<ChargeRatioProtons>,
+    densityRatio<DensityRatioPositrons>
+>;
+
+/* define species electrons */
+using Protons = Particles<
+    bmpl::string< 'p' >,
+    DefaultParticleAttributes,
+    ParticleFlagsProtons
+>;
+
+/*--------------------------- carbons --------------------------------------*/
+
+/* ratio relative to BASE_CHARGE and BASE_MASS */
+value_identifier(float_X, MassRatioCarbons, 21894.);
+value_identifier(float_X, ChargeRatioCarbons, -1.0);
+
+/* ratio to BASE_DENSITY (e.g. n_e) */
+value_identifier(float_X, DensityRatioCarbons, 4.0);
+
+using ParticleFlagsCarbons = bmpl::vector<
+/* enable the pusher only if PARAM_ENABLEPUSHER is defined as one `1` */
+#if( PARAM_ENABLEPUSHER == 1 )
+    particlePusher<UsedParticlePusher>,
+#endif
+    shape<UsedParticleShape>,
+    interpolation<UsedField2Particle>,
+    massRatio<MassRatioCarbons>,
+    chargeRatio<ChargeRatioCarbons>,
+    atomicNumbers<ionization::atomicNumbers::Carbon_t>,
+    densityRatio<DensityRatioPositrons>
+>;
+
+/* define species electrons */
+using Carbons = Particles<
+    bmpl::string< 'C' >,
+    MakeSeq_t<
+        DefaultParticleAttributes,
+        boundElectrons
+    >,
+    ParticleFlagsCarbons
 >;
 
 /*########################### end species ####################################*/
 
 using VectorAllSpecies = MakeSeq_t<
-#if( ENABLE_ELECTRONS == 1 )
-    PIC_Electrons
-#endif
+    Positrons,
+    Protons,
+    Carbons
 >;
 
-
-} //namespace picongpu
+} // namespace picongpu

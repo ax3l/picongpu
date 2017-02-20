@@ -53,8 +53,8 @@ namespace picongpu
             /* specify your E-Field in V/m and convert to PIConGPU units */
             return float3_X(
                 0.0,
-                0.0,
-                -10.0e6 / m_unitField[1]
+                100.0e6 / m_unitField[1],
+                0.0
             );
         }
     };
@@ -63,7 +63,7 @@ namespace picongpu
     {
     public:
         /* Add this additional field for pushing particles */
-        static constexpr bool InfluenceParticlePusher = true;
+        static constexpr bool InfluenceParticlePusher = false;
 
         /* We use this to calculate your SI input back to our unit system */
         PMACC_ALIGN(
@@ -89,7 +89,7 @@ namespace picongpu
             return float3_X(
                 0.0,
                 0.0,
-                50.0 / m_unitField[1]
+                0.0
             );
         }
     };
