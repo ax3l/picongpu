@@ -3,14 +3,6 @@
 Misc
 ----
 
-starter.param
-^^^^^^^^^^^^^
-
-.. doxygenfile:: starter.param
-   :project: PIConGPU
-   :path: src/picongpu/include/simulation_defines/param/starter.param
-   :no-link:
-
 seed.param
 ^^^^^^^^^^
 
@@ -27,3 +19,18 @@ physicalConstants.param
    :path: src/picongpu/include/simulation_defines/param/physicalConstants.param
    :no-link:
 
+version.param
+^^^^^^^^^^^^^
+
+.. doxygenfile:: version.param
+   :project: PIConGPU
+   :path: src/picongpu/include/simulation_defines/param/version.param
+   :no-link:
+
+starter.param
+^^^^^^^^^^^^^
+
+.. doxygenfile:: starter.param
+   :project: PIConGPU
+   :path: src/picongpu/include/simulation_defines/param/starter.param
+   :no-link:

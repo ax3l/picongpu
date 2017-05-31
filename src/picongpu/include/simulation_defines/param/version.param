@@ -1,0 +1,38 @@
+/* Copyright 2015-2017 Axel Huebl
+ *
+ * This file is part of PIConGPU.
+ *
+ * PIConGPU is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * PIConGPU is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PIConGPU.
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/** @file
+ *
+ * This file defines the last known version of PIConGPU from which this
+ * input parameter set was created with pic-create.
+ *
+ * Users do not need to change this file but it helps finding the associated
+ * PIConGPU version for the syntax used in a parameter set. When the version
+ * is found, our CHANGELOG.md file contains instructions on how to update
+ * the changes in input syntax between stable releases of PIConGPU.
+ */
+#pragma once
+
+#include "version.hpp"
+
+#define PARAM_PICONGPU_VERSION_MAJOR PICONGPU_VERSION_MAJOR
+#define PARAM_PICONGPU_VERSION_MINOR PICONGPU_VERSION_MINOR
+#define PARAM_PICONGPU_VERSION_PATCH PICONGPU_VERSION_PATCH
+#define PARAM_PICONGPU_VERSION_LABEL PICONGPU_VERSION_LABEL
+#define PARAM_PICONGPU_VERSION_SHA PICONGPU_VERSION_SHA

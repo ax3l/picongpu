@@ -17,13 +17,17 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-/** only PIConGPU programmers should change this file
+/** @file
  *
- * for examples use extensionParam.loader
+ * only PIConGPU programmers should change this file
+ *
+ * for parameter sets that need additional input files, please
+ * see extensionParam.loader
  *
  */
 #pragma once
 
+#include "simulation_defines/param/version.param"
 #include "simulation_defines/param/dimension.param"
 #include "simulation_defines/param/mallocMC.param"
 #include "simulation_defines/param/memory.param"
