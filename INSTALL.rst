@@ -119,6 +119,12 @@ rsync
 - *Arch Linux:* ``sudo pacman --sync rsync``
 - *Spack:* ``spack install rsync``
 
+pkg-config
+""""""""""
+- *Debian/Ubuntu:* ``sudo apt-get install pkg-config``
+- *Arch Linux:* ``sudo pacman --sync pkg-config``
+- *Spack:* ``spack install pkg-config``
+
 PIConGPU source code
 """"""""""""""""""""
 - ``git clone https://github.com/ComputationalRadiationPhysics/picongpu.git $HOME/src/picongpu``
