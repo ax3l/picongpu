@@ -1,0 +1,21 @@
+# paths to directories with PIConGPU components
+#   query variables with, e.g.
+#     pkg-config --variable=repo_dir picongpu
+#   note: be aware, that those variables might contain
+#         shell commands with $(...) which need execution
+#         to be populated
+repo_dir=$(cd $(dirname $(which pic-create)) && pwd)
+examples_dir=${repo_dir}/examples
+app_dir=${repo_dir}/src/picongpu
+pmacc_dir=${repo_dir}/src/libPMacc
+tools_dir=${repo_dir}/src/tools
+thirdparty_dir=${repo_dir}/thirdParty
+docs_dir=${repo_dir}/docs
+
+# reserved keywords to describe the package
+Name: PIConGPU
+Description: bla bla bla
+Version: 0.3.0-dev
+URL: http://picongpu.hzdr.de
+# we intentionally do not add requirements, libs and flags here since
+# this file is used in the PIConGPU "user" environment
