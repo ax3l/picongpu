@@ -38,7 +38,7 @@ namespace simulation_starter = defaultPIConGPU;
  *  - laserPlaneWave        : a plane wave (Gaussian in time)
  *  - laserPolynom          : a polynomial laser envelope
  */
-namespace laserProfile = laserGaussianBeam;
+namespace laserProfile = laserNone;
 
 /*! Field Configuration --------------------------------------------------
  *  - fieldSolverYee : standard Yee solver
@@ -57,7 +57,7 @@ namespace fieldSolver = PARAM_FIELDSOLVER;
 
 /*enable (1) or disable (0) current calculation*/
 #ifndef ENABLE_CURRENT
-#define ENABLE_CURRENT 1
+#define ENABLE_CURRENT 0
 #endif
 
 }

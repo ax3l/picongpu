@@ -117,10 +117,6 @@ using PIC_Ions = Particles<
 #endif
 
 using VectorAllSpecies = MakeSeq_t<
-    PIC_Electrons
-#if( PARAM_IONS == 1)
-    ,PIC_Ions
-#endif
 >;
 
 } //namespace picongpu
