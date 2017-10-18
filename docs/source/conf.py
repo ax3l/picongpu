@@ -40,7 +40,8 @@ show_authors = True
 extensions = ['sphinx.ext.mathjax',
               'breathe',
               'sphinxcontrib.programoutput',
-              'matplotlib.sphinxext.plot_directive']
+              'matplotlib.sphinxext.plot_directive',
+              'numpydoc']
 
 if not on_rtd:
     extensions.append('sphinx.ext.githubpages')
