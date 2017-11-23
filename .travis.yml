@@ -20,7 +20,7 @@ addons:
       - libopenmpi-dev
       # clang 3.9.0 is pre-installed
       # - clang-3.9  # 3.9.1-4ubuntu3~14.04.3
-      # - clang-tidy-3.9
+      - clang-tidy-3.9
 
 env:
   global:
@@ -29,9 +29,6 @@ env:
     - CXXFLAGS: "-std=c++11"
 
 install:
-  #############################################################################
-  # PMacc CPU-only dependencies                                               #
-  #############################################################################
   - SPACK_FOUND=$(which spack >/dev/null && { echo 0; } || { echo 1; })
   - if [ $SPACK_FOUND -ne 0 ]; then
       mkdir -p $SPACK_ROOT &&
@@ -39,6 +36,9 @@ install:
       echo -e "config:""\n  build_jobs:"" 2" > $SPACK_ROOT/etc/spack/config.yaml;
     fi
   - spack compiler add
+  #############################################################################
+  # PMacc CPU-only dependencies                                               #
+  #############################################################################
   - travis_wait spack install
       cmake@3.7.2~openssl~ncurses
       $COMPILERSPEC
@@ -133,6 +133,63 @@ jobs:
         - pyflakes .
     - <<: *static-code-python
       python: "3.6"
+    - language: cpp
+      env: [ COMPILERSPEC='%clang@3.9.0' ]
+      before_install:
+        - export CXX=clang++
+        - export CC=clang-3.9
+        - export FC=gfortran-4.9
+      after_install:
+        #############################################################################
+        # PIConGPU OpenMP2.0+ Blocks backend dependencies                           #
+        #############################################################################
+        - travis_wait spack install
+              zlib
+              $COMPILERSPEC
+        - travis_wait spack install
+              mpi
+              $COMPILERSPEC
+        #############################################################################
+        # PIConGPU Plugin dependencies                                              #
+        #############################################################################
+        # - travis_wait spack install
+        #       pngwriter
+        #       $COMPILERSPEC
+        # - travis_wait spack install
+        #       libsplash
+        #       $COMPILERSPEC
+        # - travis_wait spack install
+        #       adios
+        #       $COMPILERSPEC
+        # - travis_wait spack install
+        #     isaac
+        #     $COMPILERSPEC
+        - spack clean -a
+        # load all the above
+        - spack load zlib $COMPILERSPEC
+        - spack load mpi $COMPILERSPEC
+        # - spack load pngwriter $COMPILERSPEC
+        # - spack load libsplash $COMPILERSPEC
+        # - spack load adios $COMPILERSPEC
+        # - spack load isaac $COMPILERSPEC
+      script:
+        #############################################################################
+        # clang-tidy check of the FoilLCT example                                   #
+        #############################################################################
+        # - $TRAVIS_BUILD_DIR/pic-create
+        #       $TRAVIS_BUILD_DIR/share/picongpu/examples/FoilLCT
+        #       $HOME/build-foil
+        # - mkdir -p $HOME/build-foil/.build
+        # - cd $HOME/build-foil/.build
+        # - $TRAVIS_BUILD_DIR/pic-configure
+        #       -b omp2b
+        #       -c"-DCLANG_TIDY_BIN=$(which clang-tidy-3.9)"
+        #       ..
+        # or simple PIC cycle with empty init:
+        - cmake -DALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLE=ON
+                -DCLANG_TIDY_BIN=$(which clang-tidy-3.9)
+                $TRAVIS_BUILD_DIR/include/picongpu/
+        - travis_wait make clang-tidy
     - &test-cpp-unit
       stage: 'C++ Unit Tests'
       language: cpp
