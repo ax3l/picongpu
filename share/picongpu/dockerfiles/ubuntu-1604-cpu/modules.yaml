@@ -1,0 +1,12 @@
+modules:
+  enable::
+    - tcl
+  tcl:
+    openmpi:
+      environment:
+        set:
+          OMPI_MCA_mpi_leave_pinned: '0'
+    icet:
+      environment:
+        prepend_path:
+          CMAKE_PREFIX_PATH: '${PREFIX}/lib'

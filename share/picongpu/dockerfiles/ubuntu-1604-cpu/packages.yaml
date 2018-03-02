@@ -1,0 +1,33 @@
+packages:
+  cuda:
+    paths:
+      cuda@9.0.176%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr/local/cuda
+    buildable: False
+  pkg-config:
+    paths:
+      pkg-config@0.29.1%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr
+    buildable: False
+  python:
+    paths:
+      python@2.7.12%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr
+    buildable: False
+  xz:
+    version: [5.2.3]
+    paths:
+      xz@5.2.3%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr
+    buildable: False
+  bzip2:
+    version: [1.0.6]
+    paths:
+      bzip2@1.0.6%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr
+    buildable: False
+  libpng:
+    version: [1.2.57]
+    paths:
+      libpng@1.2.57%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr
+    buildable: False
+  rsync:
+    version: [3.1.1]
+    paths:
+      rsync@3.1.1%gcc@5.4.0 arch=linux-ubuntu16-x86_64: /usr
+    buildable: False

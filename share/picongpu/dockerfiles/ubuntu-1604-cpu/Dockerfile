@@ -1,4 +1,4 @@
-FROM       nvidia/cuda:9.0-base
+FROM       ubuntu:16.04
 MAINTAINER Axel Huebl <a.huebl@hzdr.de>
 
 # docker and image environment
@@ -6,7 +6,7 @@ ENV        DEBIAN_FRONTEND=noninteractive \
            FORCE_UNSAFE_CONFIGURE=1 \
            SPACK_ROOT=/usr/local \
            SPACK_EXTRA_REPO=/usr/local/share/spack-repo \
-           PIC_PACKAGE='picongpu@develop+isaac backend=cuda'
+           PIC_PACKAGE='picongpu@develop backend=omp2b'
 
 # install minimal spack dependencies
 #   - adds gfortran for spack's openmpi package
@@ -22,17 +22,13 @@ RUN        apt-get update && \
               build-essential \
               ca-certificates \
               coreutils \
-              cuda-command-line-tools-$CUDA_PKG_VERSION \
-              cuda-core-$CUDA_PKG_VERSION \
-              cuda-cudart-dev-$CUDA_PKG_VERSION \
-              cuda-curand-dev-$CUDA_PKG_VERSION \
-              cuda-minimal-build-$CUDA_PKG_VERSION \
-              cuda-misc-headers-$CUDA_PKG_VERSION \
-              cuda-nvml-dev-$CUDA_PKG_VERSION \
               curl \
               environment-modules \
               gfortran \
               git \
+              liblzma-dev \
+              libbz2-dev \
+              libpng-dev \
               nano \
               openssh-server \
               pkg-config \
@@ -62,8 +58,8 @@ RUN        /bin/echo -e "source $SPACK_ROOT/share/spack/setup-env.sh\n" \
                         'if [ $(id -u) -eq 0 ]; then\n' \
                         '   function mpirun { $(which mpirun) --allow-run-as-root $@; }\n' \
                         '   function mpiexec { $(which mpiexec) --allow-run-as-root $@; }\n' \
-                        '   export -f mpirun\n; \
-                        '   export -f mpiexec\n; \
+                        '   export -f mpirun;\n' \
+                        '   export -f mpiexec;\n' \
                         'fi' \
                > /etc/profile.d/picongpu.sh
 
@@ -71,7 +67,7 @@ RUN        /bin/echo -e "source $SPACK_ROOT/share/spack/setup-env.sh\n" \
 RUN        /bin/bash -l -c ' \
                pic-create $PICSRC/share/picongpu/examples/LaserWakefield /opt/picInputs/lwfa && \
                cd /opt/picInputs/lwfa && \
-               pic-build -b "cuda:30;35;37;50;60" && \
+               pic-build && \
                rm -rf .build'
 
 COPY       start_lwfa.sh /usr/bin/lwfa
