@@ -30,7 +30,12 @@
 #   - increase by 1, no gaps
 
 flags[0]=""
-flags[1]="-DPARAM_OVERWRITES:LIST='-DPARAM_LASERPROFILE=ExpRampWithPrepulse'"
+flags[1]="-DPARAM_OVERWRITES:LIST='-DPARAM_SEED=29814'"
+flags[2]="-DPARAM_OVERWRITES:LIST='-DPARAM_SEED=74531'"
+flags[3]="-DALPAKA_CUDA_FAST_MATH:BOOL=OFF"
+flags[4]="-DALPAKA_CUDA_FAST_MATH:BOOL=OFF -DPARAM_OVERWRITES:LIST='-DPARAM_SEED=29814'"
+flags[5]="-DALPAKA_CUDA_FAST_MATH:BOOL=OFF -DPARAM_OVERWRITES:LIST='-DPARAM_SEED=74531'"
+
 
 ################################################################################
 # execution
