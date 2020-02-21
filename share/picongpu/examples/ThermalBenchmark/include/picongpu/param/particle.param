@@ -39,8 +39,8 @@ namespace particles
              */
             using numParticlesPerDimension = typename mCT::shrinkTo<
                 mCT::Int<
-                    2,
-                    2,
+                    4,
+                    4,
                     1
                 >,
                 simDim
@@ -71,10 +71,10 @@ namespace particles
      *  particle attributes.
      */
     constexpr uint32_t TYPICAL_PARTICLES_PER_CELL =
-        startPosition::RandomParameter::numParticlesPerCell;
-    //mCT::volume<
-    //    startPosition::QuietParam::numParticlesPerDimension
-    //>::type::value;
+    //    startPosition::RandomParameter::numParticlesPerCell;
+    mCT::volume<
+        startPosition::QuietParam::numParticlesPerDimension
+    >::type::value;
 
 namespace manipulators
 {
