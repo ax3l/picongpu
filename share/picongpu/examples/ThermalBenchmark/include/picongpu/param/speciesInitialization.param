@@ -44,7 +44,7 @@ namespace particles
     using InitPipeline = bmpl::vector<
         CreateDensity<
             densityProfiles::Homogenous,
-            startPosition::Random, // Quiet or Random
+            startPosition::Quiet, // Quiet or Random
             Electrons
         >,
         Derive<
