@@ -74,7 +74,7 @@ value_identifier( float_X, MassRatioPositrons, 1.0 );
 value_identifier( float_X, ChargeRatioPositrons, -1.0 );
 
 /* ratio relative to BASE_DENSITY */
-value_identifier( float_X, DensityRatioPositrons, -1.0 );
+value_identifier( float_X, DensityRatioPositrons, 1.0 );
 
 using ParticleFlagsPositrons = MakeSeq_t<
     particlePusher< UsedParticlePusher >,
