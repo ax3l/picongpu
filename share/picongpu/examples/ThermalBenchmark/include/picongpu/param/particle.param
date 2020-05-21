@@ -39,9 +39,9 @@ namespace particles
              */
             using numParticlesPerDimension = typename mCT::shrinkTo<
                 mCT::Int<
-                    4,
-                    4,
-                    1
+                    1,
+                    2,
+                    2
                 >,
                 simDim
             >::type;
@@ -53,7 +53,7 @@ namespace particles
             /** Count of particles per cell at initial state
              *
              *  unit: none */
-            static constexpr uint32_t numParticlesPerCell = 16u;
+            static constexpr uint32_t numParticlesPerCell = 4u;
         };
         /** definition of random particle start */
         using Random = RandomImpl< RandomParameter >;
@@ -83,7 +83,7 @@ namespace manipulators
         /* Initial temperature
          *  unit: keV
          */
-        static constexpr float_64 temperature = 51.;
+        static constexpr float_64 temperature = 161.;
     };
     using AddTemperature = unary::Temperature< TemperatureParam >;
 

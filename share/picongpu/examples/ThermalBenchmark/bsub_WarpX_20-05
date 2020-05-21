@@ -1,0 +1,15 @@
+#!/bin/bash
+#BSUB -P APH114
+#BSUB -W 0:2
+#BSUB -nnodes 1
+#BSUB -J WarpX
+#BSUB -o WarpXo.%J
+#BSUB -e WarpXe.%J
+module load gcc
+module load cuda
+module list
+set -x
+omp=1
+export OMP_NUM_THREADS=${omp}
+EXE="./master.ex"
+jsrun -n 1 -a 1 -g 1 -c 7 --bind=packed:${omp} ${EXE} inputs > output_double.txt
