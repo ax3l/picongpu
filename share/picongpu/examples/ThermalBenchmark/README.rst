@@ -33,8 +33,13 @@ PIConGPU Version
 Equivalent WarpX Input
 ----------------------
 
-Version: 20.05
-Input: `inputs_WarpX_20-05` (max-out at 4 particles per cell per species)
+WarpX Version: 89b4801d778f58f04162b2c886c6c57ea4cae009
+AMReX Version: d307624f8451a18da755a6cb1b5a3c31a42cdd48
+Picsar Version: b78ba49a4299ddc8000b0ad4a244f291459fdb10
+
+Input: `inputs_WarpX_20-07` - this version leaves the GPU less than fully occupied
+Input: `inputs_full_single_WarpX_20-07` - this tries to fully occupy the GPU using 4 ppc per species, single precision
+Input: `inputs_full_double_WarpX_20-07` - this tries to fully occupy the GPU using 4 ppc per species, double precision
 
 
 Included Cases
