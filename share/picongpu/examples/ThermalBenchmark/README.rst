@@ -1,8 +1,8 @@
 Thermal Benchmark
 =================
 
-.. sectionauthor:: Axel Huebl <a.huebl (at) hzdr.de>
-.. moduleauthor:: Axel Huebl <a.huebl (at) hzdr.de>, Andrew Myers <atmyers@lbl.gov>
+.. sectionauthor:: Axel Huebl <axelhuebl@lbl.gov>
+.. moduleauthor:: Axel Huebl <axelhuebl@lbl.gov>, Andrew Myers <atmyers@lbl.gov>
 
 This example is just a little 3D3V thermal benchmark.
 If implements a single (case 0) and double precision (case 1) warm electron-positron plasma.
@@ -27,17 +27,22 @@ The example is tuned for a single or four Nvidia P100 or V100 (16 GByte) GPU(s).
 PIConGPU Version
 ----------------
 
-0.4.3-850-g0b72a28b8 (02/2020 from mainline/release-0.5.0-rc1)
+0.5.0 (07/2020 at commit 454a28efe6a6eb0fa1e0e97031ef2569a1ad313b)
+
+* ``etc/picongpu/1.cfg``: same setup as 20-05, not occupying the GPU in full
+
+  * other setups in this increase the number of cells per GPU while leaving the ppc per species constant
+* note: supercell needs modification to e.g. ``8x4x4`` for 3D3V DP runs in ``include/picongpu/param/memory.param``
 
 
 Equivalent WarpX Input
 ----------------------
 
-WarpX Version: 89b4801d778f58f04162b2c886c6c57ea4cae009
+WarpX Version: 89b4801d778f58f04162b2c886c6c57ea4cae009 (post ``20.07``)
 AMReX Version: d307624f8451a18da755a6cb1b5a3c31a42cdd48
 Picsar Version: b78ba49a4299ddc8000b0ad4a244f291459fdb10
 
-* Input: `inputs_WarpX_20-07` - this version leaves the GPU less than fully occupied
+* Input: `inputs_WarpX_20-07` - this version leaves the GPU less than fully occupied, just derived from 20-05 before memory optimizations
 * Input: `inputs_full_single_WarpX_20-07` - this tries to fully occupy the GPU using 4 ppc per species, single precision
 * Input: `inputs_full_double_WarpX_20-07` - this tries to fully occupy the GPU using 4 ppc per species, double precision
 
