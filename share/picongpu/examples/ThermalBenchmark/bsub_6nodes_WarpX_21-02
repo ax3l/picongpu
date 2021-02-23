@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Copyright 2019-2020 Maxence Thevenet, Axel Huebl
+#
+# This file is part of WarpX.
+#
+# License: BSD-3-Clause-LBNL
+#
+# Refs.:
+#   https://jsrunvisualizer.olcf.ornl.gov/?s4f0o11n6c7g1r11d1b1l0=
+#   https://docs.olcf.ornl.gov/systems/summit_user_guide.html#cuda-aware-mpi
+
+#BSUB -P aph114
+#BSUB -W 00:20
+#BSUB -nnodes 6
+#BSUB -alloc_flags smt4
+#BSUB -J WarpX
+#BSUB -o WarpXo.%J
+#BSUB -e WarpXe.%J
+
+module load gcc
+module load cuda
+
+export OMP_NUM_THREADS=1
+
+# 3x3x4 devices for full 3D comm pattern
+# base-size per GPU: 256**3
+jsrun -r 6 -a 1 -g 1 -c 7 -l GPU-CPU -d packed -b rs --smpiargs="-gpu" ./warpx inputs_full_double_WarpX_20-07 amr.n_cell=768 768 1024 > output.txt
