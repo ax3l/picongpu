@@ -29,7 +29,7 @@ PIConGPU Version
 
 0.5.0 (07/2020 at commit 454a28efe6a6eb0fa1e0e97031ef2569a1ad313b)
 
-* ``etc/picongpu/1.cfg``: same setup as 20-05, not occupying the GPU in full
+* ``etc/picongpu/1.cfg``: same setup as 20-07, not occupying the GPU in full
 
   * other setups in this increase the number of cells per GPU while leaving the ppc per species constant
 * note: supercell needs modification to e.g. ``8x4x4`` for 3D3V DP runs in ``include/picongpu/param/memory.param``
@@ -38,20 +38,20 @@ PIConGPU Version
 Equivalent WarpX Input
 ----------------------
 
-WarpX Version: ``89b4801d778f58f04162b2c886c6c57ea4cae009`` (post ``20.07``)
+WarpX Version: ``6b84b94dfc92ec0cd29b1e42f9ff0c45a45997a4`` (post ``21.06``)
 
-AMReX Version: ``d307624f8451a18da755a6cb1b5a3c31a42cdd48``
+AMReX Version: ``eb2fb8eb11d4df88d5b6c04a68f2971a6c3b97f0``
 
-Picsar Version: ``b78ba49a4299ddc8000b0ad4a244f291459fdb10``
+Picsar Version: ``c16b642e3dcf860480dd1dd21cefa3874f395773``
 
-* Input: ``inputs_WarpX_20-07`` - this version leaves the GPU less than fully occupied, just derived from 20-05 before memory optimizations
-* Input: ``inputs_full_single_WarpX_20-07`` - this tries to fully occupy the GPU using 4 ppc per species, single precision
-* Input: ``inputs_full_double_WarpX_20-07`` - this tries to fully occupy the GPU using 4 ppc per species, double precision
+* Input: ``inputs_WarpX_21-06`` - this version leaves the GPU less than fully occupied, just derived from 20-05 before memory optimizations
+* Input: ``inputs_full_single_WarpX_21-06`` - this tries to fully occupy the GPU using 4 ppc per species, single precision
+* Input: ``inputs_full_double_WarpX_21-06`` - this tries to fully occupy the GPU using 4 ppc per species, double precision
 
 Submission scripts:
 
-* ``bsub_WarpX_20-05`` - simple 1 node run script (rename inputs file)
-* ``bsub_6nodes_WarpX_21-02`` - weak-scaling to 3x3x4 devices for full 3D communication pattern
+* ``bsub_WarpX_21-06`` - simple 1 node run script (rename inputs file)
+* ``bsub_6nodes_WarpX_21-06`` - weak-scaling to 3x3x4 devices for full 3D communication pattern
 
 Included Cases
 --------------

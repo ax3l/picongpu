@@ -2,7 +2,7 @@
 ####### GENERAL PARAMETERS ######
 #################################
 max_step = 100
-amr.n_cell =  256 256 256
+amr.n_cell =  128 256 256
 amr.max_grid_size = 128
 amr.blocking_factor = 32
 amr.max_level = 0
@@ -19,14 +19,11 @@ warpx.verbose = 1
 warpx.cfl = 0.999
 warpx.do_pml = 0
 algo.current_deposition = esirkepov
-interpolation.nox = 3
-interpolation.noy = 3
-interpolation.noz = 3
+algo.particle_shape = 3
 
 #################################
 ############ PLASMA #############
 #################################
-particles.nspecies = 2
 particles.species_names = electrons positrons
 
 electrons.charge = -q_e
